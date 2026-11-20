@@ -1,0 +1,48 @@
+# Secrets
+.env
+*.key
+*.pem
+*.crt
+*.secret
+cookies.txt
+
+# VMs et disques virtuels
+*.vdi
+*.vmdk
+*.vmx
+*.vmxf
+*.vmsd
+*.nvram
+*.vbox
+*.vbox-prev
+*.iso
+vms/
+vm/
+
+# Books (gros fichiers)
+books/
+
+# Images d'installation (ISO volumineuses)
+iso/
+
+# Opencode cache
+.opencode/node_modules/
+.opencode/package-lock.json
+
+# Tracking (géré par orchestrator uniquement)
+tracking.db
+
+# Preuves locales (gros fichiers binaires)
+preuves/**/*.png
+preuves/**/*.jpg
+preuves/**/*.pcap
+
+# Données de production
+*.sql.dump
+*.backup
+
+# OS
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc

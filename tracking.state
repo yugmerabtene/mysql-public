@@ -1,0 +1,12 @@
+# État du parcours MySQL Cluster — lecture rapide pour les agents
+# Source de vérité durable : tracking.db (verrouillé, orchestrator uniquement)
+# Ce fichier contient uniquement l'état courant, format clé:valeur, lisible directement.
+
+jour: 1
+module: 1.1
+statut: blocked
+derniere_session: 2026-11-07
+blocage: infrastructure non déployée (en attente de sysadmin: 2 VMs Ubuntu 24.04 LTS)
+prochaine_action: sysadmin deploie les 2 VMs (192.168.56.10 gestion+SQL, 192.168.56.11 stockage x2)
+infrastructure: 2 VMs, 1 vCPU, 1 Go RAM, 15 Go disque, réseau vboxnet0 192.168.56.0/24
+agent_ecriture: orchestrator

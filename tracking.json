@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0",
+  "source": "tracking.db",
+  "authoritative": "tracking.db",
+  "generated_at": "2026-11-16",
+  "course": {
+    "id": 1,
+    "title": "MySQL Cluster — Administration et exploitation",
+    "level": 2,
+    "duration_days": 5,
+    "hours_per_day": 6,
+    "total_hours": 30,
+    "source": "syllabus.md",
+    "language": "fr",
+    "created_at": "2026-11-04",
+    "updated_at": "2026-11-04"
+  },
+  "current_state": {
+    "id": 1,
+    "day_id": 1,
+    "module_id": "1.0",
+    "status": "all_content_ready",
+    "last_session": "2026-11-14"
+  },
+  "modules": [
+    {
+      "day_id": 1,
+      "module_id": "1.0",
+      "title": "Introduction à MySQL Cluster — Architecture et composants",
+      "duration_h": 3,
+      "status": "done",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Présentation de MySQL Cluster, composants principaux (MySQL Server, NDB Cluster, management nodes), études de cas, exploration des composants."
+    },
+    {
+      "day_id": 1,
+      "module_id": "1.1",
+      "title": "Installation de MySQL Cluster",
+      "duration_h": 3,
+      "status": "blocked",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Pré-requis matériels et logiciels, installation des différents composants, configuration initiale, démarrage des services, vérification de l'intégrité. Dépend du déploiement infrastructure par sysadmin."
+    },
+    {
+      "day_id": 2,
+      "module_id": "2.0",
+      "title": "Architecture de MySQL Cluster — Nœuds, partitionnement, réplication",
+      "duration_h": 3,
+      "status": "not_started",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Moteur de stockage NDB, différents types de nœuds, partitionnement et réplication, redondance et résilience."
+    },
+    {
+      "day_id": 2,
+      "module_id": "2.1",
+      "title": "Configuration et Administration — Nœuds de gestion, stockage, SQL",
+      "duration_h": 3,
+      "status": "not_started",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Configuration des nœuds, paramètres essentiels, ajout et suppression de nœuds, surveillance de l'état du cluster."
+    },
+    {
+      "day_id": 3,
+      "module_id": "3.0",
+      "title": "Supervision et Maintenance",
+      "duration_h": 3,
+      "status": "not_started",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Outils de supervision et d'alertes, tâches de maintenance courantes, sauvegarde et restauration de données, maintenance sans interruption."
+    },
+    {
+      "day_id": 3,
+      "module_id": "3.1",
+      "title": "MySQL Cluster Manager",
+      "duration_h": 3,
+      "status": "not_started",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Installation des agents et clients, création de clusters, import de configurations, maintenance et gestion de clusters."
+    },
+    {
+      "day_id": 4,
+      "module_id": "4.0",
+      "title": "Optimisation des Performances et Scalabilité",
+      "duration_h": 3,
+      "status": "not_started",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Paramètres de performance, techniques de sharding et partitionnement, diagnostic et résolution de problèmes de performance."
+    },
+    {
+      "day_id": 4,
+      "module_id": "4.1",
+      "title": "Gestion de la Réplication et Tolérance aux Pannes",
+      "duration_h": 3,
+      "status": "not_started",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Réplication entre clusters, gestion des pannes et récupérations, mécanismes de failover et failback."
+    },
+    {
+      "day_id": 5,
+      "module_id": "5.0",
+      "title": "Sécuriser MySQL Cluster",
+      "duration_h": 6,
+      "status": "not_started",
+      "owner": "prof",
+      "learner": "student",
+      "score": null,
+      "notes": "Sécurité des connexions, sécurité des données, sécurité des nœuds serveurs, configuration de la sécurité d'un cluster MySQL."
+    }
+  ],
+  "agents": {
+    "orchestrator": {
+      "file": ".opencode/agent/orchestrator.md",
+      "mode": "primary",
+      "role": "Pilotage, délégation, validation et suivi"
+    },
+    "prof": {
+      "file": ".opencode/agent/prof.md",
+      "mode": "subagent",
+      "role": "Formateur, labs MySQL Cluster, détection et mitigation"
+    },
+    "student": {
+      "file": ".opencode/agent/student.md",
+      "mode": "subagent",
+      "role": "Apprenant, pratique, notes et rapports"
+    },
+    "sysadmin": {
+      "file": ".opencode/agent/sysadmin.md",
+      "mode": "subagent",
+      "role": "Infrastructure, serveurs, cluster, snapshots"
+    }
+  },
+  "lab_scope": {
+    "id": 1,
+    "authorized": 1,
+    "isolation": "Réseau isolé pour le cluster MySQL — VMs connectées uniquement au réseau du lab pendant les travaux pratiques.",
+    "default_network": "Réseau lab isolé. Nœud gestion + SQL : 192.168.56.10. Nœuds de stockage 1 et 2 : 192.168.56.11. Hôte : 192.168.56.1. Deux VMs max, 1 vCPU, 1 Go RAM, 15 Go disque, Ubuntu Server 24.04 LTS.",
+    "authorization_reference": "À compléter et valider avant le premier travaux pratique",
+    "snapshot_required": 1
+  },
+  "lab_targets": [
+    {
+      "id": 1,
+      "name": "Nœud de gestion + SQL (MGM + Mysqld)",
+      "role": "gestion+sql",
+      "ip": "192.168.56.10",
+      "nic1": "vboxnet0",
+      "nic2": null,
+      "os": "Ubuntu Server 24.04 LTS",
+      "cpu": 1,
+      "ram": "1 Go",
+      "disque": "15 Go",
+      "status": "a_creer",
+      "notes": "Nœud de gestion MySQL Cluster (ndb_mgmd) + nœud SQL (mysqld) — 192.168.56.10, 1 vCPU, 1 Go RAM, 15 Go disque, Ubuntu 24.04 LTS"
+    },
+    {
+      "id": 2,
+      "name": "Nœuds de stockage 1 et 2 (NDBD x2)",
+      "role": "stockage",
+      "ip": "192.168.56.11",
+      "nic1": "vboxnet0",
+      "nic2": null,
+      "os": "Ubuntu Server 24.04 LTS",
+      "cpu": 1,
+      "ram": "1 Go",
+      "disque": "15 Go",
+      "status": "a_creer",
+      "notes": "Deux nœuds de stockage de données (ndbmtd, node-id 1 et 2) sur une même VM — 192.168.56.11, 1 vCPU, 1 Go RAM, 15 Go disque, Ubuntu 24.04 LTS"
+    }
+  ]
+}
