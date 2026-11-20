@@ -177,3 +177,13 @@ L'infrastructure de base est déjà déployée :
 3. IPs statiques : 192.168.56.10 (gestion + SQL), 192.168.56.11 (stockage x2). Hôte : 192.168.56.1.
 4. Prendre un snapshot propre de chaque VM avant manipulation. Garder l'accès Internet désactivé pendant les labs.
 5. Pour le périmètre actuel, seuls les nœuds du cluster sont nécessaires. Maximum 3 VMs, idéalement 2.
+
+## Vérification du .env obligatoire (tous les agents)
+
+Avant **chaque** intervention, tout agent doit invoquer la skill `check-env` (`.opencode/skills/check-env/SKILL.md`) et lire le fichier `.env` à la racine du projet pour récupérer :
+- `GITHUB_TOKEN` (authentification GitHub : création de repo privé, push).
+- `GIT_AUTHOR_NAME / GIT_AUTHOR_EMAIL / GIT_COMMITTER_NAME / GIT_COMMITTER_EMAIL` (identité git).
+
+Les infos VM (IP 192.168.56.10 gestion+SQL, 192.168.56.11 stockage) se lisent dans `tracking.state` et `tracking.db`.
+**Interdit** de committer, push ou afficher en clair le contenu de `.env`. Le fichier est déjà ignoré par `.gitignore` (`# Secrets : .env`).
+Avant tout `git push`, vérifier qu'aucun secret n'est présent dans les fichiers stagés.
