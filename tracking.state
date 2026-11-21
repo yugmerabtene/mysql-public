@@ -5,8 +5,9 @@
 jour: 1
 module: 1.1
 statut: blocked
-derniere_session: 2026-11-07
-blocage: infrastructure non déployée (en attente de sysadmin: 2 VMs Ubuntu 24.04 LTS)
-prochaine_action: sysadmin deploie les 2 VMs (192.168.56.10 gestion+SQL, 192.168.56.11 stockage x2)
-infrastructure: 2 VMs, 1 vCPU, 1 Go RAM, 15 Go disque, réseau vboxnet0 192.168.56.0/24
+derniere_session: 2026-11-21
+blocage: infrastructure non déployée (en attente de déploiement manuel des 2 VMs Ubuntu 24.04 LTS)
+prochaine_action: deploier manuellement les 2 VMs (192.168.56.10 gestion+SQL, 192.168.56.11 stockage x2), puis auto-test prof sur chapitre-01.md
+infrastructure: 2 VMs, 1 vCPU, 1 Go RAM, 15 Go disque, réseau vboxnet0 192.168.56.0/24 — non déployée sur disque
+chapitre_1: redige par prof, format canonique (Lab-01 infra + Lab-02 MySQL Cluster), aligné syllabus, sans traces cours precedent, commit/push effectues sur origin/main
 agent_ecriture: orchestrator
