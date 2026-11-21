@@ -156,6 +156,12 @@ est défini dans `.opencode/skills/common.md`, section 16.
 - Aucun corps de commit, aucune note ni commentaire supplémentaire.
 - Le `.gitignore` est respecté : aucun secret, aucune VM, aucun fichier de suivi local n'est versionné.
 
+## Règles de délégation aux sous-agents
+
+- Après chaque tâche déléguée à un sous-agent (`sysadmin`, `prof`, `student`), si les tests passent correctement et la validation est verte, procéder immédiatement à un commit (`mise à jour`) puis un push vers le dépôt distant.
+- Aucun commit ni push si les tests échouent ou si la validation n'est pas verte.
+- Tout sous-agent qui crée ou utilise une nouvelle clé, token ou mot de passe doit l'indiquer dans `.env` (jamais commit/push, jamais affiché en clair). L'agent principal vérifie que `.env` reste dans `.gitignore` avant tout push.
+
 ## État actuel (tracking.state — lecture rapide des agents)
 
 - Jour : 1 | Module : 1.x (chapitre 1) | Statut : en cours
