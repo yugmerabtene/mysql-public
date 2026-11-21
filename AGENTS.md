@@ -168,6 +168,7 @@ est défini dans `.opencode/skills/common.md`, section 16.
 - Si l'utilisateur indique que les VMs sont déjà installées et fonctionnent, utiliser les VMs existantes telles quelles et configurer uniquement ce qui est demandé (réseau, SSH, IPs statiques, snapshots).
 - Avant toute action sur une VM, vérifier son état réel via `VBoxManage list vms` et `VBoxManage showvminfo <nom>`.
 - Si une VM existe déjà avec un disque et un OS, ne pas attacher d'ISO d'installation, ne pas modifier l'ordre de boot pour forcer une réinstallation, ne pas recréer le disque VDI.
+- Les disques des VMs doivent impérativement rester dans `/home/yug/Documents/mysql/vm/` — ne jamais déplacer, copier ou supprimer les fichiers `.vdi`, `.vbox`, `.vbox-prev` ailleurs.
 - Toute violation de cette règle est un défaut bloquant qui doit être corrigé immédiatement.
 
 ## État actuel (tracking.state — lecture rapide des agents)
