@@ -162,6 +162,14 @@ est défini dans `.opencode/skills/common.md`, section 16.
 - Aucun commit ni push si les tests échouent ou si la validation n'est pas verte.
 - Tout sous-agent qui crée ou utilise une nouvelle clé, token ou mot de passe doit l'indiquer dans `.env` (jamais commit/push, jamais affiché en clair). L'agent principal vérifie que `.env` reste dans `.gitignore` avant tout push.
 
+## Règle d'interdiction de réinstallation des VMs (règle absolue)
+
+- **Jamais** réinstaller, recréer, supprimer ou réinitialiser une VM existante sans autorisation écrite et explicite de l'utilisateur.
+- Si l'utilisateur indique que les VMs sont déjà installées et fonctionnent, utiliser les VMs existantes telles quelles et configurer uniquement ce qui est demandé (réseau, SSH, IPs statiques, snapshots).
+- Avant toute action sur une VM, vérifier son état réel via `VBoxManage list vms` et `VBoxManage showvminfo <nom>`.
+- Si une VM existe déjà avec un disque et un OS, ne pas attacher d'ISO d'installation, ne pas modifier l'ordre de boot pour forcer une réinstallation, ne pas recréer le disque VDI.
+- Toute violation de cette règle est un défaut bloquant qui doit être corrigé immédiatement.
+
 ## État actuel (tracking.state — lecture rapide des agents)
 
 - Jour : 1 | Module : 1.x (chapitre 1) | Statut : en cours

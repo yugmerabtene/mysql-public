@@ -4,10 +4,10 @@
 
 jour: 1
 module: 1.1
-statut: ready_for_autotest
+statut: blocked
 derniere_session: 2026-11-21
-blocage: none
-prochaine_action: auto-test prof sur chapitre-01.md (Lab-01 infra + Lab-02 MySQL Cluster), puis remise a student pour test debutant
-infrastructure: 2 VMs deployees et fonctionnelles — gestion-sql (192.168.56.10, gestion+SQL) et stockage (192.168.56.11, stockage x2), vboxnet0 192.168.56.0/24, SSH actif, snapshots propres prises
+blocage: auto-test prof a echoue — VMs sans OS installe, pas de snapshots, pas de connectivite (voir chapitre-01-self-test.md)
+prochaine_action: sysadmin configure le reseau (IP statiques 192.168.56.10/11, SSH, snapshots) sur les VMs existantes SANS les reinstaller, puis relancer auto-test prof
+infrastructure: 2 VMs enregistrees (gestion-sql, stockage) — reseau vboxnet0 configure sur l'hote, OS non installe sur disque
 chapitre_1: redige par prof, format canonique (Lab-01 infra + Lab-02 MySQL Cluster), aligne syllabus, sans traces cours precedent, commit/push effectues sur origin/main
 agent_ecriture: orchestrator
