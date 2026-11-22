@@ -1100,7 +1100,7 @@ Tester la résilience opérationnelle : arrêt simulé d'un nœud de stockage av
 | Outil | Commande | Rôle |
 |---|---|---|
 | ndb_mgm | `ndb_mgm -e "2 STOP"` | Arrêt d'un nœud de stockage |
-| date | `date +%s` | Horodatage pour mesurer le temps de récupération |
+| date | `date` | Horodatage pour mesurer le temps de récupération |
 | ndb_mgm | `ndb_mgm -e "SHOW"` | Vérification de l'état pendant et après panne |
 | pkill | `pkill -x mysqld` | Arrêt d'un nœud SQL pour redémarrage rolling |
 

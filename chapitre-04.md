@@ -1169,7 +1169,7 @@ Simuler une panne de nœud de stockage sur le cluster MySQL Cluster, observer le
 | ndb_mgm | `ndb_mgm -e "2 STOP"` | Arrêt simulé du nœud de stockage Id=2 |
 | ndb_mgm | `ndb_mgm -e "2 START"` | Redémarrage du nœud de stockage Id=2 |
 | mysql | `mysql -u root -e "SELECT ..."` | Vérification de la continuité de service et de l'absence de perte de données |
-| date | `date +%s.%N` | Horodatage pour mesurer le temps de failover |
+| date | `date` | Horodatage pour mesurer le temps de failover |
 ### Commande et laboratoire étape par étape
 #### Étape 1 — Vérifier l'état initial du cluster (tous les nœuds connectés)
 **But** — Confirmer que les 5 nœuds sont connectés avant de simuler la panne.
