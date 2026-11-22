@@ -53,14 +53,14 @@ Le schéma ci-dessous présente les flux de communication à sécuriser dans le 
 
 ```mermaid
 graph TD
-    H[Hôte admin 192.168.56.1] -->|SSH| G[VM1 gestion-sql 192.168.56.10]
-    H -->|SSH| S[VM2 stockage 192.168.56.11]
-    H -->|SSH| T[VM3 mysql-node3 192.168.56.12]
-    G -->|TLS| MGM[ndb_mgmd NodeId=1]
-    S -->|TLS| ND2[ndbmtd NodeId=2]
-    S -->|TLS| ND3[ndbmtd NodeId=3]
-    G -->|TLS + SQL| SQL1[mysqld NodeId=4]
-    T -->|TLS + SQL| SQL2[mysqld NodeId=5]
+    H["Hôte admin 192.168.56.1"] -->|SSH| G["VM1 gestion-sql 192.168.56.10"]
+    H -->|SSH| S["VM2 stockage 192.168.56.11"]
+    H -->|SSH| T["VM3 mysql-node3 192.168.56.12"]
+    G -->|TLS| MGM["ndb_mgmd NodeId=1"]
+    S -->|TLS| ND2["ndbmtd NodeId=2"]
+    S -->|TLS| ND3["ndbmtd NodeId=3"]
+    G -->|TLS + SQL| SQL1["mysqld NodeId=4"]
+    T -->|TLS + SQL| SQL2["mysqld NodeId=5"]
     MGM <-->|TLS gere| ND2
     MGM <-->|TLS gere| ND3
     ND2 <-->|TLS replique| ND3
@@ -72,9 +72,9 @@ Le schéma ci-dessous illustre le modèle de moindre privilège appliqué aux co
 
 ```mermaid
 graph TD
-    RootSQL[root@localhost MySQL] -->|droits complets| Admin[Administration uniquement]
-    AppSQL[app_user@192.168.56.%] -->|SELECT, INSERT sur labperf.*| App[Application lab]
-    BackupSQL[backup_user@192.168.56.%] -->|SELECT, SHOW VIEW, LOCK TABLES| Sauvegarde[Sauvegardes seulement]
+    RootSQL["root@localhost MySQL"] -->|droits complets| Admin["Administration uniquement"]
+    AppSQL["app_user@192.168.56.%"] -->|SELECT, INSERT sur labperf.*| App["Application lab"]
+    BackupSQL["backup_user@192.168.56.%"] -->|SELECT, SHOW VIEW, LOCK TABLES| Sauvegarde["Sauvegardes seulement"]
     RootSQL -.->|ne jamais utiliser par l'app| App
 ```
 

@@ -6,14 +6,11 @@
 
 ## Avertissement et périmètre
 
-- Cibles autorisées : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL NodeId 4), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet pendant les labs (adaptateur NAT temporaire uniquement pendant l'installation des paquets).
 - Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
 - Accès distant : une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
-- Actions interdites : aucun mode pont, aucune redirection NAT permanente, aucun accès Internet depuis les VMs pendant les labs, aucune commande MySQL Cluster exécutée sur l'hôte.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
-- Contrainte rédactionnelle : la désignation textuelle des canaux de communication n'est pas employée dans la partie cours ni dans le vocabulaire. Les références numériques aux canaux de gestion (1186) et SQL (3306) apparaissent uniquement dans les étapes de laboratoire où elles sont nécessaires aux commandes réelles.
 
 ## Durée estimée
 
@@ -47,18 +44,18 @@ Le schéma ci-dessous présente la chaîne de supervision du lab.
 
 ```mermaid
 graph TD
-    H[Hôte 192.168.56.1] -->|ssh| G[VM1 gestion-sql 192.168.56.10]
-    H -->|ssh| S[VM2 stockage 192.168.56.11]
-    H -->|ssh| T[VM3 mysql-node3 192.168.56.12]
-    G --> MGM[ndb_mgmd NodeId=1]
-    MGM -->|SHOW / REPORT| Cli[Client ndb_mgm]
+    H["Hôte 192.168.56.1"] -->|ssh| G["VM1 gestion-sql 192.168.56.10"]
+    H -->|ssh| S["VM2 stockage 192.168.56.11"]
+    H -->|ssh| T["VM3 mysql-node3 192.168.56.12"]
+    G --> MGM["ndb_mgmd NodeId=1"]
+    MGM -->|SHOW / REPORT| Cli["Client ndb_mgm"]
     MGM -->|config| CFG[ndb_config]
-    S --> ND2[ndbmtd NodeId=2]
-    S --> ND3[ndbmtd NodeId=3]
-    ND2 -->|sauvegarde| BKP[SaveDataDir /var/lib/mysql-cluster/BACKUP]
+    S --> ND2["ndbmtd NodeId=2"]
+    S --> ND3["ndbmtd NodeId=3"]
+    ND2 -->|sauvegarde| BKP["SaveDataDir /var/lib/mysql-cluster/BACKUP"]
     ND3 -->|sauvegarde| BKP
-    G --> SQL1[mysqld NodeId=4]
-    T --> SQL2[mysqld NodeId=5]
+    G --> SQL1["mysqld NodeId=4"]
+    T --> SQL2["mysqld NodeId=5"]
 ```
 
 **Fig 3.1** — Chaîne de supervision : le client `ndb_mgm` interroge le gestionnaire ; chaque nœud de stockage expose sa mémoire et ses fichiers de sauvegarde dans `SaveDataDir`.
@@ -67,13 +64,13 @@ Le schéma ci-dessous illustre la procédure de sauvegarde et restauration, insp
 
 ```mermaid
 graph TD
-    MGM[ndb_mgmd] -->|START BACKUP| ND2[ndbmtd NodeId=2]
-    MGM -->|START BACKUP| ND3[ndbmtd NodeId=3]
-    ND2 -->|fichiers BACKUP| BKP[Répertoire BACKUP sur chaque node]
+    MGM[ndb_mgmd] -->|START BACKUP| ND2["ndbmtd NodeId=2"]
+    MGM -->|START BACKUP| ND3["ndbmtd NodeId=3"]
+    ND2 -->|fichiers BACKUP| BKP["Répertoire BACKUP sur chaque node"]
     BKP -->|transfert| RST[ndb_restore]
-    RST -->|restauration| NDB[Cluster NDB]
-    RST -->|--restore_meta| SCH[Schéma (une seule fois)]
-    RST -->|restauration données| DATA[Chaque node de stockage, en parallèle]
+    RST -->|restauration| NDB["Cluster NDB"]
+    RST -->|--restore_meta| SCH["Schéma (une seule fois)"]
+    RST -->|restauration données| DATA["Chaque node de stockage, en parallèle"]
 ```
 
 **Fig 3.2** — Sauvegarde et restauration : `START BACKUP` déclenche une sauvegarde consistante sur chaque nœud de stockage ; `ndb_restore --restore_meta` restaure le schéma une fois, puis les données sont réinjectées sur chaque nœud de stockage en parallèle.

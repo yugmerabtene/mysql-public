@@ -6,14 +6,11 @@
 
 ## Avertissement et périmètre
 
-- Cibles autorisées : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL NodeId 4), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet pendant les labs (adaptateur NAT temporaire uniquement pendant l'installation des paquets).
 - Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
 - Accès distant : une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
-- Actions interdites : aucun mode pont, aucune redirection NAT permanente, aucun accès Internet depuis les VMs pendant les labs, aucune commande MySQL Cluster exécutée sur l'hôte.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
-- Contrainte rédactionnelle : la désignation textuelle des canaux de communication n'est pas employée dans la partie cours ni dans le vocabulaire. Les références numériques aux canaux de gestion (1186) et SQL (3306) apparaissent uniquement dans les étapes de laboratoire où elles sont nécessaires aux commandes réelles.
 
 ## Durée estimée
 
@@ -53,14 +50,14 @@ Le schéma ci-dessous présente l'architecture détaillée du lab sur 3 VM.
 
 ```mermaid
 graph TD
-    H[Hôte 192.168.56.1] -->|SSH admin| G[VM1 gestion-sql 192.168.56.10]
-    H -->|SSH admin| S[VM2 stockage 192.168.56.11]
-    H -->|SSH admin| T[VM3 mysql-node3 192.168.56.12]
-    G --> MGM[ndb_mgmd NodeId=1]
-    G --> SQL1[mysqld NodeId=4]
-    S --> ND2[ndbmtd NodeId=2]
-    S --> ND3[ndbmtd NodeId=3]
-    T --> SQL2[mysqld NodeId=5]
+    H["Hôte 192.168.56.1"] -->|SSH admin| G["VM1 gestion-sql 192.168.56.10"]
+    H -->|SSH admin| S["VM2 stockage 192.168.56.11"]
+    H -->|SSH admin| T["VM3 mysql-node3 192.168.56.12"]
+    G --> MGM["ndb_mgmd NodeId=1"]
+    G --> SQL1["mysqld NodeId=4"]
+    S --> ND2["ndbmtd NodeId=2"]
+    S --> ND3["ndbmtd NodeId=3"]
+    T --> SQL2["mysqld NodeId=5"]
     MGM -.->|connect-string| ND2
     MGM -.->|connect-string| ND3
     MGM -.->|connect-string| SQL1
@@ -78,12 +75,12 @@ Le schéma ci-dessous illustre le partitionnement et la réplication des donnée
 
 ```mermaid
 graph TD
-    T[Table SQL] -->|fragment F1| N2[NodeId 2: Réplica A]
-    T -->|fragment F1| N3[NodeId 3: Réplica B]
+    T["Table SQL"] -->|fragment F1| N2["NodeId 2: Réplica A"]
+    T -->|fragment F1| N3["NodeId 3: Réplica B"]
     T -->|fragment F2| N3
     T -->|fragment F2| N2
-    SQL1[mysqld NodeId=4] -->|lecture/écriture| T
-    SQL2[mysqld NodeId=5] -->|lecture/écriture| T
+    SQL1["mysqld NodeId=4"] -->|lecture/écriture| T
+    SQL2["mysqld NodeId=5"] -->|lecture/écriture| T
     N2 <-->|synchro| N3
 ```
 
@@ -101,14 +98,14 @@ Le schéma ci-dessous illustre l'arbitrage et la prévention du split-brain.
 
 ```mermaid
 graph TD
-    MGM[ndb_mgmd NodeId=1 arbitre] -->|quorum| NG[Nodegroup 0: NodeId 2 + NodeId 3]
-    NG -->|réplication synchrone| R1[NodeId 2: Réplica A]
-    NG -->|réplication synchrone| R2[NodeId 3: Réplica B]
-    P[Perte réseau NodeId 2] -->|déclenche arbitrage| MGM
+    MGM["ndb_mgmd NodeId=1 arbitre"] -->|quorum| NG["Nodegroup 0: NodeId 2 + NodeId 3"]
+    NG -->|réplication synchrone| R1["NodeId 2: Réplica A"]
+    NG -->|réplication synchrone| R2["NodeId 3: Réplica B"]
+    P["Perte réseau NodeId 2"] -->|déclenche arbitrage| MGM
     MGM -->|décide NodeId 3 actif| R2
-    R2 -->|service continu| SQL1[mysqld NodeId=4]
-    R2 -->|service continu| SQL2[mysqld NodeId=5]
-    SB[Split-brain évité] -.->|quorum majoritaire| MGM
+    R2 -->|service continu| SQL1["mysqld NodeId=4"]
+    R2 -->|service continu| SQL2["mysqld NodeId=5"]
+    SB["Split-brain évité"] -.->|quorum majoritaire| MGM
 ```
 
 **Fig 2.3** — Arbitrage et prévention du split-brain : le nœud de gestion tranche quel node group reste actif lorsque la communication est coupée.

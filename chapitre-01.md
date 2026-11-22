@@ -11,9 +11,7 @@
 - Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
 - Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine cible.
-- Actions interdites : aucun mode pont, aucune redirection NAT permanente, aucun accès Internet depuis les VMs pendant les labs, aucune commande MySQL Cluster exécutée sur l'hôte.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
-- Contrainte rédactionnelle : la désignation textuelle des canaux de communication n'est pas employée dans la partie cours ni dans le vocabulaire. Les références numériques aux canaux de gestion (1186) et SQL (3306) apparaissent uniquement dans les étapes de laboratoire où elles sont nécessaires aux commandes réelles.
 
 ## Durée estimée
 
@@ -57,14 +55,14 @@ Le schéma ci-dessous présente l'architecture du lab de ce chapitre sur trois V
 
 ```mermaid
 graph TD
-    H[Hôte 192.168.56.1] -->|SSH admin| G[VM1 gestion-sql 192.168.56.10]
-    H -->|SSH admin| S[VM2 stockage 192.168.56.11]
-    H -->|SSH admin| T[VM3 mysql-node3 192.168.56.12]
-    G --> MGM[ndb_mgmd NodeId=1]
-    G --> SQL1[mysqld NodeId=4]
-    S --> ND2[ndbmtd NodeId=2]
-    S --> ND3[ndbmtd NodeId=3]
-    T --> SQL2[mysqld NodeId=5]
+    H["Hôte 192.168.56.1"] -->|SSH admin| G["VM1 gestion-sql 192.168.56.10"]
+    H -->|SSH admin| S["VM2 stockage 192.168.56.11"]
+    H -->|SSH admin| T["VM3 mysql-node3 192.168.56.12"]
+    G --> MGM["ndb_mgmd NodeId=1"]
+    G --> SQL1["mysqld NodeId=4"]
+    S --> ND2["ndbmtd NodeId=2"]
+    S --> ND3["ndbmtd NodeId=3"]
+    T --> SQL2["mysqld NodeId=5"]
     MGM -.->|connect-string| ND2
     MGM -.->|connect-string| ND3
     MGM -.->|connect-string| SQL1
@@ -153,12 +151,12 @@ Le schéma ci-dessous illustre le comportement de résilience.
 
 ```mermaid
 graph TD
-    MGM[ndb_mgmd NodeId=1] -->|arbitrage| NG[Nodegroup 0: NodeId 2 + NodeId 3]
-    NG -->|réplication synchrone| R1[Réplica A NodeId 2]
-    NG -->|réplication synchrone| R2[Réplica B NodeId 3]
-    SQL1[mysqld NodeId=4] -->|lecture/écriture| NG
-    SQL2[mysqld NodeId=5] -->|lecture/écriture| NG
-    P[Perte NodeId 2] -->|failover auto| R2
+    MGM["ndb_mgmd NodeId=1"] -->|arbitrage| NG["Nodegroup 0: NodeId 2 + NodeId 3"]
+    NG -->|réplication synchrone| R1["Réplica A NodeId 2"]
+    NG -->|réplication synchrone| R2["Réplica B NodeId 3"]
+    SQL1["mysqld NodeId=4"] -->|lecture/écriture| NG
+    SQL2["mysqld NodeId=5"] -->|lecture/écriture| NG
+    P["Perte NodeId 2"] -->|failover auto| R2
     R2 -->|service continu| SQL1
     R2 -->|service continu| SQL2
 ```
