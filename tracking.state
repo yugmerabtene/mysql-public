@@ -4,16 +4,17 @@
 
 jour: 1
 module: 1.1
-statut: pret_pour_student
-derniere_session: 2026-11-22
-blocage: Aucun blocage. Chapitres 1 à 5 corrigés, nettoyés et testés en réel sur les 3 VM. SSH root OK sur les 3 VM. Données portuaire ~1,25M lignes chargees dans base portdb. Preuves reelles dans tous les blocs Resultat attendu. Snapshots propre-avant-lab sur les 3 VM.
-prochaine_action: (1) valider portes G0-G7, (2) remise a student pour test debutant, (3) feedback/correction si necessaire, (4) nouveau commit/push sur main apres validation verte.
-infrastructure: 3 VMs operationnelles sur vboxnet0 192.168.56.0/24 (DHCP off, hote 192.168.56.1) — tous disques dans /home/yug/Documents/mysql/vm/, aucun disque deplace/supprime. VM 1 (UbuntuServer-01) : gestion-sql, 192.168.56.10/24, SSH root OK, nœud gestion + SQL. VM 2 (UbuntuServer-02) : stockage, 192.168.56.11/24, SSH root OK, deux nœuds stockage ndbmtd. VM 3 (UbuntuServer-03) : mysql-node3, 192.168.56.12/24, SSH root OK, 2e nœud SQL. Snapshots : propre-avant-lab sur les 3 VM (sysadmin). Espace disque : 28G libre. Données portuaire ~1,25M lignes chargees dans base portdb sur les 3 VM (tests performance hors cours).
+statut: corrige_post_relecture
+derniere_session: 2026-11-23
+blocage: Aucun. Relecture intégrale student (5 chapitres) et correction prof terminées. 4 BLOCKER + ~30 MAJOR + MINOR corrigés. Format canonique vérifié (Lab-01 a Lab-14, 4 sections dans l'ordre, aucun Changelog dans les chapitres, aucun secret expose, .env ignore et non suivi). En attente de validation portes G0-G7 puis commit/push.
+prochaine_action: (1) valider portes G0-G7, (2) commit `mise a jour` + push (stager uniquement chapitres, syllabus.md, AGENTS.md, CHANGELOG.md, RAPPORT_CORRECTIONS_RELECTURE_STUDENT.md, netplan-*.yaml, config.ini ; exclure .bak/.pre-fix/rag/ et anciens RAPPORT_*), (3) remise a student pour re-test des points corriges, (4) rapport final.
+infrastructure: 3 VMs operationnelles sur vboxnet0 192.168.56.0/24 (DHCP off, hote 192.168.56.1) — tous disques dans /home/yug/Documents/mysql/vm/, aucun disque deplace/supprime. VM 1 (UbuntuServer-01) : gestion-sql, 192.168.56.10/24, SSH root OK. VM 2 (UbuntuServer-02) : stockage, 192.168.56.11/24, deux noeuds ndbmtd. VM 3 (UbuntuServer-03) : mysql-node3, 192.168.56.12/24, 2e noeud SQL. Snapshots propre-avant-lab. AUCUNE VM reinstallée/reconfiguree lors de la correction (regle absolue).
 chapitres:
-  chapitre_01: redige par prof, format canonique (Lab-01 infra 3 VM + Lab-02 MySQL Cluster), conforme 14 regles, syllabus aligne (NDB-01 a NDB-08), nettoyage inclus, mode SSH session ouverte, recherches industrielles sans mot interdit, preuves supprimees du corps. Lab-01 et Lab-02 VALIDES en reel sur les 3 VM.
-  chapitre_02: redige par prof (Lab-03 a 06: architecture NDB, quorum/split-brain, config nodes, test panne/rolling), NDB-06 a NDB-15, format canonique OK, preuves supprimees, mode SSH session ouverte. Lab-03, Lab-04, Lab-05 VALIDES en reel sur les 3 VM.
-  chapitre_03: redige par prof (Lab-07 a 09: supervision, backup/restauration, MySQL Cluster Manager), NDB-16 a NDB-22, format canonique OK, preuves supprimees, mode SSH session ouverte. Lab-07 et Lab-08 VALIDES en reel. Lab-09 non testable (MCM commercial).
-  chapitre_04: redige par prof (Lab-10, 11 optimisation + Lab-13 replication inter-clusters, Lab-14 failover/failback), NDB-06 a NDB-28, format canonique OK, preuves supprimees, mode SSH session ouverte. Module 4.1 ajoute. Lab-10, Lab-11 et Lab-14 VALIDES en reel. Lab-13 non teste (second cluster).
-  chapitre_05: redige par prof (Lab-12: securite TLS, authentification, moindre privilege), NDB-29 a NDB-31, format canonique OK, preuves supprimees, mode SSH session ouverte, de-cyberise (pas de pentest/SIEM/CVE). Lab-12 VALIDE en reel.
-systeme_rag: deploie dans /home/yug/Documents/mysql/rag/ — 10 livres indexes (dont Pro MySQL NDB Cluster, 536 chunks), ~2600 chunks, 543 images extraites, recherche semantique avec re-ranking specialisation, detection auto nouveaux livres via rag-detect.sh, indexation livre par livre via rag-index-book.sh, requete via rag-query.py.
+  chapitre_01: corrige (cartographie NDB-08 un seul node group, dpkg -l par VM, DataMemory 256M/128M, netplan sans gateway4/DNS, Etape 12/13 restructuree, 2 STOP homogeneise). Format canonique OK.
+  chapitre_02: corrige (DataMemory 256M/128M, bloc SHOW duplique supprime, Lab-05 ajout/suppression complete + NodeId 6 abouti, 2 STOP). Format canonique OK.
+  chapitre_03: corrige (Lab-08 renumérote, resultat NodeId 6 rempli, ndb_desc precede creation table, 2 START -> manuel, Lab-09 dpkg -l honnete, markdown repare). Format canonique OK.
+  chapitre_04: corrige (Lab-13 refondu en Lab-12 reference/demonstration, 4 BLOCKER resolus, log_bin/server_id honnetes, Lab-10/11 resultats remplis, 2 START -> manuel, Lab-14 -> Lab-13). Format canonique OK.
+  chapitre_05: corrige (Lab-12 -> Lab-14, TLS sections default + certif distincts, arret cluster avant --initial, START BACKUP reintegre, numerotation fantome resolue, PIDs inventes supprimes). Format canonique OK.
+systeme_rag: deploye dans /home/yug/Documents/mysql/rag/ — 10 livres indexes, ~2600 chunks, 543 images, recherche semantique re-ranking.
 agent_ecriture: orchestrateur
+historique: CHANGELOG.md a la racine (2026-11-23 — correction relecture integrale student). Detail dans RAPPORT_CORRECTIONS_RELECTURE_STUDENT.md.

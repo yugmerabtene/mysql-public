@@ -12,7 +12,7 @@
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
 - Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
-- **Note sur les NodeId de stockage** : le syllabus (Jour 1, ligne 11) indique des nœuds de stockage `node-id 1 et 2` sur VM 2. Les chapitres de ce parcours utilisent plutôt `NodeId 1` pour le nœud de gestion (VM 1), `NodeId 2 et 3` pour les deux nœuds de stockage (VM 2), et `NodeId 4 et 5` pour les nœuds SQL. Les `config.ini`, schémas et résultats `SHOW` attendus des chapitres suivent cette numérotation (gestion=1, stockage=2 et 3, SQL=4 et 5). Cette numérotation est celle de l'infrastructure déployée et validée en laboratoire.
+- **Note sur les NodeId** : la numérotation canonique du parcours est `NodeId 1` pour le nœud de gestion (VM 1), `NodeId 2 et 3` pour les deux nœuds de stockage (VM 2), et `NodeId 4 et 5` pour les nœuds SQL (VM 1 et VM 3). Les `config.ini`, schémas et résultats `SHOW` attendus des chapitres suivent cette numérotation (gestion=1, stockage=2 et 3, SQL=4 et 5). Cette numérotation est celle de l'infrastructure déployée et validée en laboratoire.
 
 ## Prérequis
 
@@ -180,7 +180,7 @@ Le tableau ci-dessous classe les opérations de ce chapitre selon le référenti
 | Études de cas | NDB-02 | Usage critique | Systèmes critiques (téléphonie, finance, logistique, 99,999 %) | Identifier les charges à haute disponibilité | Réserver MySQL Cluster aux cas critiques |
 | Installation des composants | NDB-03 | Tous les nœuds | Sortie `dpkg -l`, commande `which` | Vérifier la présence de `ndb_mgmd`, `ndbmtd`, `mysqld` | Installer depuis le dépôt officiel MySQL |
 | Configuration initiale | NDB-04 | Nœud de gestion | Fichier `config.ini` | Vérifier que `ndb_mgmd` démarre sans erreur | Sauvegarder `config.ini` avant toute modification |
-| Dimensionnement résilience | NDB-08 | Stockage | `config.ini`, `ndb_mgm SHOW` | Vérifier `NoOfReplicas = 2` et deux node-group | Définir `NoOfReplicas = 2` avant le premier démarrage |
+| Dimensionnement résilience | NDB-08 | Stockage | `config.ini`, `ndb_mgm SHOW` | Vérifier `NoOfReplicas = 2` et un seul node group (Nodegroup: 0) | Définir `NoOfReplicas = 2` avant le premier démarrage |
 | Vérification d'intégrité | NDB-05 | Cluster entier | `ndb_mgm -e "SHOW"` | Alerte si un nœud apparaît `not connected` | Redémarrer dans l'ordre : gestion, stockage, SQL |
 
 ## Plan d'installation maître
@@ -334,15 +334,14 @@ network:
     enp0s8:
       dhcp4: no
       addresses: [192.168.56.10/24]
-      gateway4: 192.168.56.1
       nameservers:
-        addresses: [192.168.56.1, 8.8.8.8]
+        addresses: [192.168.56.1]
 YEOF
 ```
 
 **Explication de la commande**
 
-- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.10/24`, le DHCP désactivé, la passerelle `192.168.56.1` et les serveurs DNS.
+- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.10/24` et le DHCP désactivé. Aucune route par défaut n'est définie : le nœud reste isolé d'Internet (réseau host-only `vboxnet0`), conformément au périmètre du lab.
 - Le bloc entre `<< 'YEOF'` et `YEOF` est le contenu écrit dans le fichier (les guillemets autour de `YEOF` interdisent l'expansion des variables).
 
 **Résultat attendu**
@@ -528,15 +527,14 @@ network:
     enp0s8:
       dhcp4: no
       addresses: [192.168.56.11/24]
-      gateway4: 192.168.56.1
       nameservers:
-        addresses: [192.168.56.1, 8.8.8.8]
+        addresses: [192.168.56.1]
 YEOF
 ```
 
 **Explication de la commande**
 
-- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.11/24`, le DHCP désactivé, la passerelle `192.168.56.1` et les serveurs DNS.
+- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.11/24` et le DHCP désactivé. Aucune route par défaut n'est définie : le nœud reste isolé d'Internet (réseau host-only `vboxnet0`), conformément au périmètre du lab.
 - Le bloc entre `<< 'YEOF'` et `YEOF` est le contenu écrit dans le fichier (les guillemets autour de `YEOF` interdisent l'expansion des variables).
 
 **Résultat attendu**
@@ -722,15 +720,14 @@ network:
     enp0s8:
       dhcp4: no
       addresses: [192.168.56.12/24]
-      gateway4: 192.168.56.1
       nameservers:
-        addresses: [192.168.56.1, 8.8.8.8]
+        addresses: [192.168.56.1]
 YEOF
 ```
 
 **Explication de la commande**
 
-- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.12/24`, le DHCP désactivé, la passerelle `192.168.56.1` et les serveurs DNS.
+- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.12/24` et le DHCP désactivé. Aucune route par défaut n'est définie : le nœud reste isolé d'Internet (réseau host-only `vboxnet0`), conformément au périmètre du lab.
 - Le bloc entre `<< 'YEOF'` et `YEOF` est le contenu écrit dans le fichier (les guillemets autour de `YEOF` interdisent l'expansion des variables).
 
 **Résultat attendu**
@@ -1003,10 +1000,7 @@ dpkg -l
 **Résultat attendu**
 
 ```text
-ii  mysql-cluster-community-management-server  8.0.50-1ubuntu24.04  amd64  MySQL Cluster management server
 ii  mysql-cluster-community-data-node          8.0.50-1ubuntu24.04  amd64  MySQL Cluster data node
-ii  mysql-cluster-community-server             8.0.50-1ubuntu24.04  amd64  MySQL Cluster server
-ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL Cluster client
 ```
 
 #### Étape 3 — Vérifier les paquets MySQL Cluster sur VM 3
@@ -1033,8 +1027,6 @@ dpkg -l
 **Résultat attendu**
 
 ```text
-ii  mysql-cluster-community-management-server  8.0.50-1ubuntu24.04  amd64  MySQL Cluster management server
-ii  mysql-cluster-community-data-node          8.0.50-1ubuntu24.04  amd64  MySQL Cluster data node
 ii  mysql-cluster-community-server             8.0.50-1ubuntu24.04  amd64  MySQL Cluster server
 ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL Cluster client
 ```
@@ -1244,8 +1236,8 @@ DataDir = /var/lib/mysql-cluster
 
 [ndbd default]
 NoOfReplicas = 2
-DataMemory = 512M
-IndexMemory = 256M
+DataMemory = 256M
+IndexMemory = 128M
 
 [tcp default]
 
@@ -1564,12 +1556,11 @@ sleep 5
 **Explication de la commande**
 
 - `sleep 5` : laisse le temps aux nœuds SQL de se connecter au gestionnaire.
-- `echo 'démarrage des nœuds SQL terminé'` : confirme la fin de l'étape.
 
 **Résultat attendu**
 
 ```text
-démarrage des nœuds SQL terminé
+
 ```
 
 #### Étape 10 — Vérifier l'intégrité du cluster avec ndb_mgm SHOW
@@ -1659,17 +1650,15 @@ id=5    @192.168.56.12 (mysqld)
         HostName = 192.168.56.12
 ```
 
-#### Étape 12 — Test de résilience : arrêt du NodeId 2, failover sur NodeId 3, redémarrage, resynchronisation
+#### Étape 12 — Test de résilience : arrêt du NodeId 2 et failover sur NodeId 3
 
-**But** — Vérifier la tolérance aux pannes du cluster : arrêter le NodeId 2, confirmer que le NodeId 3 reste actif (failover automatique), puis redémarrer le NodeId 2 et vérifier sa resynchronisation et sa réintégration. Ce test illustre les propositions d'amélioration du livre sur la résilience et le failover automatique.
+**But** — Vérifier la tolérance aux pannes du cluster : arrêter le NodeId 2 et confirmer que le NodeId 3 reste actif (failover automatique). Le redémarrage et la resynchronisation sont traités à l'étape 13. Ce test illustre les propositions d'amélioration du livre sur la résilience et le failover automatique.
 
-**Machine** — 192.168.56.10 (gestion-sql) pour `ndb_mgm`, 192.168.56.11 (stockage) pour le redémarrage de `ndbmtd`.
+**Machine** — 192.168.56.10 (gestion-sql) pour `ndb_mgm`.
 
 **Prérequis** — Cluster sain, 5 nœuds connectés, `ndb_mgm` opérationnel, répertoire `/var/lib/mysql-cluster/ndb_2` présent.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
-
-**Exemple de commande**
 
 **Exemple de commande**
 
@@ -1685,7 +1674,7 @@ ndb_mgm -e "2 STOP"
 
 ```text
 Connected to Management Server at: localhost:1186
-Node 2 has shutdown.
+Node 2: Node shutdown initiated
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
@@ -1753,7 +1742,13 @@ id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
-**Suite — Redémarrage du NodeId 2 et resynchronisation**
+#### Étape 13 — Redémarrer le NodeId 2 et vérifier la resynchronisation
+
+**But** — Relancer le nœud de stockage NodeId 2 sans `--initial` pour conserver les données et le resynchroniser depuis le NodeId 3, puis vérifier sa réintégration dans le cluster.
+
+**Machine** — 192.168.56.11 (stockage) pour le redémarrage de `ndbmtd`, 192.168.56.10 (gestion-sql) pour la vérification finale.
+
+**Prérequis** — NodeId 2 arrêté (étape 12), répertoire `/var/lib/mysql-cluster/ndb_2` présent, NodeId 3 toujours connecté.
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
 
@@ -1811,8 +1806,6 @@ sleep 8
 ```text
 
 ```
-
-**Vérification finale de la réintégration**
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 

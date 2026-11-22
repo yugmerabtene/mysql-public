@@ -87,7 +87,7 @@ Les risques à surveiller sont l'interception des communications inter-nœuds en
 | Sécurité données | NDB-30 | Comptes SQL | `SHOW GRANTS`, `mysql.user` | Détecter les comptes sur-privilégiés ou sans mot de passe | Appliquer le moindre privilège, comptes dédiés, pas de root pour les applications |
 | Sécurité nœuds | NDB-31 | Serveurs VM | Accès SSH, processus `ndb_mgmd`/`ndbmtd`/`mysqld`, routes | Vérifier l'absence de route par défaut vers Internet et la présence des processus | Pas d'Internet sur les nœuds, accès SSH limité, utilisateur non-root pour mysqld |
 
-## Lab-12 — Sécuriser MySQL Cluster : TLS, comptes SQL, sauvegardes, isolement
+## Lab-14 — Sécuriser MySQL Cluster : TLS, comptes SQL, sauvegardes, isolement
 
 ### Énoncé / Contexte
 
@@ -106,13 +106,13 @@ Sécuriser le cluster MySQL Cluster en administration : activer le chiffrement T
 
 ### Commande et laboratoire étape par étape
 
-#### Étape 1 — Activer le chiffrement TLS dans config.ini
+#### Étape 1 — Sauvegarder config.ini
 
-**But** — Activer `TLS = 1` pour les communications inter-nœuds (gestion, stockage, SQL) dans le fichier de topologie du cluster, en ajoutant les chemins vers les fichiers de certificat et clé.
+**But** — Conserver une sauvegarde de `config.ini` avant d'y ajouter la configuration TLS, pour pouvoir revenir en arrière.
 
 **Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
 
-**Prérequis** — Fichier `/var/lib/mysql-cluster/config.ini` présent et valide, répertoire `/etc/mysql-cluster-tls` contenant les certificats et clés (ou à créer), sauvegarde de `config.ini` avant modification.
+**Prérequis** — Fichier `/var/lib/mysql-cluster/config.ini` présent et valide.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
@@ -138,7 +138,7 @@ cp config.ini config.ini.bak.tls
 
 **Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
 
-**Prérequis** — Sauvegarde de `config.ini` créée (étape 1a).
+**Prérequis** — Sauvegarde de `config.ini` créée (étape 1).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
@@ -150,23 +150,23 @@ cat >> config.ini << 'EOF'
 [tcp default]
 TLS = 1
 
-[ndb_mgmd]
+[ndb_mgmd default]
 TLS = 1
 TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
 TLSCertificateFile = /etc/mysql-cluster-tls/mgmd-cert.pem
 TLSKeyFile = /etc/mysql-cluster-tls/mgmd-key.pem
 
-[ndbd]
+[ndbd default]
 TLS = 1
 TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
-TLSCertificateFile = /etc/mysql-cluster-tls/mgmd-cert.pem
-TLSKeyFile = /etc/mysql-cluster-tls/mgmd-key.pem
+TLSCertificateFile = /etc/mysql-cluster-tls/ndbd-cert.pem
+TLSKeyFile = /etc/mysql-cluster-tls/ndbd-key.pem
 
-[mysqld]
+[mysqld default]
 TLS = 1
 TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
-TLSCertificateFile = /etc/mysql-cluster-tls/mgmd-cert.pem
-TLSKeyFile = /etc/mysql-cluster-tls/mgmd-key.pem
+TLSCertificateFile = /etc/mysql-cluster-tls/mysqld-cert.pem
+TLSKeyFile = /etc/mysql-cluster-tls/mysqld-key.pem
 EOF
 ```
 
@@ -174,11 +174,13 @@ EOF
 
 - `cat >> config.ini << 'EOF'` : ajoute la configuration TLS à la fin de `config.ini` sans effacer le contenu existant.
 - `[tcp default] TLS = 1` : active le chiffrement pour toutes les connexions TCP entre nœuds du cluster.
-- `[ndb_mgmd] TLS = 1` : active TLS sur le nœud de gestion (`ndb_mgmd`).
-- `TLSCAFile`, `TLSCertificateFile`, `TLSKeyFile` : désignent respectivement le certificat de l'autorité de certification, le certificat de serveur et la clé privée utilisés par le nœud.
-- Les sections `[ndbd]` et `[mysqld]` étendent TLS aux nœuds de stockage et aux nœuds SQL.
+- `[ndb_mgmd default] TLS = 1` : active TLS sur le nœud de gestion (le suffixe `default` applique la section à tous les nœuds de gestion, sans créer de nouvelle définition de nœud).
+- `[ndbd default]` et `[mysqld default]` : appliquent TLS aux nœuds de stockage et aux nœuds SQL existants (suffixe `default`, pas de nouveau `NodeId`).
+- `TLSCAFile`, `TLSCertificateFile`, `TLSKeyFile` : désignent respectivement le certificat de l'autorité de certification, le certificat de serveur et la clé privée du nœud.
+- Chaque type de nœud utilise son **propre certificat** (`mgmd-cert`, `ndbd-cert`, `mysqld-cert`) et sa **propre clé**, et non un certificat unique partagé.
+- **Piège** : écrire `[ndb_mgmd]`, `[ndbd]` ou `[mysqld]` sans suffixe `default` ni `NodeId` créerait de **nouvelles définitions de nœuds** au lieu de s'appliquer aux nœuds existants.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab ; contenu de `config.ini` après ajout TLS)
 
 ```text
 [ndb_mgmd default]
@@ -186,10 +188,11 @@ DataDir = /var/lib/mysql-cluster
 
 [ndbd default]
 NoOfReplicas = 2
-DataMemory = 512M
-IndexMemory = 256M
+DataMemory = 256M
+IndexMemory = 128M
 
 [tcp default]
+TLS = 1
 
 [ndb_mgmd]
 NodeId = 1
@@ -213,6 +216,24 @@ HostName = 192.168.56.10
 [mysqld]
 NodeId = 5
 HostName = 192.168.56.12
+
+[ndb_mgmd default]
+TLS = 1
+TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
+TLSCertificateFile = /etc/mysql-cluster-tls/mgmd-cert.pem
+TLSKeyFile = /etc/mysql-cluster-tls/mgmd-key.pem
+
+[ndbd default]
+TLS = 1
+TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
+TLSCertificateFile = /etc/mysql-cluster-tls/ndbd-cert.pem
+TLSKeyFile = /etc/mysql-cluster-tls/ndbd-key.pem
+
+[mysqld default]
+TLS = 1
+TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
+TLSCertificateFile = /etc/mysql-cluster-tls/mysqld-cert.pem
+TLSKeyFile = /etc/mysql-cluster-tls/mysqld-key.pem
 ```
 
 #### Étape 1c — Vérifier la configuration TLS dans config.ini
@@ -236,29 +257,29 @@ grep -E 'TLS|TLSCAFile|TLSCertificateFile|TLSKeyFile' config.ini
 - `grep -E 'TLS|…' config.ini` : affiche les lignes TLS pour vérifier que la configuration a été ajoutée correctement.
 - **Piège** : les chemins des certificats doivent être identiques et accessibles sur tous les nœuds qui utilisent TLS ; après modification de `config.ini`, les nœuds doivent être redémarrés pour prendre en compte le chiffrement.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
 [tcp default]
 TLS = 1
 
-[ndb_mgmd]
+[ndb_mgmd default]
 TLS = 1
 TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
 TLSCertificateFile = /etc/mysql-cluster-tls/mgmd-cert.pem
 TLSKeyFile = /etc/mysql-cluster-tls/mgmd-key.pem
 
-[ndbd]
+[ndbd default]
 TLS = 1
 TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
-TLSCertificateFile = /etc/mysql-cluster-tls/mgmd-cert.pem
-TLSKeyFile = /etc/mysql-cluster-tls/mgmd-key.pem
+TLSCertificateFile = /etc/mysql-cluster-tls/ndbd-cert.pem
+TLSKeyFile = /etc/mysql-cluster-tls/ndbd-key.pem
 
-[mysqld]
+[mysqld default]
 TLS = 1
 TLSCAFile = /etc/mysql-cluster-tls/ca-cert.pem
-TLSCertificateFile = /etc/mysql-cluster-tls/mgmd-cert.pem
-TLSKeyFile = /etc/mysql-cluster-tls/mgmd-key.pem
+TLSCertificateFile = /etc/mysql-cluster-tls/mysqld-cert.pem
+TLSKeyFile = /etc/mysql-cluster-tls/mysqld-key.pem
 ```
 
 #### Étape 2 — Créer des certificats et clés TLS pour les nœuds
@@ -293,7 +314,7 @@ mkdir -p /etc/mysql-cluster-tls
 
 **Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
 
-**Prérequis** — `openssl` installé, répertoire `/etc/mysql-cluster-tls` créé (étape 2a).
+**Prérequis** — `openssl` installé, répertoire `/etc/mysql-cluster-tls` créé (étape 2).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
@@ -365,25 +386,81 @@ openssl x509 -req -in mgmd-req.pem -CA ca-cert.pem -CAkey ca-key.pem -out mgmd-c
 
 ```
 
-#### Étape 2e — Protéger les clés privées et vérifier les fichiers
+#### Étape 2d-bis — Générer le certificat du nœud de stockage (ndbd)
 
-**But** — Restreindre l'accès aux clés privées et afficher les fichiers générés pour vérification.
+**But** — Générer la clé privée, la CSR et le certificat signé pour les nœuds de stockage (`ndbd`), avec un certificat distinct de celui du gestionnaire.
 
-**Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
+**Machine** — 192.168.56.10 (gestion-sql), nœud de gestion (génération centralisée des certificats du lab).
 
-**Prérequis** — Certificats et clés générés (étapes 2b à 2d).
+**Prérequis** — CA disponible (étape 2b).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
 **Exemple de commande**
 
 ```bash
-chmod 600 ca-key.pem mgmd-key.pem
+openssl req -newkey rsa:2048 -keyout ndbd-key.pem -out ndbd-req.pem -nodes -subj '/CN=ndbd/L=Lab/O=Formation'
+openssl x509 -req -in ndbd-req.pem -CA ca-cert.pem -CAkey ca-key.pem -out ndbd-cert.pem -days 365 -set_serial 02
 ```
 
 **Explication de la commande**
 
-- `chmod 600 ca-key.pem mgmd-key.pem` : restreint l'accès aux clés privées au seul propriétaire (root), conformément à la bonne pratique de protection des clés.
+- `openssl req -newkey rsa:2048 -keyout ndbd-key.pem -out ndbd-req.pem ...` : génère la clé privée et la CSR du nœud de stockage.
+- `openssl x509 -req ... -out ndbd-cert.pem -set_serial 02` : signe la CSR avec la CA pour produire le certificat `ndbd-cert.pem`.
+
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
+
+```text
+
+```
+
+#### Étape 2d-ter — Générer le certificat du nœud SQL (mysqld)
+
+**But** — Générer la clé privée, la CSR et le certificat signé pour les nœuds SQL (`mysqld`), avec un certificat distinct.
+
+**Machine** — 192.168.56.10 (gestion-sql), nœud de gestion (génération centralisée des certificats du lab).
+
+**Prérequis** — CA disponible (étape 2b).
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
+
+**Exemple de commande**
+
+```bash
+openssl req -newkey rsa:2048 -keyout mysqld-key.pem -out mysqld-req.pem -nodes -subj '/CN=mysqld/L=Lab/O=Formation'
+openssl x509 -req -in mysqld-req.pem -CA ca-cert.pem -CAkey ca-key.pem -out mysqld-cert.pem -days 365 -set_serial 03
+```
+
+**Explication de la commande**
+
+- `openssl req -newkey rsa:2048 -keyout mysqld-key.pem -out mysqld-req.pem ...` : génère la clé privée et la CSR du nœud SQL.
+- `openssl x509 -req ... -out mysqld-cert.pem -set_serial 03` : signe la CSR avec la CA pour produire le certificat `mysqld-cert.pem`.
+
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
+
+```text
+
+```
+
+#### Étape 2e — Protéger les clés privées et vérifier les fichiers
+
+**But** — Restreindre l'accès aux clés privées et afficher les fichiers générés pour vérification.
+
+**Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
+
+**Prérequis** — Certificats et clés générés (étapes 2b à 2d-ter).
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
+
+**Exemple de commande**
+
+```bash
+chmod 600 ca-key.pem mgmd-key.pem ndbd-key.pem mysqld-key.pem
+```
+
+**Explication de la commande**
+
+- `chmod 600 ca-key.pem mgmd-key.pem ndbd-key.pem mysqld-key.pem` : restreint l'accès à toutes les clés privées au seul propriétaire (root), conformément à la bonne pratique de protection des clés.
 
 **Résultat attendu**
 
@@ -412,22 +489,106 @@ ls -la ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem
 - `ls -la …` : affiche les fichiers générés avec leurs droits pour vérification.
 - **Piège** : hors lab, protéger la clé privée de la CA et ne jamais la diffuser sur les nœuds ; ici elle reste sur le nœud de gestion pour les besoins du lab isolé.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
 -rw-r--r-- 1 root root … ca-cert.pem
 -rw------- 1 root root … ca-key.pem
 -rw-r--r-- 1 root root … mgmd-cert.pem
 -rw------- 1 root root … mgmd-key.pem
+-rw-r--r-- 1 root root … ndbd-cert.pem
+-rw------- 1 root root … ndbd-key.pem
+-rw-r--r-- 1 root root … mysqld-cert.pem
+-rw------- 1 root root … mysqld-key.pem
 ```
 
-#### Étape 3 — Redémarrer les nœuds du cluster avec TLS activé
+#### Étape 3 — Arrêter le cluster avant le redémarrage TLS
 
-**But** — Redémarrer le nœud de gestion, les nœuds de stockage et les nœuds SQL pour que la configuration TLS de `config.ini` soit prise en compte, puis vérifier que le cluster est opérationnel avec chiffrement.
+**But** — Arrêter proprement les nœuds du cluster (SQL, stockage, gestion) avant de redémarrer avec la configuration TLS, dans l'ordre inverse du démarrage (SQL → stockage → gestion).
 
-**Machine** — 192.168.56.10 (gestion-sql) pour le gestionnaire et le SQL NodeId 4 ; 192.168.56.11 (stockage) pour les nœuds de stockage NodeId 2 et 3 ; 192.168.56.12 (mysql-node3) pour le SQL NodeId 5.
+**Machine** — 192.168.56.10 (gestion-sql) pour les nœuds SQL NodeId 4 et le gestionnaire, 192.168.56.11 (stockage) pour les nœuds de stockage NodeId 2 et 3, 192.168.56.12 (mysql-node3) pour le SQL NodeId 5.
 
-**Prérequis** — `config.ini` modifié avec `TLS = 1`, certificats et clés présents sur les nœuds concernés, cluster arrêté ou prêt à redémarrer.
+**Prérequis** — `config.ini` modifié avec `TLS = 1`, certificats et clés présents sur les nœuds concernés.
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+pkill -x mysqld
+```
+
+**Explication de la commande**
+
+- `pkill -x mysqld` : arrête le nœud SQL NodeId 4 sur VM 1 (premier à arrêter, dans l'ordre SQL → stockage → gestion).
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+pkill -x mysqld
+```
+
+**Explication de la commande**
+
+- `pkill -x mysqld` : arrête le nœud SQL NodeId 5 sur VM 3.
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
+
+**Exemple de commande**
+
+```bash
+pkill -x ndbmtd
+```
+
+**Explication de la commande**
+
+- `pkill -x ndbmtd` : arrête les deux nœuds de stockage NodeId 2 et 3 sur VM 2.
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
+
+**Exemple de commande**
+
+```bash
+pkill -x ndb_mgmd
+```
+
+**Explication de la commande**
+
+- `pkill -x ndb_mgmd` : arrête le nœud de gestion NodeId 1 en dernier, laissant le cluster prêt pour un redémarrage TLS.
+
+**Résultat attendu**
+
+```text
+
+```
+
+#### Étape 3a — Redémarrer le gestionnaire avec TLS activé
+
+**But** — Redémarrer le nœud de gestion avec la configuration TLS de `config.ini`.
+
+**Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
+
+**Prérequis** — Cluster arrêté (étape 3).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
@@ -444,7 +605,7 @@ ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
 - `--initial` : force l'initialisation propre du gestionnaire ; à n'utiliser qu'au premier démarrage ou après un snapshot propre.
 - **Piège** : `--initial` supprime les fichiers de configuration précédents du gestionnaire ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver. Le redémarrage des nœuds de stockage et SQL doit suivre dans l'ordre (gestion → stockage → SQL).
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
 MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
@@ -550,6 +711,14 @@ sleep 5
 
 ```
 
+#### Étape 3e — Lancer le nœud SQL Id=4 (VM 1)
+
+**But** — Démarrer le nœud SQL NodeId 4 sur VM 1 avec le moteur NDB et TLS.
+
+**Machine** — 192.168.56.10 (gestion-sql), premier nœud SQL.
+
+**Prérequis** — Nœuds de stockage Id=2 et Id=3 lancés (étapes 3b et 3c), TLS activé dans `config.ini`.
+
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
@@ -573,6 +742,14 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 
 ```
 
+#### Étape 3f — Lancer le nœud SQL Id=5 (VM 3)
+
+**But** — Démarrer le second nœud SQL NodeId 5 sur VM 3 avec le moteur NDB et TLS.
+
+**Machine** — 192.168.56.12 (mysql-node3), second nœud SQL.
+
+**Prérequis** — Nœuds de stockage Id=2 et Id=3 lancés (étapes 3b et 3c), nœud SQL Id=4 lancé (étape 3e).
+
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
@@ -591,13 +768,13 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 
 ```
 
-#### Étape 3f — Attendre la connexion des nœuds SQL
+#### Étape 3g — Attendre la connexion des nœuds SQL
 
 **But** — Laisser le temps aux deux nœuds SQL de se connecter au gestionnaire avec TLS.
 
 **Machine** — 192.168.56.12 (mysql-node3), second nœud SQL.
 
-**Prérequis** — Second nœud SQL NodeId 5 lancé (étape 3e).
+**Prérequis** — Second nœud SQL NodeId 5 lancé (étape 3f).
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
@@ -617,6 +794,14 @@ sleep 5
 
 ```
 
+#### Étape 3h — Vérifier l'état du cluster avec TLS
+
+**But** — Confirmer que les 5 nœuds sont connectés après le redémarrage TLS.
+
+**Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
+
+**Prérequis** — Nœuds SQL Id=4 et Id=5 lancés (étapes 3e et 3f).
+
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
@@ -631,7 +816,7 @@ ndb_mgm -e "SHOW"
 - Le résultat doit afficher 1 `ndb_mgmd`, 2 `ndbmtd` et 2 `mysqld` sans état `not connected`, confirmant que le cluster est opérationnel avec TLS activé.
 - **Piège** : un nœud absent apparaît avec l'état `not connected` ; investiguer les journaux TLS (`/var/lib/mysql-cluster/ndbmtd_*.log`, `/tmp/mysqld-*.log`) avant de poursuivre.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
 Connected to Management Server at: localhost:1186
@@ -816,7 +1001,7 @@ Empty set (0.00 sec)
 
 **Machine** — 192.168.56.10 (gestion-sql), premier nœud SQL.
 
-**Prérequis** — Vérification des comptes anonymes terminée (étape 5a).
+**Prérequis** — Vérification des comptes anonymes terminée (étape 5).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
@@ -841,6 +1026,20 @@ mysql -u root -e "SELECT User, Host FROM mysql.user;"
 | app_user     | 192.168.56.% |
 | backup_user  | 192.168.56.% |
 +--------------+-------------+
+```
+
+#### Étape 6 — Lancer la sauvegarde cluster protégée (START BACKUP)
+
+**But** — Déclencher une sauvegarde consistante des données du cluster avec `START BACKUP`.
+
+**Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
+
+**Prérequis** — Cluster opérationnel, nœuds de stockage démarrés.
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
 ```bash
 ndb_mgm -e "START BACKUP"
 ```
@@ -851,7 +1050,7 @@ ndb_mgm -e "START BACKUP"
 - Chaque nœud de stockage écrit ses fichiers de sauvegarde dans son `SaveDataDir` (par défaut sous `/var/lib/mysql-cluster/BACKUP`).
 - La commande attend la complétion (`Waiting for completed, this may take several minutes`).
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
 Connected to Management Server at: localhost:1186
@@ -869,7 +1068,7 @@ Node 3: Backup 1 started from node 1 completed
 
 **Machine** — 192.168.56.10 (gestion-sql), nœud de gestion.
 
-**Prérequis** — Sauvegarde lancée (étape 6a).
+**Prérequis** — Sauvegarde lancée (étape 6).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
@@ -889,6 +1088,14 @@ sleep 5
 ```text
 
 ```
+
+#### Étape 7 — Protéger les répertoires de sauvegarde
+
+**But** — Restreindre l'accès aux répertoires de sauvegarde au seul propriétaire (root).
+
+**Machine** — 192.168.56.11 (stockage), nœud de stockage.
+
+**Prérequis** — Sauvegarde terminée (étapes 6 et 6b).
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
@@ -914,7 +1121,7 @@ chmod 700 ndb_2/BACKUP ndb_3/BACKUP
 
 **Machine** — 192.168.56.11 (stockage), nœud de stockage.
 
-**Prérequis** — Droits restreints sur les répertoires de sauvegarde (étape 7a).
+**Prérequis** — Droits restreints sur les répertoires de sauvegarde (étape 7).
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
@@ -948,7 +1155,7 @@ drwxr-xr-x 3 root root 4096 … ..
 -rw------- 1 root root … BACKUP-1.0.3.ctl
 ```
 
-#### Étape 7 — Vérifier l'isolement réseau (pas d'accès Internet sur les nœuds)
+#### Étape 8 — Vérifier l'isolement réseau (pas d'accès Internet sur les nœuds)
 
 **But** — Confirmer que les nœuds n'ont pas de route par défaut vers Internet et ne sont joignables que sur le réseau host-only vboxnet0, réduisant ainsi la surface d'exposition.
 
@@ -976,13 +1183,13 @@ ip route show default || echo 'aucune route par défaut'
 aucune route par défaut
 ```
 
-#### Étape 8b — Vérifier l'interface réseau sur VM 1
+#### Étape 9 — Vérifier l'interface réseau sur VM 1
 
 **But** — Confirmer l'adresse IP sur l'interface host-only de VM 1.
 
 **Machine** — 192.168.56.10 (gestion-sql).
 
-**Prérequis** — Vérification de l'absence de route par défaut (étape 8a).
+**Prérequis** — Vérification de l'absence de route par défaut (étape 8).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
@@ -1002,6 +1209,14 @@ ip -br addr show enp0s8
 enp0s8           UP             192.168.56.10/24 fe80::a00:27ff:fef7:44ec/64
 ```
 
+#### Étape 10 — Vérifier la route par défaut sur VM 2
+
+**But** — Confirmer que VM 2 n'a pas non plus de route par défaut vers Internet.
+
+**Machine** — 192.168.56.11 (stockage).
+
+**Prérequis** — Réseau vboxnet0 configuré, pas de passerelle par défaut.
+
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
@@ -1012,7 +1227,7 @@ ip route show default || echo 'aucune route par défaut'
 
 **Explication de la commande**
 
-- Identique à l'étape précédente, ciblant le nœud de stockage sur VM 2 (`192.168.56.11/24`).
+- Identique à l'étape 8, ciblant le nœud de stockage sur VM 2 (`192.168.56.11/24`).
 
 **Résultat attendu**
 
@@ -1020,13 +1235,13 @@ ip route show default || echo 'aucune route par défaut'
 aucune route par défaut
 ```
 
-#### Étape 8d — Vérifier l'interface réseau sur VM 2
+#### Étape 11 — Vérifier l'interface réseau sur VM 2
 
 **But** — Confirmer l'adresse IP sur l'interface host-only de VM 2.
 
 **Machine** — 192.168.56.11 (stockage).
 
-**Prérequis** — Vérification de l'absence de route par défaut sur VM 2 (étape 8c).
+**Prérequis** — Vérification de l'absence de route par défaut sur VM 2 (étape 10).
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
@@ -1047,7 +1262,7 @@ ip -br addr show enp0s8
 enp0s8           UP             192.168.56.11/24 fe80::a00:27ff:fe62:5198/64
 ```
 
-#### Étape 8 — Surveiller les processus des nœuds et vérifier l'accès SSH limité
+#### Étape 12 — Surveiller les processus des nœuds et vérifier l'accès SSH limité
 
 **But** — Confirmer que les processus `ndb_mgmd`, `ndbmtd` et `mysqld` sont en cours d'exécution (surveillance des nœuds serveurs), et vérifier qu'aucun accès Internet non autorisé n'est configuré.
 
@@ -1068,19 +1283,19 @@ pgrep -a ndb_mgmd
 - `pgrep -a ndb_mgmd` : affiche le processus du nœud de gestion en cours d'exécution.
 - La présence confirmée des processus permet de surveiller la santé des nœuds serveurs (lié à NDB-31).
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab ; le PID est propre à chaque exécution)
 
 ```text
-1234 ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
+ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
 ```
 
-#### Étape 8f — Vérifier le processus mysqld sur VM 1
+#### Étape 13 — Vérifier le processus mysqld sur VM 1
 
 **But** — Afficher le(s) processus `mysqld` du premier nœud SQL en cours d'exécution sur VM 1.
 
 **Machine** — 192.168.56.10 (gestion-sql), premier nœud SQL.
 
-**Prérequis** — Processus `ndb_mgmd` vérifié (étape 8e).
+**Prérequis** — Processus `ndb_mgmd` vérifié (étape 12).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
@@ -1095,11 +1310,19 @@ pgrep -a mysqld
 - `pgrep -a mysqld` : affiche le(s) processus du nœud SQL en cours d'exécution.
 - **Piège** : si un processus manque, le nœud concerné ne participe plus au cluster ; consulter les journaux de démarrage.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab ; le PID est propre à chaque exécution)
 
 ```text
-5678 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
+mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
 ```
+
+#### Étape 14 — Vérifier les processus ndbmtd sur VM 2
+
+**But** — Afficher les processus des nœuds de stockage (`ndbmtd`) en cours d'exécution sur VM 2.
+
+**Machine** — 192.168.56.11 (stockage), nœud de stockage.
+
+**Prérequis** — Cluster démarré, nœuds de stockage en cours.
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
@@ -1115,12 +1338,20 @@ pgrep -a ndbmtd
 - Deux processus doivent être listés (NodeId 2 et NodeId 3), chacun avec son répertoire de données dédié.
 - **Piège** : si un seul processus `ndbmtd` est présent, un nœud de stockage manque et la redondance est compromise.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab ; les PID sont propres à chaque exécution)
 
 ```text
-2345 ndbmtd --ndb-connectstring=192.168.56.10 --initial
-2346 ndbmtd --ndb-connectstring=192.168.56.10 --initial
+ndbmtd --ndb-connectstring=192.168.56.10 --initial
+ndbmtd --ndb-connectstring=192.168.56.10 --initial
 ```
+
+#### Étape 15 — Vérifier le processus mysqld sur VM 3
+
+**But** — Afficher le processus du second nœud SQL (NodeId 5) en cours d'exécution sur VM 3.
+
+**Machine** — 192.168.56.12 (mysql-node3), second nœud SQL.
+
+**Prérequis** — Cluster démarré, second nœud SQL en cours.
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
@@ -1135,10 +1366,10 @@ pgrep -a mysqld
 - `pgrep -a mysqld` : affiche le processus du second nœud SQL (NodeId 5) en cours d'exécution sur VM 3.
 - **Piège** : confirmer que `--user=mysql` est présent dans la ligne de commande (moindre privilège sur le serveur).
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab ; le PID est propre à chaque exécution)
 
 ```text
-3456 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
+mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
 ```
 
 ### En conclusion

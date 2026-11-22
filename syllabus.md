@@ -7,8 +7,9 @@
 - Système : Ubuntu Server 24.04 LTS.
 - Réseau : VirtualBox Host-only vboxnet0, 192.168.56.0/24, DHCP désactivé, pas d'accès Internet pendant les labs.
 - Hôte : 192.168.56.1.
-- VM 1 (192.168.56.10) : nœud de gestion + nœud SQL.
-- VM 2 (192.168.56.11) : deux nœuds de stockage (ndbmtd node-id 1 et 2).
+- VM 1 (192.168.56.10) : nœud de gestion (`ndb_mgmd` NodeId 1) + nœud SQL (`mysqld` NodeId 4).
+- VM 2 (192.168.56.11) : deux nœuds de stockage (`ndbmtd` NodeId 2 et 3).
+- VM 3 (192.168.56.12) : second nœud SQL (`mysqld` NodeId 5).
 
 ## Objectifs pédagogiques
 

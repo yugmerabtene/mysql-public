@@ -213,14 +213,14 @@ id=2    @192.168.56.11 (ndbd)
         NodeId = 2
         HostName = 192.168.56.11
         NoOfReplicas = 2
-        DataMemory = 512M
-        IndexMemory = 256M
+        DataMemory = 256M
+        IndexMemory = 128M
 id=3    @192.168.56.11 (ndbd)
         NodeId = 3
         HostName = 192.168.56.11
         NoOfReplicas = 2
-        DataMemory = 512M
-        IndexMemory = 256M
+        DataMemory = 256M
+        IndexMemory = 128M
 id=4    @192.168.56.10 (mysqld)
         NodeId = 4
         HostName = 192.168.56.10
@@ -320,8 +320,7 @@ Approfondir la résilience du cluster : comprendre le quorum, prévenir le split
 |---|---|---|
 | ndb_mgm | `ndb_mgm -e "SHOW"` | État des nœuds et node groups |
 | ndb_mgm | `ndb_mgm -e "2 STOP"` | Arrêt propre d'un nœud de stockage |
-| ndb_mgm | `ndb_mgm -e "2 START"` | Redémarrage d'un nœud de stockage |
-| ndb_mgm | `ndb_mgm -e "ALL START"` | Démarrage de tous les nœuds de stockage éligibles |
+| ndbmtd | `nohup ndbmtd --ndb-connectstring=192.168.56.10 &` | Redémarrage manuel d'un nœud de stockage |
 | ndb_mgm | `ndb_mgm -e "ALL REPORT MEMORYUSAGE"` | Usage mémoire après panne |
 
 ### Commande et laboratoire étape par étape
@@ -390,7 +389,7 @@ ndb_mgm -e '2 STOP'
 
 ```text
 Connected to Management Server at: localhost:1186
-Node 2 has shutdown.
+Node 2: Node shutdown initiated
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -443,35 +442,6 @@ ndb_mgm -e 'SHOW'
 - **Piège** : le NodeId 2 reste listé (non supprimé) avec l'état `not connected` ; c'est le comportement attendu.
 
 **Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
-
-```text
-Connected to Management Server at: localhost:1186
-Cluster Configuration
----------------------
-[ndbd(NDB)]	2 node(s)
-id=2 (not connected, accepting connect from 192.168.56.11)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-[ndb_mgmd(MGM)]	1 node(s)
-id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
-[mysqld(API)]	2 node(s)
-id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
-id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-```
-
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
-
-```bash
-ndb_mgm -e 'SHOW'
-```
-
-**Explication de la commande**
-
-- `SHOW` : liste tous les nœuds et leur état ; confirme le failover : NodeId 2 en `not connected`, NodeId 3 toujours connecté (`*`), nœuds SQL toujours opérationnels.
-- **Piège** : le NodeId 2 reste listé (non supprimé) avec l'état `not connected` ; c'est le comportement attendu.
-
-**Résultat attendu**
 
 ```text
 Connected to Management Server at: localhost:1186
@@ -809,8 +779,8 @@ DataDir = /var/lib/mysql-cluster
 
 [ndbd default]
 NoOfReplicas = 2
-DataMemory = 512M
-IndexMemory = 256M
+DataMemory = 256M
+IndexMemory = 128M
 
 [tcp default]
 
@@ -836,6 +806,11 @@ HostName = 192.168.56.10
 [mysqld]
 NodeId = 5
 HostName = 192.168.56.12
+
+[ndbd]
+NodeId = 6
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_6
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -877,7 +852,7 @@ pkill -x ndb_mgmd
 **Explication de la commande**
 
 - `pkill -x ndb_mgmd` : arrête le processus du nœud de gestion pour forcer le rechargement de `config.ini` au prochain démarrage.
-- **Piège** : le port de gestion (1186) peut mettre quelques secondes à se libérer ; prévoir une attente avant le redémarrage.
+- **Piège** : le service de gestion (1186) peut mettre quelques secondes à se libérer ; prévoir une attente avant le redémarrage.
 
 **Résultat attendu**
 
@@ -932,18 +907,19 @@ ndb_mgm -e 'SHOW'
 
 **Explication de la commande**
 
-- `ndb_mgm -e 'SHOW'` : vérifie que le gestionnaire est de retour et que le cluster est à nouveau joignable.
-- **Piège** : même après ce redémarrage, NodeId 6 peut rester absent de `SHOW` si le gestionnaire conserve un cache de configuration ; dans ce cas, purger les fichiers de cache du gestionnaire ou redémarrer complètement le cluster.
+- `ndb_mgm -e 'SHOW'` : vérifie que le gestionnaire est de retour et que le cluster est à nouveau joignable. Le NodeId 6, déclaré dans `config.ini` mais pas encore démarré, apparaît en `not connected`.
+- **Piège** : le NodeId 6 reste en `not connected` tant que son processus `ndbmtd` n'est pas lancé (étape 2c).
 
-**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés)
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; NodeId 6 déclaré mais non démarré)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
-[ndbd(NDB)]	2 node(s)
+[ndbd(NDB)]	3 node(s)
 id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
 id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+id=6 (not connected, accepting connect from 192.168.56.11)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
@@ -1017,18 +993,19 @@ ndb_mgm -e 'SHOW'
 **Explication de la commande**
 
 - `SHOW` : liste tous les nœuds et leur état ; le NodeId 6 doit apparaître connecté parmi les nœuds de stockage.
-- Avec `NoOfReplicas = 2` et 3 nœuds de stockage, le cluster forme un node group avec les deux premières répliques ; le NodeId 6 apparaît comme nœud de stockage supplémentaire.
+- Avec `NoOfReplicas = 2` et 3 nœuds de stockage, les nodes 2 et 3 restent dans le node group 0 ; le NodeId 6 apparaît dans un nouveau node group (Nodegroup: 1) qui n'est pas encore complet.
 - **Piège** : si NodeId 6 apparaît en `not connected`, vérifier le fichier `ndbmtd_6.log` sur VM 2 et le connect-string.
 
-**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés)
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; 6 nœuds : 3 stockage + 1 gestion + 2 SQL)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
-[ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+[ndbd(NDB)]	3 node(s)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=6	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 1)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
@@ -1055,17 +1032,18 @@ ndb_mgm -e 'SHOW'
 
 **Explication de la commande**
 
-- `SHOW` : confirme que tous les nœuds attendus sont connectés.
+- `SHOW` : confirme que tous les nœuds attendus sont connectés (3 stockage, 1 gestion, 2 SQL).
 
-**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés)
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; 6 nœuds connectés)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
-[ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+[ndbd(NDB)]	3 node(s)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=6	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 1)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
@@ -1113,12 +1091,128 @@ Node 2: Data usage is 0%(11 32K pages of total 12290)
 Node 2: Index usage is 0%(6 32K pages of total 12285)
 Node 3: Data usage is 0%(11 32K pages of total 12290)
 Node 3: Index usage is 0%(6 32K pages of total 12285)
+Node 6: Data usage is 0%(11 32K pages of total 12290)
+Node 6: Index usage is 0%(6 32K pages of total 12285)
+```
+
+
+#### Étape 4 — Supprimer le nœud de stockage NodeId 6
+
+**But** — Retirer proprement le nœud de stockage NodeId 6 ajouté précédemment : arrêter le processus `ndbmtd` 6, retirer son entrée de `config.ini`, recharger le gestionnaire et vérifier le retour à 5 nœuds (2 stockage, 1 gestion, 2 SQL).
+
+**Machine** — VM 2 (192.168.56.11) pour l'arrêt du processus, VM 1 (192.168.56.10) pour `config.ini` et la vérification.
+
+**Prérequis** — NodeId 6 connecté (étape 2d), sauvegarde `config.ini.pre-node6` présente.
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
+
+**Exemple de commande**
+
+```bash
+pkill -x ndbmtd
+```
+
+**Explication de la commande**
+
+- `pkill -x ndbmtd` : arrête les processus de stockage présents. Ici, sur le lab, les nodes 2 et 3 tournent également sur VM 2 ; pour ne retirer que le NodeId 6, arrêter uniquement son processus par PID (`pgrep -a ndbmtd` puis `kill <pid du node 6>`), puis confirmer son retrait dans `SHOW`.
+- **Piège** : ne pas arrêter les deux nœuds de stockage du node group 0 simultanément, ce qui couperait le service.
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+cp config.ini.pre-node6 config.ini
+```
+
+**Explication de la commande**
+
+- `cp config.ini.pre-node6 config.ini` : restaure la configuration sans l'entrée NodeId 6 (sauvegarde prise à l'étape 2b).
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+pkill -x ndb_mgmd && sleep 2 && ndb_mgmd -f /var/lib/mysql-cluster/config.ini
+```
+
+**Explication de la commande**
+
+- `pkill -x ndb_mgmd` : arrête le gestionnaire pour qu'il relise `config.ini` sans l'entrée NodeId 6.
+- `sleep 2` : laisse le port de gestion (1186) se libérer.
+- `ndb_mgmd -f /var/lib/mysql-cluster/config.ini` : redémarre le gestionnaire avec la topologie restaurée (2 nœuds de stockage).
+- **Piège** : après ce redémarrage, le NodeId 6 ne doit plus apparaître dans `SHOW`.
+
+**Résultat attendu**
+
+```text
+MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+
+**Explication de la commande**
+
+- `sleep 5` : laisse le temps aux nœuds de stockage restants de se reconnecter au gestionnaire.
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'SHOW'
+```
+
+**Explication de la commande**
+
+- `SHOW` : confirme le retour à 5 nœuds (2 stockage, 1 gestion, 2 SQL), le NodeId 6 ayant disparu de la topologie.
+- **Piège** : si le NodeId 6 apparaît encore en `not connected`, redémarrer le gestionnaire ou purger le cache de configuration.
+
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; retour à 5 nœuds connectés)
+
+```text
+Connected to Management Server at: localhost:1186
+Cluster Configuration
+---------------------
+[ndbd(NDB)]	2 node(s)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+[mysqld(API)]	2 node(s)
+id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
 
 ### En conclusion
 
-Ce lab couvre la lecture et la sauvegarde de `config.ini`, la préparation de l'ajout d'un nœud de stockage (répertoire dédié) et la surveillance de l'état du cluster (SHOW + mémoire). Les opérations `NDB-11`, `NDB-12` et `NDB-13` sont réalisées. Renvoi : passer au Lab-06 pour le test de panne, le redémarrage rolling et la maintenance à chaud.
+Ce lab couvre la lecture et la sauvegarde de `config.ini`, l'ajout contrôlé d'un nœud de stockage (répertoire dédié, déclaration dans `config.ini`, rechargement du gestionnaire, démarrage du nœud), sa surveillance, puis sa suppression propre (arrêt du processus, restauration de `config.ini`, rechargement du gestionnaire). Les opérations `NDB-11`, `NDB-12` et `NDB-13` sont réalisées. Renvoi : passer au Lab-06 pour le test de panne, le redémarrage rolling et la maintenance à chaud.
 
 ## Lab-06 — Test de panne, redémarrage rolling et maintenance à chaud
 
@@ -1162,7 +1256,7 @@ ndb_mgm -e '2 STOP'
 
 ```text
 Connected to Management Server at: localhost:1186
-Node 2 has shutdown.
+Node 2: Node shutdown initiated
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1222,8 +1316,6 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Prérequis** — Le second nœud SQL (NodeId 5 sur VM 3) est actif pour prendre le relais.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
 
 **Exemple de commande**
 

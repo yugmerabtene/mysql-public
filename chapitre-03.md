@@ -169,13 +169,33 @@ Node 3: Data usage is 0%(26 32K pages of total 24575)
 Node 3: Index usage is 0%(9 32K pages of total 24558)
 ```
 
-#### Étape 2b — Décrire une table NDB avec ndb_desc
+#### Étape 3 — Créer puis décrire une table NDB avec ndb_desc
 
-**But** — Utiliser `ndb_desc` pour afficher la structure et la fragmentation d'une table NDB, conformément à l'outil documenté dans ce lab.
+**But** — Créer une table NDB de démonstration puis utiliser `ndb_desc` pour afficher sa structure et sa fragmentation, conformément à l'outil documenté dans ce lab.
 
 **Machine** — VM 1 (192.168.56.10), premier nœud SQL.
 
-**Prérequis** — `ndb_desc` installé, nœud SQL connecté, une table NDB existe (créée si nécessaire).
+**Prérequis** — `ndb_desc` installé, nœud SQL connecté, cluster opérationnel.
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS labndb; CREATE TABLE IF NOT EXISTS labndb.t_ndb_desc (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
+```
+
+**Explication de la commande**
+
+- `CREATE DATABASE IF NOT EXISTS labndb` : crée la base de démonstration `labndb` si elle n'existe pas.
+- `CREATE TABLE ... ENGINE=NDB` : crée la table `t_ndb_desc` avec le moteur NDB, nécessaire pour que `ndb_desc` puisse la décrire.
+- **Piège** : `ndb_desc` échoue si la table n'existe pas ; la créer d'abord est indispensable.
+
+**Résultat attendu**
+
+```text
+Query OK, 0 rows affected (0.05 sec)
+```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
@@ -189,7 +209,6 @@ ndb_desc -d labndb t_ndb_desc
 
 - `ndb_desc -d labndb t_ndb_desc` : décrit la table NDB `t_ndb_desc` dans la base `labndb` (fragments, attributs, index, nœuds de stockage qui la contiennent).
 - Le résultat affiche le nombre de fragments, les `NodeId` de stockage qui les contiennent, et les attributs de la table.
-- **Prérequis implicite** : la table `labndb.t_ndb_desc` doit exister avec le moteur `ENGINE=NDB` (créée au préalable sur un nœud SQL).
 - **Piège** : `ndb_desc` nécessite que le cluster soit opérationnel et que le nœud SQL soit connecté au gestionnaire.
 
 **Résultat attendu**
@@ -204,7 +223,7 @@ NoOfReplicas: 2
 NDBT_ProgramExit: 0
 ```
 
-#### Étape 3 — Détecter un nœud en état not connected (alerte)
+#### Étape 4 — Détecter un nœud en état not connected (alerte)
 
 **But** — Simuler la perte d'un nœud de stockage et confirmer que `SHOW` remonte l'état `not connected`, constitutif d'une alerte de supervision.
 
@@ -228,7 +247,7 @@ ndb_mgm -e '2 STOP'
 
 ```text
 Connected to Management Server at: localhost:1186
-Node 2 has shutdown.
+Node 2: Node shutdown initiated
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -277,25 +296,46 @@ id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
 
 **Exemple de commande**
 
 ```bash
-ndb_mgm -e '2 START'
+cd /var/lib/mysql-cluster/ndb_2
 ```
 
 **Explication de la commande**
 
-- `2 START` : demande le redémarrage du NodeId 2 (si supporté par le gestionnaire).
+- `cd /var/lib/mysql-cluster/ndb_2` : se place dans le répertoire dédié du node 2 avant son redémarrage.
 
 **Résultat attendu**
 
 ```text
-Node 2: Node restart initiated
+
 ```
 
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
+
+**Exemple de commande**
+
+```bash
+nohup ndbmtd --ndb-connectstring=192.168.56.10 &
+```
+
+**Explication de la commande**
+
+- `nohup ndbmtd --ndb-connectstring=192.168.56.10 &` : relance `ndbmtd` sans `--initial` pour conserver les données et resynchroniser depuis le NodeId 3.
+- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion.
+- `&` : détache le processus en arrière-plan.
+- **Piège** : `ndb_mgm -e '2 START'` ne redémarre pas un node lancé manuellement ; il faut relancer `ndbmtd` directement.
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
 
 **Exemple de commande**
 
@@ -324,7 +364,6 @@ ndb_mgm -e 'SHOW'
 **Explication de la commande**
 
 - `SHOW` : confirme le retour à l'état nominal, NodeId 2 est de nouveau connecté.
-- **Piège** : `2 START` ne redémarre pas un node lancé manuellement ; relancer avec `ndbmtd` sur VM 2 si nécessaire.
 
 **Résultat attendu**
 
@@ -496,7 +535,6 @@ drwxr-xr-x 4 root root 4096 nov.  22 09:42 ..
 -rw-r--r-- 1 root root  1024 nov.  22 09:42 BACKUP-1.0.2.Data
 -rw-r--r-- 1 root root   512 nov.  22 09:42 BACKUP-1.0.2.log
 -rw-r--r-- 1 root root   256 nov.  22 09:42 BACKUP-1.0.2.ctl
-```
 ndb_2/BACKUP:
 total 12
 drwxr-xr-x 2 root root 4096 … .
@@ -593,7 +631,7 @@ NDBT_ProgramExit: 0
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion + SQL.
 
-**Prérequis** — Sauvegarde disponible sur le nœud de stockage Id=3, étape 4a terminée.
+**Prérequis** — Sauvegarde disponible sur le nœud de stockage Id=3, étape 4 terminée.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
@@ -645,7 +683,7 @@ ndb_mgm -e '2 STOP'
 
 ```text
 Connected to Management Server at: localhost:1186
-Node 2 has shutdown.
+Node 2: Node shutdown initiated
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -694,11 +732,11 @@ id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
-#### Étape 5b — Déclarer le NodeId 6 dans config.ini et redémarrer le gestionnaire
+#### Étape 6 — Déclarer le NodeId 6 dans config.ini
 
-**But** — Ajouter l'entrée `[ndbd] NodeId = 6` dans `config.ini` sur VM 1 et redémarrer `ndb_mgmd` pour qu'il prenne en compte le nouveau nœud de stockage avant son démarrage.
+**But** — Ajouter l'entrée `[ndbd] NodeId = 6` dans `config.ini` sur VM 1 pour déclarer le nouveau nœud de stockage avant son démarrage.
 
-**Machine** — VM 1 (192.168.56.10), fichier `config.ini` et nœud de gestion.
+**Machine** — VM 1 (192.168.56.10), fichier `config.ini`.
 
 **Prérequis** — NodeId 2 arrêté (étape 5), répertoire `/var/lib/mysql-cluster/ndb_6` présent sur VM 2, sauvegarde de `config.ini`.
 
@@ -746,8 +784,8 @@ DataDir = /var/lib/mysql-cluster
 
 [ndbd default]
 NoOfReplicas = 2
-DataMemory = 512M
-IndexMemory = 256M
+DataMemory = 256M
+IndexMemory = 128M
 
 [tcp default]
 
@@ -773,15 +811,20 @@ HostName = 192.168.56.10
 [mysqld]
 NodeId = 5
 HostName = 192.168.56.12
+
+[ndbd]
+NodeId = 6
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_6
 ```
 
-#### Étape 5b — Arrêter le gestionnaire avant recharge de config.ini
+#### Étape 7 — Arrêter le gestionnaire avant recharge de config.ini
 
 **But** — Arrêter proprement `ndb_mgmd` pour qu'il relise la nouvelle `config.ini` (y compris NodeId 6) au prochain démarrage.
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 
-**Prérequis** — `config.ini` mis à jour avec la section NodeId 6 (étape 5a), gestionnaire en cours d'exécution.
+**Prérequis** — `config.ini` mis à jour avec la section NodeId 6 (étape 6), gestionnaire en cours d'exécution.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
@@ -800,13 +843,13 @@ pkill -x ndb_mgmd
 ```text
 ```
 
-#### Étape 5c — Redémarrer le gestionnaire avec la nouvelle topologie
+#### Étape 8 — Redémarrer le gestionnaire avec la nouvelle topologie
 
 **But** — Relancer `ndb_mgmd` avec le `config.ini` mis à jour (NodeId 6 déclaré) pour que le cluster prenne en compte le nouveau nœud de stockage.
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 
-**Prérequis** — Gestionnaire arrêté (étape 5b), `config.ini` contient l'entrée `[ndbd] NodeId = 6`.
+**Prérequis** — Gestionnaire arrêté (étape 7), `config.ini` contient l'entrée `[ndbd] NodeId = 6`.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
@@ -828,13 +871,13 @@ ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
 MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 ```
 
-#### Étape 5d — Lancer le nœud de stockage de remplacement Id=6
+#### Étape 9 — Lancer le nœud de stockage de remplacement Id=6
 
 **But** — Démarrer le nouveau nœud de stockage `ndbmtd` NodeId 6 sur VM 2 pour prendre le relais du NodeId 2 défaillant.
 
 **Machine** — VM 2 (192.168.56.11), répertoire de données `ndb_6`.
 
-**Prérequis** — `config.ini` mis à jour et gestionnaire redémarré (étape 5c), répertoire `/var/lib/mysql-cluster/ndb_6` présent.
+**Prérequis** — `config.ini` mis à jour et gestionnaire redémarré (étape 8), répertoire `/var/lib/mysql-cluster/ndb_6` présent.
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
 
@@ -874,13 +917,13 @@ sleep 8
 
 ```
 
-#### Étape 5e — Lister les processus ndbmtd
+#### Étape 10 — Lister les processus ndbmtd
 
 **But** — Confirmer que les processus `ndbmtd` sont en cours d'exécution sur VM 2 (NodeId 3 existant + NodeId 6 nouveau).
 
 **Machine** — VM 2 (192.168.56.11), nouveau nœud de stockage.
 
-**Prérequis** — Nouveau nœud lancé (étape 5d).
+**Prérequis** — Nouveau nœud lancé (étape 9).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
 
@@ -903,13 +946,13 @@ pgrep -a ndbmtd
 22285 ndbmtd --ndb-connectstring=192.168.56.10
 ```
 
-#### Étape 7 — Vérifier l'état du cluster après remplacement (NodeId 6 présent)
+#### Étape 11 — Vérifier l'état du cluster après remplacement (NodeId 6 présent)
 
 **But** — Confirmer que le nouveau nœud de stockage NodeId 6 est connecté et pris en compte, et que le cluster reste opérationnel malgré la panne simulée de NodeId 2.
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 
-**Prérequis** — Nouveau nœud NodeId 6 lancé (étape 5d).
+**Prérequis** — Nouveau nœud NodeId 6 lancé (étape 9).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
@@ -927,7 +970,18 @@ ndb_mgm -e 'SHOW'
 **Résultat attendu**
 
 ```text
-
+Connected to Management Server at: localhost:1186
+Cluster Configuration
+---------------------
+[ndbd(NDB)]	3 node(s)
+id=2 (not connected, accepting connect from 192.168.56.11)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+id=6	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 1)
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+[mysqld(API)]	2 node(s)
+id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
 
@@ -966,18 +1020,20 @@ L'accès aux VM se fait en SSH (mot de passe dans `.env`, non affiché en clair)
 **Exemple de commande**
 
 ```bash
-dpkg -l
+dpkg -l | grep -i 'mysql-cluster-manager' || echo 'paquet mysql-cluster-manager non installé'
 ```
 
 **Explication de la commande**
 
-- `dpkg -l` : liste tous les paquets installés sur le système. La sortie inclut les paquets MySQL Cluster Manager s'ils sont installés.
+- `dpkg -l` : liste tous les paquets installés sur le système.
+- `grep -i 'mysql-cluster-manager'` : filtre la liste sur le paquet MCM (aucune correspondance attendue).
+- `|| echo 'paquet mysql-cluster-manager non installé'` : affiche un constat explicite quand le paquet est absent (code retour de `grep` non nul).
 - **Piège** : si aucun paquet `mysql-cluster-manager` n'apparaît, MCM n'est pas installé ; ce produit est commercial Oracle et hors périmètre du lab.
 
 **Résultat attendu**
 
 ```text
-paquet mcm non installé
+paquet mysql-cluster-manager non installé
 ```
 
 > **Note** : ce résultat confirme l'indisponibilité de MCM ; `mcm` est introuvable sur cette VM.

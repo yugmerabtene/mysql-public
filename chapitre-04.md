@@ -257,6 +257,7 @@ grep -E 'DataMemory|IndexMemory|NoOfReplicas' config.ini
 
 - `grep -E 'DataMemory|IndexMemory|NoOfReplicas' config.ini` : affiche les nouvelles valeurs et que `NoOfReplicas = 2` est conservé.
 - Le redémarrage des nœuds de stockage est nécessaire pour prendre en compte les nouveaux paramètres.
+- **Note** : `IndexMemory` est déprécié dans MySQL Cluster 8.0 (le démarrage du gestionnaire affiche un `WARNING -- IndexMemory is deprecated`) ; il est conservé ici pour la compatibilité de l'exemple, la mémoire d'index étant désormais déduite de `DataMemory`.
 - **Piège** : toute modification de `config.ini` nécessite un redémarrage des nœuds concernés ; prévoir une fenêtre de maintenance.
 
 **Résultat attendu**
@@ -279,6 +280,7 @@ pkill -x ndbmtd
 **Explication de la commande**
 
 - `pkill -x ndbmtd` : arrête les processus de stockage existants.
+- **Piège** : la modification de `DataMemory`/`IndexMemory` impose un redémarrage **complet** des nœuds de stockage (les deux à la fois), car ces paramètres de mémoire ne se modifient pas à chaud. Contrairement au redémarrage rolling d'un nœud SQL (Lab-06), ceci provoque une **interruption du service de stockage** : le cluster est brièvement indisponible pour les écritures tant que les deux nœuds n'ont pas redémarré. En production, planifier une fenêtre de maintenance.
 
 **Résultat attendu**
 
@@ -292,7 +294,7 @@ pkill -x ndbmtd
 
 **Machine** — VM 2 (192.168.56.11), nœud de stockage.
 
-**Prérequis** — Processus `ndbmtd` arrêtés (étape 4a).
+**Prérequis** — Processus `ndbmtd` arrêtés (étape 4).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
 **Exemple de commande**
@@ -440,6 +442,21 @@ ndb_config --query-all
 - **Piège** : si les anciennes valeurs persistent, les nœuds n'ont pas été correctement redémarrés avec la nouvelle `config.ini`.
 
 **Résultat attendu**
+
+```text
+id=2    @192.168.56.11 (ndbd)
+        NodeId = 2
+        HostName = 192.168.56.11
+        NoOfReplicas = 2
+        DataMemory = 512M
+        IndexMemory = 256M
+id=3    @192.168.56.11 (ndbd)
+        NodeId = 3
+        HostName = 192.168.56.11
+        NoOfReplicas = 2
+        DataMemory = 512M
+        IndexMemory = 256M
+```
 
 ### En conclusion
 Ce lab couvre l'ajustement de `DataMemory` et `IndexMemory`, la vérification de la RAM et du disque de chaque VM, le redémarrage des nœuds de stockage pour appliquer les changements, et la confirmation de la nouvelle configuration. Les opérations `NDB-23` et `NDB-24` (paramètres performance et détection de goulots) sont réalisées. Renvoi : passer au Lab-11 pour le sharding, le partitionnement et les gros volumes.
@@ -610,6 +627,25 @@ ndb_config --query-all
 
 **Résultat attendu**
 
+```text
+id=2    @192.168.56.11 (ndbd)
+        NodeId = 2
+        HostName = 192.168.56.11
+        NoOfReplicas = 2
+        DataMemory = 512M
+        IndexMemory = 256M
+        NoOfFragmentLogParts = 4
+        RedoBuffer = 32M
+id=3    @192.168.56.11 (ndbd)
+        NodeId = 3
+        HostName = 192.168.56.11
+        NoOfReplicas = 2
+        DataMemory = 512M
+        IndexMemory = 256M
+        NoOfFragmentLogParts = 4
+        RedoBuffer = 32M
+```
+
 #### Étape 4 — Préconiser la montée en charge par ajout de nœuds de stockage
 **But** — Expliquer comment ajouter des nœuds de stockage pour créer plusieurs node groups et répartir le sharding sur plus de machines, comme préconisé par le livre pour la scalabilité horizontale.
 **Machine** — VM 2 (192.168.56.11) pour préparer un nouveau répertoire de stockage.
@@ -711,9 +747,15 @@ La panne ou l'incident cherche à rendre indisponible un site entier ou à provo
 | Réplication inter-clusters | NDB-26 | SQL source / SQL replica | `SHOW SLAVE STATUS`, `ndb_mgm SHOW` | Vérifier que le canal est actif et `Seconds_Behind_Master = 0` | Valider le binlog et le canal de réplication |
 | Gestion pannes | NDB-27 | Nœud de stockage | `ndb_mgm -e "SHOW"` | Détecter le passage d'un nœud en `not connected` | Maintenir `NoOfReplicas = 2` pour le basculement |
 | Failover / failback | NDB-28 | Nœud de stockage | `ndb_mgm -e "SHOW"`, chronométrage | Mesurer le temps de basculement et de resynchronisation | Redémarrer le nœud et valider la resynchronisation sans perte de données |
-## Lab-13 — Réplication entre clusters
+## Lab-12 — Réplication entre clusters (référence/démonstration)
 ### Énoncé / Contexte
-Configurer la réplication entre deux clusters MySQL Cluster : le site principal (Cluster A, déjà déployé sur VM 1 et VM 2) et le site de secours (Cluster B, déployé sur VM 3). L'objectif est de mettre en place le canal de réplication entre le nœud SQL source (Id=4 sur VM 1) et le nœud SQL replica (Id=6 sur VM 3), puis de vérifier la propagation des données d'un cluster à l'autre. Ce lab réalise l'opération `NDB-26` (réplication inter-clusters). Le cluster principal doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes s'exécutent directement en root sur chaque VM (déjà connecté en SSH).
+Configurer la réplication entre deux clusters MySQL Cluster : le site principal (Cluster A, déjà déployé sur VM 1 et VM 2) et le site de secours (Cluster B). L'objectif pédagogique est de comprendre le canal de réplication SQL (journal binaire) entre le nœud SQL source (Id=4 sur VM 1) et le nœud SQL replica (Id=6 de Cluster B), puis la vérification de la propagation des données. Ce lab réalise l'opération `NDB-26` (réplication inter-clusters).
+
+**Statut du lab** : ce lab est un **lab de référence / démonstration**. Le second cluster (Cluster B) n'est pas déployable de manière isolée et fonctionnelle sur l'infrastructure actuelle à 3 VMs : VM 3 héberge déjà le nœud SQL NodeId 5 du Cluster A, et un second cluster complet (gestionnaire + 2 nœuds de stockage + nœud SQL replica) nécessiterait des ressources et un hôte dédiés supplémentaires. **Aucune commande de ce lab n'est exécutée en laboratoire** ; toutes les sorties présentées sont **illustratives (non exécutées en lab)** et servent uniquement de référence de procédure correcte. Le lab suivant (Lab-13) reste entièrement exécutable sur le cluster existant.
+
+Le Cluster A et le Cluster B ont des espaces de `NodeId` distincts (chaque cluster a sa propre numérotation) : le `NodeId 6` du Cluster B (nœud SQL replica) est sans rapport avec le `NodeId 6` éventuellement utilisé comme nœud de stockage dans le Cluster A aux chapitres 2 et 3.
+
+L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 ### Outils et commandes utilisées
 | Outil | Commande | Rôle |
 |---|---|---|
@@ -724,8 +766,8 @@ Configurer la réplication entre deux clusters MySQL Cluster : le site principal
 | CHANGE MASTER TO | `CHANGE MASTER TO ...` | Configurer le replica sur la source |
 | START SLAVE | `START SLAVE` | Démarrer la réplication sur le replica |
 | SHOW SLAVE STATUS | `SHOW SLAVE STATUS\G` | Vérifier l'état et le retard du canal de réplication |
-| ndb_mgmd | `ndb_mgmd --ndb-nodeid=10 ...` | Démarrer le gestionnaire du site de secours |
-| ndbmtd | `ndbmtd --ndb-nodeid=20 ...` | Démarrer un nœud de stockage du site de secours |
+| ndb_mgmd | `ndb_mgmd --ndb-nodeid=10 --config-file=... --port=1188` | Démarrer le gestionnaire du site de secours |
+| ndbmtd | `ndbmtd --ndb-nodeid=20/21 --ndb-connectstring=192.168.56.12:1188` | Démarrer les deux nœuds de stockage du site de secours |
 ### Commande et laboratoire étape par étape
 #### Étape 1 — Vérifier la santé du cluster principal (site principal, Cluster A)
 **But** — Confirmer que les 5 nœuds du cluster principal sont connectés avant de configurer la réplication.
@@ -734,7 +776,8 @@ Configurer la réplication entre deux clusters MySQL Cluster : le site principal
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-ndb_mgm -e 'SHOW' ```
+ndb_mgm -e 'SHOW'
+```
 **Explication de la commande**
 - `ndb_mgm -e 'SHOW'` : liste tous les nœuds du cluster et leur état de connexion.
 - On attend 5 nœuds connectés : gestion Id=1, stockage Id=2 et Id=3, SQL Id=4 et Id=5.
@@ -763,17 +806,36 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 mysql -u root -e "SHOW VARIABLES LIKE 'log_bin'"
 ```
 **Explication de la commande**
-- `SHOW VARIABLES LIKE 'log_bin'` : indique si le journal binaire est activé (`ON`) sur le nœud SQL source.
-- **Piège** : si `log_bin` vaut `OFF`, il faut ajouter `log_bin = mysql-bin` et `server-id = 1` dans la configuration de `mysqld`, puis redémarrer le nœud SQL Id=4 seul (le cluster reste disponible via l'autre nœud SQL).
+- `SHOW VARIABLES LIKE 'log_bin'` : indique si le journal binaire est activé sur le nœud SQL source. Par défaut, il est désactivé (`OFF`) tant qu'il n'a pas été configuré.
+- **Piège** : pour activer la réplication, il faut ajouter `log_bin = mysql-bin` et `server-id = 1` dans la configuration de `mysqld`, puis redémarrer le nœud SQL Id=4 seul (le cluster reste disponible via l'autre nœud SQL).
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab ; état avant configuration)
 
 ```text
 +---------------+-------+
 | Variable_name | Value |
 +---------------+-------+
-| log_bin       | ON    |
+| log_bin       | OFF   |
 +---------------+-------+
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+printf '[mysqld]\nlog_bin = mysql-bin\nserver-id = 1\n' >> /etc/mysql/mysql.conf.d/replication.cnf && systemctl restart mysql
+```
+**Explication de la commande**
+- `printf ... >> /etc/mysql/mysql.conf.d/replication.cnf` : ajoute les paramètres `log_bin` et `server-id` à la configuration de `mysqld` (chemin Ubuntu 24.04).
+- `log_bin = mysql-bin` : active le journal binaire.
+- `server-id = 1` : identifiant unique du serveur SQL source (obligatoire pour la réplication).
+- `systemctl restart mysql` : redémarre le nœud SQL pour appliquer la configuration.
+- **Piège** : ne redémarrer que le nœud SQL Id=4, jamais les nœuds de stockage.
+
+**Résultat attendu**
+
+```text
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -784,9 +846,8 @@ mysql -u root -e "SHOW VARIABLES LIKE 'server_id'"
 ```
 **Explication de la commande**
 - `SHOW VARIABLES LIKE 'server_id'` : affiche l'identifiant de serveur, obligatoire pour la réplication.
-- **Piège** : l'activation du journal binaire nécessite un redémarrage de `mysqld` ; ne pas redémarrer les nœuds de stockage.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab ; état après redémarrage du nœud SQL)
 
 ```text
 +---------------+-------+
@@ -848,8 +909,8 @@ mysql -u root -e "SHOW MASTER STATUS\G"
      Binlog_Do_DB: NULL
  Binlog_Ignore_DB: NULL
 ```
-#### Étape 4 — Démarrer le cluster de secours (site de secours, Cluster B) sur VM 3
-**But** — Déployer le cluster de secours (Cluster B) sur VM 3 : gestionnaire Id=10, nœud de stockage Id=20, nœud SQL replica Id=6.
+#### Étape 4 — Déployer le cluster de secours (site de secours, Cluster B) sur VM 3
+**But** — Déployer le cluster de secours (Cluster B) sur VM 3 : gestionnaire Id=10 (port 1188), deux nœuds de stockage Id=20 et Id=21 (`NoOfReplicas = 2`), nœud SQL replica Id=6 (port SQL 3307).
 **Machine** — VM 3 (192.168.56.12), nœud SQL et nouveau site de secours.
 **Prérequis** — Espace disque et binaires MySQL Cluster installés sur VM 3 ; répertoire de données dédié pour Cluster B.
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -868,26 +929,81 @@ mkdir -p /var/lib/mysql-cluster/clusterB
 
 ```
 
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
+
+**Exemple de commande**
+
+```bash
+cat > /var/lib/mysql-cluster/clusterB/config.ini << 'EOF'
+[ndb_mgmd default]
+DataDir = /var/lib/mysql-cluster/clusterB
+
+[ndbd default]
+NoOfReplicas = 2
+DataMemory = 256M
+IndexMemory = 128M
+
+[tcp default]
+
+[ndb_mgmd]
+NodeId = 10
+HostName = 192.168.56.12
+DataDir = /var/lib/mysql-cluster/clusterB
+PortNumber = 1188
+
+[ndbd]
+NodeId = 20
+HostName = 192.168.56.12
+DataDir = /var/lib/mysql-cluster/clusterB/ndb_20
+
+[ndbd]
+NodeId = 21
+HostName = 192.168.56.12
+DataDir = /var/lib/mysql-cluster/clusterB/ndb_21
+
+[mysqld]
+NodeId = 6
+HostName = 192.168.56.12
+EOF
+```
+**Explication de la commande**
+
+- `cat > …/clusterB/config.ini << 'EOF'` : crée la topologie du Cluster B (fichier distinct de celui du Cluster A).
+- `[ndb_mgmd] NodeId = 10` : gestionnaire de secours, sur le port `1188` (distinct du port `1186` du Cluster A).
+- `[ndbd] NodeId = 20` et `NodeId = 21` : deux nœuds de stockage avec `NoOfReplicas = 2` (une architecture à un seul nœud de stockage serait incompatible avec `NoOfReplicas = 2`).
+- `[mysqld] NodeId = 6` : nœud SQL replica du Cluster B.
+- **Piège** : chaque cluster a son propre `config.ini` et sa propre numérotation de `NodeId`.
+
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
+
+```text
+
+```
+
 #### Étape 4b — Démarrer le gestionnaire de Cluster B
 
-**But** — Démarrer le nœud de gestion `ndb_mgmd` de Cluster B avec l'identifiant 10 sur VM 3.
+**But** — Démarrer le nœud de gestion `ndb_mgmd` de Cluster B avec l'identifiant 10 et le port 1188 sur VM 3.
 
 **Machine** — VM 3 (192.168.56.12), nœud de gestion du site de secours.
 
-**Prérequis** — Répertoire `clusterB` créé (étape 4a).
+**Prérequis** — Répertoire `clusterB` et `config.ini` créés (étape 4).
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
 **Exemple de commande**
 
 ```bash
-ndb_mgmd --ndb-nodeid=10 --initial --configdir=/var/lib/mysql-cluster/clusterB > mgmdB.log &
+ndb_mgmd --ndb-nodeid=10 --initial --config-file=/var/lib/mysql-cluster/clusterB/config.ini --configdir=/var/lib/mysql-cluster/clusterB > mgmdB.log &
 ```
 **Explication de la commande**
 
-- `ndb_mgmd --ndb-nodeid=10 --initial --configdir=…` : démarre le gestionnaire de Cluster B avec l'identifiant 10 (initial pour créer ses fichiers de configuration).
+- `ndb_mgmd --ndb-nodeid=10` : démarre le gestionnaire de Cluster B avec l'identifiant 10.
+- `--initial` : initialise proprement le gestionnaire (premier démarrage de ce cluster).
+- `--config-file=/var/lib/mysql-cluster/clusterB/config.ini` : charge la topologie du Cluster B (avec `PortNumber = 1188`).
+- `--configdir=/var/lib/mysql-cluster/clusterB` : répertoire de travail du gestionnaire.
 - `> mgmdB.log &` : redirige les journaux vers un fichier et détache le processus en arrière-plan.
+- **Piège** : le port de gestion du Cluster B (1188) doit être cohérent entre le `config.ini` (`PortNumber`) et le connect-string des nœuds de stockage.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
 
@@ -942,13 +1058,39 @@ ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtd
 
 ```
 
-#### Étape 4e — Attendre le démarrage du nœud de stockage
+#### Étape 4e — Démarrer le second nœud de stockage Id=21
 
-**But** — Laisser le temps au nœud de stockage de Cluster B de se déclarer au gestionnaire.
+**But** — Démarrer le second nœud de stockage `ndbmtd` Id=21 de Cluster B sur VM 3, afin de respecter `NoOfReplicas = 2`.
 
 **Machine** — VM 3 (192.168.56.12), nœud de stockage du site de secours.
 
-**Prérequis** — Nœud de stockage de Cluster B lancé (étape 4d).
+**Prérequis** — Gestionnaire de Cluster B démarré (étape 4b), nœud de stockage Id=20 lancé (étape 4d).
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
+**Exemple de commande**
+
+```bash
+ndbmtd --ndb-nodeid=21 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtdB_21.log &
+```
+**Explication de la commande**
+
+- `ndbmtd --ndb-nodeid=21 --ndb-connectstring=192.168.56.12:1188 --initial` : démarre le second nœud de stockage Id=21 de Cluster B, connecté au gestionnaire local sur 1188.
+- `> ndbmtdB_21.log &` : redirige les journaux vers un fichier et détache le processus en arrière-plan.
+- **Piège** : sans ce second nœud, `NoOfReplicas = 2` ne peut pas être satisfait (architecture impossible avec un seul nœud de stockage).
+
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
+
+```text
+
+```
+
+#### Étape 4f — Attendre le démarrage des nœuds de stockage
+
+**But** — Laisser le temps aux deux nœuds de stockage de Cluster B de se déclarer au gestionnaire.
+
+**Machine** — VM 3 (192.168.56.12), nœud de stockage du site de secours.
+
+**Prérequis** — Nœuds de stockage Id=20 et Id=21 lancés (étapes 4d et 4e).
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
 **Exemple de commande**
@@ -958,7 +1100,7 @@ sleep 3
 ```
 **Explication de la commande**
 
-- `sleep 3` : laisse le temps au nœud de stockage de se déclarer au gestionnaire.
+- `sleep 3` : laisse le temps aux nœuds de stockage de se déclarer au gestionnaire.
 
 **Résultat attendu**
 
@@ -972,7 +1114,7 @@ sleep 3
 
 **Machine** — VM 3 (192.168.56.12), nœud de gestion et nœud de stockage du site de secours.
 
-**Prérequis** — Gestionnaire et nœud de stockage de Cluster B lancés (étapes 4b et 4d).
+**Prérequis** — Gestionnaire (étape 4b) et nœuds de stockage Id=20 et Id=21 (étapes 4d et 4e) lancés.
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
 **Exemple de commande**
@@ -985,24 +1127,55 @@ pgrep -a 'ndb_mgmd|ndbmtd'
 - `pgrep -a 'ndb_mgmd|ndbmtd'` : confirme le retour des processus de Cluster B.
 - **Piège** : `--initial` réinitialise les métadonnées du cluster ; ne pas l'utiliser sur un cluster contenant des données à conserver.
 
-**Résultat attendu**
+**Résultat attendu** (sortie illustrative — non exécutée en lab ; les PID sont propres à chaque exécution)
 
 ```text
-xxxx ndb_mgmd --ndb-nodeid=10 --initial --configdir=/var/lib/mysql-cluster/clusterB
-yyyy ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial
+ndb_mgmd --ndb-nodeid=10 --initial --config-file=/var/lib/mysql-cluster/clusterB/config.ini --configdir=/var/lib/mysql-cluster/clusterB
+ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial
+ndbmtd --ndb-nodeid=21 --ndb-connectstring=192.168.56.12:1188 --initial
 ```
+
+#### Étape 4g — Démarrer le nœud SQL replica Id=6 (port 3307)
+
+**But** — Démarrer le nœud SQL replica de Cluster B (Id=6) sur un port SQL distinct (3307) de celui du Cluster A (3306).
+
+**Machine** — VM 3 (192.168.56.12), nœud SQL replica de Cluster B.
+
+**Prérequis** — Gestionnaire et nœuds de stockage de Cluster B lancés (étapes 4b, 4d, 4e), datadir MySQL initialisé pour l'instance 3307.
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
+**Exemple de commande**
+
+```bash
+nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.12:1188 --port=3307 --user=mysql --daemonize > /tmp/mysqld-6.log &
 ```
+**Explication de la commande**
+
+- `mysqld --ndbcluster` : active le moteur NDB sur le nœud SQL replica.
+- `--ndb-connectstring=192.168.56.12:1188` : connecte ce nœud SQL au gestionnaire de Cluster B (port 1188), distinct du Cluster A (1186).
+- `--port=3307` : écoute sur le port SQL 3307, distinct du 3306 utilisé par le SQL Id=4 du Cluster A.
+- `--user=mysql` : exécute le processus sous l'utilisateur `mysql` (moindre privilège).
+- `--daemonize` : lance `mysqld` en arrière-plan.
+- `> /tmp/mysqld-6.log &` : redirige le journal et détache le processus.
+- **Piège** : ce nœud SQL doit être démarré avant l'étape 5, sinon la connexion `-P 3307` échoue.
+
+**Résultat attendu** (sortie illustrative — non exécutée en lab)
+
+```text
+
+```
+
 #### Étape 5 — Configurer le canal de réplication sur le replica (SQL Id=6)
 **But** — Configurer le nœud SQL replica (Id=6) pour qu'il se connecte au nœud SQL source (Id=4 sur VM 1) et démarrer la réplication.
 **Machine** — VM 3 (192.168.56.12), nœud SQL replica de Cluster B.
-**Prérequis** — Cluster B démarré (étape 4), position du binaire relevée à l'étape 3 (Fichier `mysql-bin.000001`, Position `154` à adapter).
+**Prérequis** — Cluster B démarré (étapes 4 à 4g), nœud SQL replica Id=6 lancé sur le port 3307 (étape 4g), position du binaire relevée à l'étape 3 (Fichier `mysql-bin.000001`, Position `154` à adapter).
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
 mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CHANGE MASTER TO MASTER_HOST='192.168.56.10', MASTER_USER='repl', MASTER_PASSWORD='repl_pass', MASTER_LOG_FILE='mysql-bin.000001', MASTER_LOG_POS=154"
 ```
 **Explication de la commande**
-- `mysql … -h 127.0.0.1 -P 3307` : se connecte au nœud SQL replica Id=6 de Cluster B (port 3307, distinct de 3306 pour Cluster A).
+- `mysql … -h 127.0.0.1 -P 3307` : se connecte au nœud SQL replica Id=6 de Cluster B (service SQL 3307, distinct de 3306 pour Cluster A).
 - `CHANGE MASTER TO …` : configure le replica avec l'adresse de la source (VM 1), l'utilisateur de réplication et la position du journal binaire relevée à l'étape 3.
 - **Piège** : `MASTER_LOG_FILE` et `MASTER_LOG_POS` doivent correspondre exactement à la sortie de `SHOW MASTER STATUS` de l'étape 3 ; sinon la réplication ne démarre pas.
 
@@ -1152,8 +1325,8 @@ mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "SELECT * FROM labrep.t_rep
 +-----+----------+
 ```
 ### En conclusion
-Ce lab décrit le déploiement d'un cluster de secours (Cluster B) sur VM 3, l'activation du journal binaire sur le nœud SQL source (Id=4), la création de l'utilisateur de réplication et la configuration du canal de réplication (`CHANGE MASTER TO`, `START SLAVE`). Sur l'infrastructure à 3 VMs disponibles, VM 3 héberge déjà le nœud SQL NodeId 5 du cluster A ; le démarrage d'un gestionnaire Cluster B (Id=10) et d'un nœud SQL réplica (Id=6, sur l'interface SQL 3307) sur la même VM n'est pas réalisable de manière isolée et fonctionnelle sans ressources dédiées. L'opération `NDB-26` (réplication inter-clusters) est donc présentée à titre indicatif ; elle n'est pas effectivement exécutable sur cette infrastructure. Renvoi : passer au Lab-14 qui est indépendant (propre table de test `labfail.t_fail`) pour la simulation de panne, le failover et le failback (NDB-27, NDB-28).
-## Lab-14 — Simulation de panne, failover et failback
+Ce lab est un **lab de référence / démonstration** de la réplication inter-clusters (opération `NDB-26`). Il documente la procédure correcte : activation du journal binaire sur le nœud SQL source (`log_bin`, `server-id`), création d'un utilisateur de réplication, relevé de `SHOW MASTER STATUS`, déploiement d'un Cluster B complet (gestionnaire Id=10 sur le port 1188, deux nœuds de stockage Id=20 et Id=21 pour respecter `NoOfReplicas = 2`, nœud SQL replica Id=6 sur le port 3307), puis configuration du canal (`CHANGE MASTER TO`, `START SLAVE`) et vérification de la propagation. Aucune commande n'est exécutée en lab : l'infrastructure à 3 VMs ne permet pas d'héberger un second cluster complet isolé, toutes les sorties sont **illustratives (non exécutées en lab)**. Renvoi : passer au Lab-13, entièrement exécutable sur le cluster existant, pour la simulation de panne, le failover et le failback (NDB-27, NDB-28).
+## Lab-13 — Simulation de panne, failover et failback
 ### Énoncé / Contexte
 Simuler une panne de nœud de stockage sur le cluster MySQL Cluster, observer le basculement automatique (failover) puis le retour arrière (failback) avec resynchronisation. L'objectif est de constater que le service reste disponible malgré la perte d'un nœud de stockage (grâce à `NoOfReplicas = 2`), de mesurer le temps de failover (cible < 1 seconde), et de valider le failback sans perte de données. Ce lab réalise les opérations `NDB-27` (gestion des pannes) et `NDB-28` (failover/failback). Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes s'exécutent directement en root sur chaque VM (déjà connecté en SSH).
 ### Outils et commandes utilisées
@@ -1161,7 +1334,7 @@ Simuler une panne de nœud de stockage sur le cluster MySQL Cluster, observer le
 |---|---|---|
 | ndb_mgm | `ndb_mgm -e "SHOW"` | État des nœuds et transitions not connected / recovering / connected |
 | ndb_mgm | `ndb_mgm -e "2 STOP"` | Arrêt simulé du nœud de stockage Id=2 |
-| ndb_mgm | `ndb_mgm -e "2 START"` | Redémarrage du nœud de stockage Id=2 |
+| ndbmtd | `nohup ndbmtd --ndb-connectstring=192.168.56.10 &` | Redémarrage manuel du nœud de stockage Id=2 (failback) |
 | mysql | `mysql -u root -e "SELECT ..."` | Vérification de la continuité de service et de l'absence de perte de données |
 | date | `date` | Horodatage pour mesurer le temps de failover |
 ### Commande et laboratoire étape par étape
@@ -1176,7 +1349,6 @@ ndb_mgm -e 'SHOW'
 ```
 **Explication de la commande**
 - `ndb_mgm -e 'SHOW'` : liste tous les nœuds et leur état de connexion.
-- `tee` : enregistre la sortie dans le fichier de preuve.
 - On attend 5 nœuds connectés : gestion Id=1, stockage Id=2 et Id=3, SQL Id=4 et Id=5.
 - **Piège** : si un nœud est absent, le corriger avant de simuler la panne.
 **Résultat attendu**
@@ -1194,9 +1366,9 @@ id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
-#### Étape 1b — Créer une table de test indépendante pour Lab-14
+#### Étape 1b — Créer une table de test indépendante pour Lab-13
 
-**But** — Créer une table `labfail.t_fail` sur le nœud SQL (Id=4) pour vérifier la continuité de service pendant le failover, sans dépendre de Lab-13 ni de la table `labrep.t_repl`.
+**But** — Créer une table `labfail.t_fail` sur le nœud SQL (Id=4) pour vérifier la continuité de service pendant le failover, sans dépendre de Lab-12 ni de la table `labrep.t_repl`.
 
 **Machine** — VM 1 (192.168.56.10), premier nœud SQL.
 
@@ -1229,7 +1401,7 @@ mysql -u root -e "CREATE TABLE IF NOT EXISTS labfail.t_fail (id INT PRIMARY KEY,
 **Explication de la commande**
 
 - `CREATE TABLE … ENGINE=NDB` : crée une table stockée par le moteur NDB, donc répliquée sur les nœuds de stockage.
-- Cette table est propre à Lab-14 et rend le lab indépendant de Lab-13.
+- Cette table est propre à Lab-13 et rend le lab indépendant de Lab-12.
 
 **Résultat attendu**
 
@@ -1287,7 +1459,6 @@ ndb_mgm -e 'SHOW'
 ```
 **Explication de la commande**
 - `ndb_mgm -e 'SHOW'` : affiche l'état actuel de chaque nœud.
-- `tee` : enregistre la sortie dans le fichier de preuve.
 - On attend le nœud Id=2 en état `not connected` (ou en cours de détection) et le nœud Id=3 restant `connected`.
 - Le quorum est préservé par le nœud de gestion arbitre ; le split-brain est évité.
 - **Piège** : juste après l'arrêt, le nœud peut apparaître brièvement comme `not connected` avant que le cluster ne confirme le basculement.
@@ -1314,7 +1485,7 @@ mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail;"
 
 - `mysql -u root` : se connecte au serveur MySQL local en tant que root.
 - `-e "SELECT COUNT(*) FROM labfail.t_fail;"` : exécute la requête SQL et affiche le résultat, vérifiant que le service SQL répond via le nœud de stockage restant (Id=3).
-- `labfail.t_fail` : table de test propre à Lab-14, créée à l'étape 1b pour valider la continuité du service pendant le failover, sans dépendre de Lab-13.
+- `labfail.t_fail` : table de test propre à Lab-13, créée à l'étape 1b pour valider la continuité du service pendant le failover, sans dépendre de Lab-12.
 - **Piège** : si la requête SQL échoue, le failover n'a pas eu lieu (vérifier `NoOfReplicas = 2` et l'état des nœuds).
 **Résultat attendu**
 ```text
@@ -1325,34 +1496,37 @@ mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail;"
 +----------+
 ```
 #### Étape 5 — Redémarrer le nœud de stockage Id=2 (failback)
-**But** — Redémarrer le nœud de stockage Id=2 et observer sa resynchronisation puis sa réintégration (failback).
-**Machine** — VM 1 (192.168.56.10), nœud de gestion.
-**Prérequis** — Nœud Id=2 arrêté, service continu via Id=3.
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+**But** — Redémarrer le nœud de stockage Id=2 sans `--initial` et observer sa resynchronisation puis sa réintégration (failback).
+**Machine** — VM 2 (192.168.56.11), nœud de stockage.
+**Prérequis** — Nœud Id=2 arrêté (étape 2), service continu via Id=3, répertoire `/var/lib/mysql-cluster/ndb_2` présent.
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
 **Exemple de commande**
 
 ```bash
-ndb_mgm -e "2 START"
+nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 ```
 **Explication de la commande**
 
-- `ndb_mgm -e "2 START"` : demande le redémarrage du nœud de stockage Id=2.
+- `nohup ndbmtd --ndb-connectstring=192.168.56.10 &` : relance `ndbmtd` sans `--initial` pour conserver les données et resynchroniser depuis le NodeId 3.
+- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion.
+- `&` : détache le processus en arrière-plan.
+- **Piège** : `ndb_mgm -e "2 START"` ne redémarre pas un nœud lancé manuellement ; il faut relancer `ndbmtd` directement.
 
 **Résultat attendu**
 
 ```text
-Node 2: Node restart initiated
+
 ```
 
 #### Étape 5b — Attendre le redémarrage du nœud de stockage
 
 **But** — Laisser le temps au nœud de stockage Id=2 de démarrer et de se resynchroniser.
 
-**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+**Machine** — VM 2 (192.168.56.11), nœud de stockage.
 
-**Prérequis** — Nœud de stockage Id=2 en cours de redémarrage (étape 5a).
+**Prérequis** — Nœud de stockage Id=2 relancé (étape 5).
 
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
 **Exemple de commande**
 
 ```bash
@@ -1374,7 +1548,7 @@ sleep 5
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 
-**Prérequis** — Nœud de stockage Id=2 redémarré (étape 5a).
+**Prérequis** — Nœud de stockage Id=2 relancé (étape 5).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
@@ -1391,8 +1565,6 @@ ndb_mgm -e 'SHOW'
 **Résultat attendu**
 
 ```text
-Node 2: Node shutdown completed
-Node 2: Node restart initiated
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------

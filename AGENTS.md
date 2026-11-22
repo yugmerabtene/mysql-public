@@ -174,9 +174,10 @@ est défini dans `.opencode/skills/common.md`, section 16.
 ## État actuel (tracking.state — lecture rapide des agents)
 
 - Jour : 1 | Module : 1.x (chapitre 1) | Statut : en cours
-- Infrastructure cible : 2 VMs (1 vCPU, 1 Go RAM, 15 Go disque, Ubuntu Server 24.04 LTS) sur réseau isolé vboxnet0 192.168.56.0/24.
-  - VM 1 (192.168.56.10) : nœud de gestion + nœud SQL
-  - VM 2 (192.168.56.11) : deux nœuds de stockage (ndbmtd node-id 1 et 2)
+- Infrastructure cible : 3 VMs (1 vCPU, 1 Go RAM, 15 Go disque, Ubuntu Server 24.04 LTS) sur réseau isolé vboxnet0 192.168.56.0/24.
+  - VM 1 (192.168.56.10) : nœud de gestion (`ndb_mgmd` NodeId 1) + nœud SQL (`mysqld` NodeId 4)
+  - VM 2 (192.168.56.11) : deux nœuds de stockage (`ndbmtd` NodeId 2 et 3)
+  - VM 3 (192.168.56.12) : second nœud SQL (`mysqld` NodeId 5)
 - Chapitre 1 v1.2 : introduction à MySQL Cluster, installation des composants, vérification de l'intégrité.
 
 **Fichiers d'état :**
@@ -189,7 +190,7 @@ est défini dans `.opencode/skills/common.md`, section 16.
 L'infrastructure de base est déjà déployée :
 1. VirtualBox et le réseau isolé (vboxnet0, 192.168.56.0/24, DHCP désactivé) pour les nœuds du cluster MySQL.
 2. Les VMs sont connectées uniquement au réseau du lab pendant les travaux pratiques.
-3. IPs statiques : 192.168.56.10 (gestion + SQL), 192.168.56.11 (stockage x2). Hôte : 192.168.56.1.
+3. IPs statiques : 192.168.56.10 (gestion + SQL NodeId 4), 192.168.56.11 (stockage x2 NodeId 2 et 3), 192.168.56.12 (second nœud SQL NodeId 5). Hôte : 192.168.56.1.
 4. Prendre un snapshot propre de chaque VM avant manipulation. Garder l'accès Internet désactivé pendant les labs.
 5. Pour le périmètre actuel, seuls les nœuds du cluster sont nécessaires. Maximum 3 VMs, idéalement 2.
 
@@ -199,6 +200,6 @@ Avant **chaque** intervention, tout agent doit invoquer la skill `check-env` (`.
 - `GITHUB_TOKEN` (authentification GitHub : création de repo privé, push).
 - `GIT_AUTHOR_NAME / GIT_AUTHOR_EMAIL / GIT_COMMITTER_NAME / GIT_COMMITTER_EMAIL` (identité git).
 
-Les infos VM (IP 192.168.56.10 gestion+SQL, 192.168.56.11 stockage) se lisent dans `tracking.state` et `tracking.db`.
+Les infos VM (IP 192.168.56.10 gestion+SQL, 192.168.56.11 stockage x2, 192.168.56.12 second SQL) se lisent dans `tracking.state` et `tracking.db`.
 **Interdit** de committer, push ou afficher en clair le contenu de `.env`. Le fichier est déjà ignoré par `.gitignore` (`# Secrets : .env`).
 Avant tout `git push`, vérifier qu'aucun secret n'est présent dans les fichiers stagés.
