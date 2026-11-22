@@ -660,28 +660,126 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-mysql -u root -e "CREATE USER IF NOT EXISTS 'app_user'@'192.168.56.%' IDENTIFIED BY 'LabAppPass123!'; GRANT SELECT, INSERT, UPDATE, DELETE ON labperf.* TO 'app_user'@'192.168.56.%'; CREATE USER IF NOT EXISTS 'backup_user'@'192.168.56.%' IDENTIFIED BY 'LabBackupPass123!'; GRANT SELECT, SHOW VIEW, LOCK TABLES ON *.* TO 'backup_user'@'192.168.56.%'; FLUSH PRIVILEGES; SHOW GRANTS FOR 'app_user'@'192.168.56.%'; SHOW GRANTS FOR 'backup_user'@'192.168.56.%';"
+mysql -u root -e "CREATE USER IF NOT EXISTS 'app_user'@'192.168.56.%' IDENTIFIED BY 'LabAppPass123!'"
 ```
 
 **Explication de la commande**
 
 - `CREATE USER … IDENTIFIED BY` : crée un compte avec un mot de passe fort (authentification forte).
-- `GRANT SELECT, INSERT, UPDATE, DELETE ON labperf.*` : donne uniquement les droits nécessaires sur la base `labperf` (pas de droits globaux), appliquant le moindre privilège au compte applicatif.
-- `GRANT SELECT, SHOW VIEW, LOCK TABLES ON *.*` : compte de sauvegarde en lecture seule sur toutes les bases, utilisé pour les opérations de sauvegarde.
-- `FLUSH PRIVILEGES` : recharge les privilèges après création/modification des comptes.
-- `SHOW GRANTS FOR …` : vérifie les droits effectifs de chaque compte pour confirmer qu'aucun droit excessif n'a été accordé.
 - **Piège** : ne jamais accorder `ALL PRIVILEGES` ou `GRANT OPTION` à un compte applicatif ; réserver `root` à l'administration uniquement.
 
 **Résultat attendu**
 
 ```text
 Query OK, 0 rows affected (0.02 sec)
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "GRANT SELECT, INSERT, UPDATE, DELETE ON labperf.* TO 'app_user'@'192.168.56.%'"
+```
+
+**Explication de la commande**
+
+- `GRANT SELECT, INSERT, UPDATE, DELETE ON labperf.*` : donne uniquement les droits nécessaires sur la base `labperf` (pas de droits globaux), appliquant le moindre privilège au compte applicatif.
+
+**Résultat attendu**
+
+```text
 Query OK, 0 rows affected (0.02 sec)
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "CREATE USER IF NOT EXISTS 'backup_user'@'192.168.56.%' IDENTIFIED BY 'LabBackupPass123!'"
+```
+
+**Explication de la commande**
+
+- `CREATE USER … IDENTIFIED BY` : crée un compte de sauvegarde avec un mot de passe fort.
+
+**Résultat attendu**
+
+```text
 Query OK, 0 rows affected (0.02 sec)
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "GRANT SELECT, SHOW VIEW, LOCK TABLES ON *.* TO 'backup_user'@'192.168.56.%'"
+```
+
+**Explication de la commande**
+
+- `GRANT SELECT, SHOW VIEW, LOCK TABLES ON *.*` : compte de sauvegarde en lecture seule sur toutes les bases, utilisé pour les opérations de sauvegarde.
+
+**Résultat attendu**
+
+```text
 Query OK, 0 rows affected (0.02 sec)
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "FLUSH PRIVILEGES"
+```
+
+**Explication de la commande**
+
+- `FLUSH PRIVILEGES` : recharge les privilèges après création/modification des comptes.
+
+**Résultat attendu**
+
+```text
 Query OK, 0 rows affected (0.02 sec)
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "SHOW GRANTS FOR 'app_user'@'192.168.56.%'"
+```
+
+**Explication de la commande**
+
+- `SHOW GRANTS FOR …` : vérifie les droits effectifs du compte applicatif pour confirmer qu'aucun droit excessif n'a été accordé.
+
+**Résultat attendu**
+
+```text
 Grants for app_user@192.168.56.%
 GRANT SELECT, INSERT, UPDATE, DELETE ON `labperf`.* TO 'app_user'@'192.168.56.%'
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "SHOW GRANTS FOR 'backup_user'@'192.168.56.%'"
+```
+
+**Explication de la commande**
+
+- `SHOW GRANTS FOR …` : vérifie les droits effectifs du compte de sauvegarde.
+
+**Résultat attendu**
+
+```text
 Grants for backup_user@192.168.56.%
 GRANT SELECT, SHOW VIEW, LOCK TABLES ON *.* TO 'backup_user'@'192.168.56.%'
 ```

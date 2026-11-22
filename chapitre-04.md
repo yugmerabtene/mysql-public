@@ -462,20 +462,53 @@ Mettre en œuvre le sharding et le partitionnement pour répartir la charge sur 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-mysql -u root -e "CREATE DATABASE IF NOT EXISTS labperf; CREATE TABLE IF NOT EXISTS labperf.t_shard (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB; INSERT INTO labperf.t_shard (id,val) VALUES (1,'a'),(2,'b'),(3,'c'),(4,'d'),(5,'e') ON DUPLICATE KEY UPDATE val=VALUES(val); SELECT COUNT(*) FROM labperf.t_shard;"
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS labperf"
 ```
 **Explication de la commande**
-- `CREATE TABLE … ENGINE=NDB` : crée une table stockée par le moteur NDB, donc fragmentée automatiquement.
-- `INSERT … ON DUPLICATE KEY UPDATE` : insère des données de test de manière idempotente.
-- `SELECT COUNT(*)` : confirme l'insertion.
-- Le moteur NDB fragmente automatiquement la table sur les nœuds de stockage (auto-sharding).
-- **Piège** : si le datadir MySQL est absent, la commande échoue (« Failed to create schema directory »).
+- `mysql -u root -e "CREATE DATABASE IF NOT EXISTS labperf"` : crée la base de test `labperf` si elle n'existe pas encore.
+- **Piège** : si le datadir MySQL n'est pas initialisé, la commande échoue (« Failed to create schema directory »).
 **Résultat attendu**
 ```text
-CREATE DATABASE
-CREATE TABLE
+Query OK, 1 row affected (0.01 sec)
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "CREATE TABLE IF NOT EXISTS labperf.t_shard (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
+```
+**Explication de la commande**
+- `CREATE TABLE … ENGINE=NDB` : crée une table stockée par le moteur NDB, donc fragmentée automatiquement sur les nœuds de stockage.
+**Résultat attendu**
+```text
+Query OK, 0 rows affected (0.05 sec)
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "INSERT INTO labperf.t_shard (id,val) VALUES (1,'a'),(2,'b'),(3,'c'),(4,'d'),(5,'e') ON DUPLICATE KEY UPDATE val=VALUES(val)"
+```
+**Explication de la commande**
+- `INSERT … ON DUPLICATE KEY UPDATE` : insère des données de test de manière idempotente (en cas de doublon de clé primaire, la valeur est mise à jour).
+**Résultat attendu**
+```text
 Query OK, 5 rows affected (0.05 sec)
 Records: 5  Duplicates: 0  Warnings: 0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "SELECT COUNT(*) FROM labperf.t_shard"
+```
+**Explication de la commande**
+- `SELECT COUNT(*)` : confirme l'insertion des 5 lignes dans la table.
+**Résultat attendu**
+```text
 +----------+
 | COUNT(*) |
 +----------+
@@ -733,19 +766,37 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-mysql -u root -e "SHOW VARIABLES LIKE 'log_bin'; SHOW VARIABLES LIKE 'server_id';" ```
+mysql -u root -e "SHOW VARIABLES LIKE 'log_bin'"
+```
 **Explication de la commande**
 - `SHOW VARIABLES LIKE 'log_bin'` : indique si le journal binaire est activé (`ON`) sur le nœud SQL source.
-- `SHOW VARIABLES LIKE 'server_id'` : affiche l'identifiant de serveur, obligatoire pour la réplication.
-- `tee` : enregistre la sortie dans le fichier de preuve.
-- Si `log_bin` vaut `OFF`, ajouter `log_bin = mysql-bin` et `server-id = 1` dans le fichier de configuration de `mysqld`, puis redémarrer le nœud SQL Id=4 seul (le cluster reste disponible via l'autre nœud SQL).
-- **Piège** : l'activation du journal binaire nécessite un redémarrage de `mysqld` ; ne pas redémarrer les nœuds de stockage.
+- **Piège** : si `log_bin` vaut `OFF`, il faut ajouter `log_bin = mysql-bin` et `server-id = 1` dans la configuration de `mysqld`, puis redémarrer le nœud SQL Id=4 seul (le cluster reste disponible via l'autre nœud SQL).
+
 **Résultat attendu**
+
 ```text
 +---------------+-------+
 | Variable_name | Value |
 +---------------+-------+
 | log_bin       | ON    |
++---------------+-------+
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "SHOW VARIABLES LIKE 'server_id'"
+```
+**Explication de la commande**
+- `SHOW VARIABLES LIKE 'server_id'` : affiche l'identifiant de serveur, obligatoire pour la réplication.
+- **Piège** : l'activation du journal binaire nécessite un redémarrage de `mysqld` ; ne pas redémarrer les nœuds de stockage.
+
+**Résultat attendu**
+
+```text
++---------------+-------+
+| Variable_name | Value |
 +---------------+-------+
 | server_id     | 1     |
 +---------------+-------+
@@ -757,20 +808,51 @@ mysql -u root -e "SHOW VARIABLES LIKE 'log_bin'; SHOW VARIABLES LIKE 'server_id'
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-mysql -u root -e "CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED BY 'repl_pass'; GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%'; SHOW MASTER STATUS\G" ```
+mysql -u root -e "CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED BY 'repl_pass'"
+```
 **Explication de la commande**
-- `CREATE USER ... IDENTIFIED BY` : crée l'utilisateur de réplication `repl`.
-- `GRANT REPLICATION SLAVE ON *.*` : donne le droit de se connecter en tant que replica au canal de réplication.
-- `SHOW MASTER STATUS\G` : affiche le fichier de journal binaire actuel et la position (`File`, `Position`) à indiquer sur le replica.
-- `tee` : enregistre la sortie (y compris la position du binaire) dans le fichier de preuve.
-- **Piège** : noter précisément `File` et `Position` ; ils seront requis à l'étape de configuration du replica.
+- `CREATE USER ... IDENTIFIED BY` : crée l'utilisateur de réplication `repl` avec un mot de passe.
+- **Piège** : noter précisément les identifiants ; ils seront requis pour la configuration du replica.
+
 **Résultat attendu**
+
+```text
+Query OK, 0 rows affected (0.01 sec)
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%'"
+```
+**Explication de la commande**
+- `GRANT REPLICATION SLAVE ON *.*` : donne le droit de se connecter en tant que replica au canal de réplication.
+
+**Résultat attendu**
+
+```text
+Query OK, 0 rows affected (0.01 sec)
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "SHOW MASTER STATUS\G"
+```
+**Explication de la commande**
+- `SHOW MASTER STATUS\G` : affiche le fichier de journal binaire actuel et la position (`File`, `Position`) à indiquer sur le replica.
+- **Piège** : noter précisément `File` et `Position` ; ils seront requis à l'étape de configuration du replica.
+
+**Résultat attendu**
+
 ```text
 *************************** 1. row ***************************
              File: mysql-bin.000001
          Position: 154
      Binlog_Do_DB: NULL
-Binlog_Ignore_DB: NULL
+ Binlog_Ignore_DB: NULL
 ```
 #### Étape 4 — Démarrer le cluster de secours (site de secours, Cluster B) sur VM 3
 **But** — Déployer le cluster de secours (Cluster B) sur VM 3 : gestionnaire Id=10, nœud de stockage Id=20, nœud SQL replica Id=6.
@@ -923,15 +1005,46 @@ yyyy ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CHANGE MASTER TO MASTER_HOST='192.168.56.10', MASTER_USER='repl', MASTER_PASSWORD='repl_pass', MASTER_LOG_FILE='mysql-bin.000001', MASTER_LOG_POS=154; START SLAVE; SHOW SLAVE STATUS\G" ```
+mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CHANGE MASTER TO MASTER_HOST='192.168.56.10', MASTER_USER='repl', MASTER_PASSWORD='repl_pass', MASTER_LOG_FILE='mysql-bin.000001', MASTER_LOG_POS=154"
+```
 **Explication de la commande**
-- `mysql … -h 127.0.0.1 -P 3307` : se connecte au nœud SQL replica Id=6 de Cluster B (3307, distinct de 3306 pour Cluster A).
+- `mysql … -h 127.0.0.1 -P 3307` : se connecte au nœud SQL replica Id=6 de Cluster B (port 3307, distinct de 3306 pour Cluster A).
 - `CHANGE MASTER TO …` : configure le replica avec l'adresse de la source (VM 1), l'utilisateur de réplication et la position du journal binaire relevée à l'étape 3.
-- `START SLAVE` : démarre le thread de réplication sur le replica.
-- `SHOW SLAVE STATUS\G` : affiche l'état du canal (`Slave_IO_Running`, `Slave_SQL_Running`, `Seconds_Behind_Master`).
-- `tee` : enregistre la sortie dans le fichier de preuve.
 - **Piège** : `MASTER_LOG_FILE` et `MASTER_LOG_POS` doivent correspondre exactement à la sortie de `SHOW MASTER STATUS` de l'étape 3 ; sinon la réplication ne démarre pas.
+
 **Résultat attendu**
+
+```text
+Query OK, 0 rows affected (0.02 sec)
+```
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "START SLAVE"
+```
+**Explication de la commande**
+- `START SLAVE` : démarre le thread de réplication sur le replica.
+
+**Résultat attendu**
+
+```text
+Query OK, 0 rows affected (0.01 sec)
+```
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "SHOW SLAVE STATUS\G"
+```
+**Explication de la commande**
+- `SHOW SLAVE STATUS\G` : affiche l'état du canal (`Slave_IO_Running`, `Slave_SQL_Running`, `Seconds_Behind_Master`).
+- **Piège** : si `Slave_IO_Running` ou `Slave_SQL_Running` vaut `No`, vérifier les journaux d'erreur du replica.
+
+**Résultat attendu**
+
 ```text
 *************************** 1. row ***************************
                Slave_IO_Running: Yes
@@ -946,18 +1059,62 @@ mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CHANGE MASTER TO MASTER_HO
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-mysql -u root -e "CREATE DATABASE IF NOT EXISTS labrep; CREATE TABLE IF NOT EXISTS labrep.t_repl (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB; INSERT INTO labrep.t_repl (id,val) VALUES (101,'principal'),(102,'secours') ON DUPLICATE KEY UPDATE val=VALUES(val); SELECT * FROM labrep.t_repl;" ```
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS labrep"
+```
+**Explication de la commande**
+- `CREATE DATABASE IF NOT EXISTS labrep` : crée la base de test `labrep` sur le site principal si elle n'existe pas.
+
+**Résultat attendu**
+
+```text
+Query OK, 1 row affected (0.01 sec)
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "CREATE TABLE IF NOT EXISTS labrep.t_repl (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
+```
 **Explication de la commande**
 - `CREATE TABLE … ENGINE=NDB` : crée une table stockée par le moteur NDB sur le site principal.
-- `INSERT … ON DUPLICATE KEY UPDATE` : insère des données de test de manière idempotente.
-- `SELECT *` : affiche les données insérées sur le site principal.
-- `tee` : enregistre la sortie dans le fichier de preuve.
-- La réplication asynchrone propage ces lignes vers le site de secours.
-- **Piège** : la table doit exister avec la même définition sur le replica avant que la réplication ne puisse l'appliquer ; la création sur le replica est faite à l'étape suivante.
+
 **Résultat attendu**
+
 ```text
-Query OK, 1 row affected
-Query OK, 1 row affected
+Query OK, 0 rows affected (0.05 sec)
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "INSERT INTO labrep.t_repl (id,val) VALUES (101,'principal'),(102,'secours') ON DUPLICATE KEY UPDATE val=VALUES(val)"
+```
+**Explication de la commande**
+- `INSERT … ON DUPLICATE KEY UPDATE` : insère des données de test de manière idempotente.
+- La réplication asynchrone propage ces lignes vers le site de secours.
+
+**Résultat attendu**
+
+```text
+Query OK, 2 rows affected (0.05 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root -e "SELECT * FROM labrep.t_repl"
+```
+**Explication de la commande**
+- `SELECT *` : affiche les données insérées sur le site principal.
+- **Piège** : la table doit exister avec la même définition sur le replica avant que la réplication ne puisse l'appliquer ; la création sur le replica est faite à l'étape suivante.
+
+**Résultat attendu**
+
+```text
 +-----+----------+
 | id  | val      |
 +-----+----------+
@@ -968,16 +1125,31 @@ Query OK, 1 row affected
 > **Passage sur le site de secours (VM 3)** — création de la table sur le replica et vérification de la propagation.
 **Exemple de commande**
 ```bash
-mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CREATE TABLE IF NOT EXISTS labrep.t_repl (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB; SELECT * FROM labrep.t_repl;" ```
+mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CREATE TABLE IF NOT EXISTS labrep.t_repl (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
+```
 **Explication de la commande**
 - Se connecte au SQL replica Id=6 de Cluster B (3307).
 - Crée la table `labrep.t_repl` sur le replica si elle n'existe pas (même définition que la source).
-- `SELECT *` : confirme que les lignes insérées sur le site principal ont été propagées via le canal de réplication.
-- `tee` : enregistre la sortie dans le fichier de preuve.
-- **Piège** : si le replica est vide, vérifier que `Seconds_Behind_Master` est faible et que le canal n'est pas en erreur.
+
 **Résultat attendu**
+
 ```text
-Query OK, 0 rows affected
+Query OK, 0 rows affected (0.05 sec)
+```
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+```bash
+mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "SELECT * FROM labrep.t_repl"
+```
+**Explication de la commande**
+- `SELECT *` : confirme que les lignes insérées sur le site principal ont été propagées via le canal de réplication.
+- **Piège** : si le replica est vide, vérifier que `Seconds_Behind_Master` est faible et que le canal n'est pas en erreur.
+
+**Résultat attendu**
+
+```text
 +-----+----------+
 | id  | val      |
 +-----+----------+
@@ -1041,21 +1213,50 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-mysql -u root -e "CREATE DATABASE IF NOT EXISTS labfail; CREATE TABLE IF NOT EXISTS labfail.t_fail (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB; INSERT INTO labfail.t_fail (id,val) VALUES (101,'principal'),(102,'secours') ON DUPLICATE KEY UPDATE val=VALUES(val);"
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS labfail"
 ```
-
 **Explication de la commande**
 
 - `CREATE DATABASE IF NOT EXISTS labfail` : crée la base de test si nécessaire.
+
+**Résultat attendu**
+
+```text
+Query OK, 1 row affected (0.01 sec)
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "CREATE TABLE IF NOT EXISTS labfail.t_fail (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
+```
+**Explication de la commande**
+
 - `CREATE TABLE … ENGINE=NDB` : crée une table stockée par le moteur NDB, donc répliquée sur les nœuds de stockage.
-- `INSERT … ON DUPLICATE KEY UPDATE` : insère des données de test de manière idempotente.
 - Cette table est propre à Lab-14 et rend le lab indépendant de Lab-13.
 
 **Résultat attendu**
 
 ```text
-CREATE DATABASE
-CREATE TABLE
+Query OK, 0 rows affected (0.05 sec)
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "INSERT INTO labfail.t_fail (id,val) VALUES (101,'principal'),(102,'secours') ON DUPLICATE KEY UPDATE val=VALUES(val)"
+```
+**Explication de la commande**
+
+- `INSERT … ON DUPLICATE KEY UPDATE` : insère des données de test de manière idempotente.
+
+**Résultat attendu**
+
+```text
 Query OK, 2 rows affected (0.05 sec)
 Records: 2  Duplicates: 0  Warnings: 0
 ```
@@ -1199,13 +1400,16 @@ ndb_mgm -e 'SHOW'
 Node 2: Node shutdown completed
 Node 2: Node restart initiated
 Connected to Management Server at: localhost:1186
-...
-id=2	@192.168.56.11  (...) connected
-id=3	@192.168.56.11  (...) connected
-```
-...
-id=2	@192.168.56.11  (...) connected
-id=3	@192.168.56.11  (...) connected
+Cluster Configuration
+---------------------
+[ndbd(NDB)]	2 node(s)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+[mysqld(API)]	2 node(s)
+id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 #### Étape 6 — Vérifier la resynchronisation et l'absence de perte de données
 **But** — Confirmer que le nœud Id=2 est resynchronisé, que le cluster est à nouveau à 5 nœuds connectés, et qu'aucune donnée n'a été perdue.
@@ -1242,12 +1446,12 @@ id=3	@192.168.56.11  (...) connected
 **Exemple de commande**
 
 ```bash
-mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail; SELECT * FROM labfail.t_fail ORDER BY id;"
+mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail"
 ```
 **Explication de la commande**
 
-- `mysql … SELECT COUNT(*)` et `SELECT *` : vérifie l'intégrité des données après le failback (aucune perte).
-- **Piège** : si des données manquent, le failback n'a pas été complété ; vérifier la resynchronisation.
+- `mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail"` : vérifie le nombre de lignes après le failback (aucune perte de données).
+- **Piège** : si le compte est inférieur au nombre attendu, le failback n'a pas été complété ; vérifier la resynchronisation du NodeId 2.
 
 **Résultat attendu**
 
@@ -1257,15 +1461,23 @@ mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail; SELECT * FROM labfail.t_f
 +----------+
 |        2 |
 +----------+
-+-----+----------+
-| id  | val      |
-+-----+----------+
-| 101 | principal|
-| 102 | secours  |
-+-----+----------+
 ```
-|        2 |
-+----------+
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "SELECT * FROM labfail.t_fail ORDER BY id"
+```
+**Explication de la commande**
+
+- `SELECT * FROM labfail.t_fail ORDER BY id` : affiche toutes les lignes de la table de test pour confirmer l'intégrité des données après le failback.
+- **Piège** : si des lignes manquent ou sont corrompues, le failback n'a pas été complété.
+
+**Résultat attendu**
+
+```text
 +-----+----------+
 | id  | val      |
 +-----+----------+
