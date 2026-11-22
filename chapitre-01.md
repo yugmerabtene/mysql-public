@@ -236,7 +236,9 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -255,6 +257,22 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+Note : selection de mysql-server pour le motif rationnel "mysql-server-*"
+Les paquets suivants seront ENLES :
+  mysql-cluster-* mysql-server-* mysql-common-*
+0 mis a jour, 0 nouvellement installes, 3 a enlever et 0 non mis a jour.
+Apres cette operation, XXX Mo d'espace disque seront liberes.
+(Lecture de la base de donnees... 124568 fichiers et repertoires deja installes.)
+Suppression de mysql-cluster-common (8.0.xx-xxx) ...
+Suppression de mysql-server-core (8.0.xx-xxx) ...
+Suppression de mysql-common (8.0.xx-xxx) ...
+Traitement des actions differes pour man-db (2.xx-xxubuntuy) ...
+Traitement des actions differes pour libc-bin (2.xx-xxubuntuy) ...
 
 ```
 
@@ -274,6 +292,12 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+0 mis a jour, 0 nouvellement installes, 0 a enlever et 0 non mis a jour.
 
 ```
 
@@ -319,7 +343,9 @@ hostnamectl set-hostname gestion-sql
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -347,6 +373,15 @@ YEOF
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+network:
+  version: 2
+  ethernets:
+    enp0s8:
+      dhcp4: no
+      addresses: [192.168.56.10/24]
+      nameservers:
+        addresses: [192.168.56.1]
 
 ```
 
@@ -365,7 +400,9 @@ netplan apply
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -429,7 +466,9 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -448,6 +487,22 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+Note : selection de mysql-server pour le motif rationnel "mysql-server-*"
+Les paquets suivants seront ENLES :
+  mysql-cluster-* mysql-server-* mysql-common-*
+0 mis a jour, 0 nouvellement installes, 3 a enlever et 0 non mis a jour.
+Apres cette operation, XXX Mo d'espace disque seront liberes.
+(Lecture de la base de donnees... 124568 fichiers et repertoires deja installes.)
+Suppression de mysql-cluster-common (8.0.xx-xxx) ...
+Suppression de mysql-server-core (8.0.xx-xxx) ...
+Suppression de mysql-common (8.0.xx-xxx) ...
+Traitement des actions differes pour man-db (2.xx-xxubuntuy) ...
+Traitement des actions differes pour libc-bin (2.xx-xxubuntuy) ...
 
 ```
 
@@ -467,6 +522,12 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+0 mis a jour, 0 nouvellement installes, 0 a enlever et 0 non mis a jour.
 
 ```
 
@@ -512,7 +573,9 @@ hostnamectl set-hostname stockage
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -540,6 +603,15 @@ YEOF
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+network:
+  version: 2
+  ethernets:
+    enp0s8:
+      dhcp4: no
+      addresses: [192.168.56.11/24]
+      nameservers:
+        addresses: [192.168.56.1]
 
 ```
 
@@ -558,7 +630,9 @@ netplan apply
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -622,7 +696,9 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -641,6 +717,22 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+Note : selection de mysql-server pour le motif rationnel "mysql-server-*"
+Les paquets suivants seront ENLES :
+  mysql-cluster-* mysql-server-* mysql-common-*
+0 mis a jour, 0 nouvellement installes, 3 a enlever et 0 non mis a jour.
+Apres cette operation, XXX Mo d'espace disque seront liberes.
+(Lecture de la base de donnees... 124568 fichiers et repertoires deja installes.)
+Suppression de mysql-cluster-common (8.0.xx-xxx) ...
+Suppression de mysql-server-core (8.0.xx-xxx) ...
+Suppression de mysql-common (8.0.xx-xxx) ...
+Traitement des actions differes pour man-db (2.xx-xxubuntuy) ...
+Traitement des actions differes pour libc-bin (2.xx-xxubuntuy) ...
 
 ```
 
@@ -660,6 +752,12 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+0 mis a jour, 0 nouvellement installes, 0 a enlever et 0 non mis a jour.
 
 ```
 
@@ -705,7 +803,9 @@ hostnamectl set-hostname mysql-node3
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -733,6 +833,15 @@ YEOF
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+network:
+  version: 2
+  ethernets:
+    enp0s8:
+      dhcp4: no
+      addresses: [192.168.56.12/24]
+      nameservers:
+        addresses: [192.168.56.1]
 
 ```
 
@@ -751,7 +860,9 @@ netplan apply
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -1054,6 +1165,15 @@ apt-get update
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+Atteint :1 http://archive.ubuntu.com/ubuntu noble InRelease
+Reception de :2 http://archive.ubuntu.com/ubuntu noble-updates InRelease [119 kB]
+Reception de :3 http://archive.ubuntu.com/ubuntu noble-backports InRelease [108 kB]
+Reception de :4 http://security.ubuntu.com/ubuntu noble-security InRelease [115 kB]
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+Tous les paquets sont a jour.
 
 ```
 
@@ -1100,6 +1220,15 @@ apt-get update
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+Atteint :1 http://archive.ubuntu.com/ubuntu noble InRelease
+Reception de :2 http://archive.ubuntu.com/ubuntu noble-updates InRelease [119 kB]
+Reception de :3 http://archive.ubuntu.com/ubuntu noble-backports InRelease [108 kB]
+Reception de :4 http://security.ubuntu.com/ubuntu noble-security InRelease [115 kB]
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+Tous les paquets sont a jour.
 
 ```
 
@@ -1143,6 +1272,15 @@ apt-get update
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+Atteint :1 http://archive.ubuntu.com/ubuntu noble InRelease
+Reception de :2 http://archive.ubuntu.com/ubuntu noble-updates InRelease [119 kB]
+Reception de :3 http://archive.ubuntu.com/ubuntu noble-backports InRelease [108 kB]
+Reception de :4 http://security.ubuntu.com/ubuntu noble-security InRelease [115 kB]
+Lecture des listes de paquets... Fait
+Construction de l'arbre des dependances... Fait
+Lecture des informations d'etat... Fait
+Tous les paquets sont a jour.
 
 ```
 
@@ -1280,7 +1418,9 @@ cp /tmp/config.ini /var/lib/mysql-cluster/config.ini
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1357,7 +1497,9 @@ mkdir -p /var/lib/mysql-cluster/ndb_2 /var/lib/mysql-cluster/ndb_3
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1435,7 +1577,9 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
@@ -1456,6 +1600,9 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+nohup: ignoring input and appending output to 'nohup.out'
+[1] 2458
 
 ```
 
@@ -1474,7 +1621,9 @@ cd /var/lib/mysql-cluster/ndb_3
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_3
@@ -1493,6 +1642,9 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+nohup: ignoring input and appending output to 'nohup.out'
+[1] 2459
 
 ```
 
@@ -1524,6 +1676,9 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+nohup: ignoring input and appending output to 'nohup.out'
+[1] 2460
 
 ```
 
@@ -1542,6 +1697,9 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+nohup: ignoring input and appending output to 'nohup.out'
+[1] 2461
 
 ```
 
@@ -1560,7 +1718,9 @@ sleep 5
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 #### Étape 10 — Vérifier l'intégrité du cluster avec ndb_mgm SHOW
@@ -1692,7 +1852,9 @@ sleep 5
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
@@ -1765,7 +1927,9 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
@@ -1785,6 +1949,9 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+nohup: ignoring input and appending output to 'nohup.out'
+[1] 2462
 
 ```
 
@@ -1804,7 +1971,9 @@ sleep 8
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root

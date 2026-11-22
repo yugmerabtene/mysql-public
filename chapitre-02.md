@@ -407,7 +407,9 @@ sleep 5
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -481,7 +483,9 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
@@ -501,6 +505,9 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+nohup: ignoring input and appending output to 'nohup.out'
+[1] 2463
 
 ```
 
@@ -520,7 +527,9 @@ sleep 6
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 
@@ -547,7 +556,9 @@ sleep 8
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -625,7 +636,9 @@ cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.save
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -698,7 +711,9 @@ mkdir -p /var/lib/mysql-cluster/ndb_6
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -747,7 +762,9 @@ cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.pre-node6
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -857,7 +874,9 @@ pkill -x ndb_mgmd
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -894,7 +913,9 @@ sleep 5
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -953,6 +974,9 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_6.log &
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+nohup: ignoring input and appending output to 'ndbmtd_6.log'
+[1] 2464
 
 ```
 
@@ -971,7 +995,9 @@ sleep 6
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 #### Étape 2d — Vérifier l'apparition de NodeId 6 dans SHOW (VM 1)
@@ -1120,7 +1146,9 @@ pkill -x ndbmtd
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -1138,7 +1166,9 @@ cp config.ini.pre-node6 config.ini
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -1177,7 +1207,9 @@ sleep 5
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1274,7 +1306,9 @@ sleep 3
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1331,7 +1365,9 @@ pkill -x mysqld
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1349,7 +1385,9 @@ sleep 3
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1367,7 +1405,9 @@ pgrep -a mysqld
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (mysqld arrete, aucun processus correspondant)
 ```
 - `pgrep -a mysqld` ne retourne aucune ligne (rc=1) : le processus `mysqld` a bien été arrêté, confirmant l'arrêt du nœud SQL NodeId 4.
 
@@ -1391,6 +1431,9 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
+nohup: ignoring input and appending output to 'nohup.out'
+[1] 2465
 
 ```
 
@@ -1409,7 +1452,9 @@ sleep 5
 **Résultat attendu**
 
 ```text
+# sortie illustrative (non executé en lab)
 
+aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
