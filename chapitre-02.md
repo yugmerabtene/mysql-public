@@ -827,6 +827,99 @@ HostName = 192.168.56.11
 DataDir = /var/lib/mysql-cluster/ndb_6
 ```
 
+#### Étape 2b-bis — Recharger la configuration du gestionnaire (redémarrer ndb_mgmd) (VM 1)
+
+**But** — Redémarrer le processus `ndb_mgmd` afin qu'il recharge `config.ini` et prenne en compte la nouvelle entrée `[ndbd] NodeId = 6` avant le lancement du nœud de stockage. Sans ce redémarrage, le gestionnaire conserve l'ancienne configuration en mémoire et le nouveau nœud ne peut pas se déclarer.
+
+**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+
+**Prérequis** — `config.ini` modifié avec l'entrée NodeId 6 (étape 2b), `ndb_mgmd` en cours d'exécution.
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+pkill -x ndb_mgmd
+```
+
+**Explication de la commande**
+
+- `pkill -x ndb_mgmd` : arrête le processus du nœud de gestion pour forcer le rechargement de `config.ini` au prochain démarrage.
+- **Piège** : le port de gestion (1186) peut mettre quelques secondes à se libérer ; prévoir une attente avant le redémarrage.
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+ndb_mgmd -f /var/lib/mysql-cluster/config.ini
+```
+
+**Explication de la commande**
+
+- `ndb_mgmd -f /var/lib/mysql-cluster/config.ini` : redémarre le nœud de gestion en lui faisant relire `config.ini` (qui contient désormais la déclaration NodeId 6).
+
+**Résultat attendu**
+
+```text
+WARNING: --ndb-connectstring is ignored when mgmd is started with -f or config-file.
+MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+
+**Explication de la commande**
+
+- `sleep 5` : laisse le temps au gestionnaire de se réinitialiser et aux nœuds de stockage de se reconnecter.
+
+**Résultat attendu**
+
+```text
+
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'SHOW'
+```
+
+**Explication de la commande**
+
+- `ndb_mgm -e 'SHOW'` : vérifie que le gestionnaire est de retour et que le cluster est à nouveau joignable.
+- **Piège** : même après ce redémarrage, NodeId 6 peut rester absent de `SHOW` si le gestionnaire conserve un cache de configuration ; dans ce cas, purger les fichiers de cache du gestionnaire ou redémarrer complètement le cluster.
+
+**Résultat attendu**
+
+```text
+Connected to Management Server at: localhost:1186
+Cluster Configuration
+---------------------
+[ndbd(NDB)]	2 node(s)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+[mysqld(API)]	2 node(s)
+id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
+```
+
 #### Étape 2c — Démarrer le nœud de stockage NodeId 6 (VM 2)
 
 **But** — Lancer le processus `ndbmtd` NodeId 6 sur VM 2 pour qu'il rejoigne le cluster et réintègre le node group.
