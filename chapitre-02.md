@@ -164,22 +164,21 @@ ndb_mgm -e 'SHOW'
 - Le résultat doit afficher 1 `ndb_mgmd`, 2 `ndbd` et 2 `mysqld` sans état `not connected`.
 - **Piège** : un nœud absent apparaît avec l'état `not connected` ; investiguer avant de poursuivre.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
 [ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
-
 
 #### Étape 2 — Interroger la configuration effective des nœuds
 
@@ -194,18 +193,17 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-ndb_config --query-all | grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'
+ndb_config --query-all
 ```
 
 **Explication de la commande**
 
-- `ndb_config --query-all` : retourne tous les paramètres de configuration de tous les nœuds.
-- `| grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'` : filtre les paramètres clés de topologie et de dimensionnement.
+- `ndb_config --query-all` : retourne tous les paramètres de configuration de tous les nœuds. La sortie inclut `NodeId`, `HostName`, `NoOfReplicas`, `DataMemory` et `IndexMemory` pour chaque nœud.
 - `NoOfReplicas = 2` doit apparaître pour les nœuds de stockage.
 - `DataMemory` et `IndexMemory` montrent la mémoire allouée par node de stockage.
-- **Piège** : la sortie complète est très volumineuse ; le filtrage par `grep` concentre l'attention sur les paramètres pertinents.
+- **Piège** : la sortie complète est très volumineuse ; rechercher les paramètres pertinents dans la liste affichée.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; `ndb_config --query-all` retourne du CSV, une ligne par nœud — extrait pertinent ci-dessous)
 
 ```text
 id=1    @192.168.56.10 (ndb_mgmd)
@@ -215,14 +213,14 @@ id=2    @192.168.56.11 (ndbd)
         NodeId = 2
         HostName = 192.168.56.11
         NoOfReplicas = 2
-        DataMemory = 256M
-        IndexMemory = 128M
+        DataMemory = 512M
+        IndexMemory = 256M
 id=3    @192.168.56.11 (ndbd)
         NodeId = 3
         HostName = 192.168.56.11
         NoOfReplicas = 2
-        DataMemory = 256M
-        IndexMemory = 128M
+        DataMemory = 512M
+        IndexMemory = 256M
 id=4    @192.168.56.10 (mysqld)
         NodeId = 4
         HostName = 192.168.56.10
@@ -230,7 +228,6 @@ id=5    @192.168.56.12 (mysqld)
         NodeId = 5
         HostName = 192.168.56.12
 ```
-
 
 #### Étape 3 — Consulter l'usage mémoire des nœuds de stockage
 
@@ -256,16 +253,15 @@ ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
 - Un usage proche de 100 % signale un sous-dimensionnement (risque « table is full »).
 - **Piège** : sur un cluster vide, l'usage est proche de 0 % ; ce n'est pas anormal en début de lab.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
 Connected to Management Server at: localhost:1186
-Node 2: Data usage is 0%(11 32K pages of total 12290)
-Node 2: Index usage is 0%(6 32K pages of total 12285)
-Node 3: Data usage is 0%(11 32K pages of total 12290)
-Node 3: Index usage is 0%(6 32K pages of total 12285)
+Node 2: Data usage is 0%(26 32K pages of total 24576)
+Node 2: Index usage is 0%(8 32K pages of total 24558)
+Node 3: Data usage is 0%(26 32K pages of total 24575)
+Node 3: Index usage is 0%(9 32K pages of total 24558)
 ```
-
 
 #### Étape 4 — État du moteur NDB côté nœud SQL
 
@@ -280,28 +276,33 @@ Node 3: Index usage is 0%(6 32K pages of total 12285)
 **Exemple de commande**
 
 ```bash
-mysql -u root -e 'SHOW ENGINE NDB STATUS\G' | head -40
+mysql -u root -e 'SHOW ENGINE NDB STATUS\G'
 ```
 
 **Explication de la commande**
 
 - `mysql -u root` : se connecte au serveur MySQL local en root.
-- `SHOW ENGINE NDB STATUS\G` : affiche l'état détaillé du moteur NDB côté SQL (cluster connecté, opérations, transactions).
-- `| head -40` : limite la sortie aux premières lignes pertinentes.
+- `-e 'SHOW ENGINE NDB STATUS\G'` : exécute l'instruction qui affiche l'état détaillé du moteur NDB côté SQL (cluster connecté, opérations, transactions).
 - La ligne « Cluster connection » doit indiquer que le nœud SQL est connecté au gestionnaire.
 - **Piège** : si `mysqld` a été lancé sans `--ndbcluster`, cette commande renvoie une erreur « Unknown ENGINE ».
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
 *************************** 1. row ***************************
-Status: 
--- NDB Cluster --
-Connectstring: 192.168.56.10
-Cluster state: connected
+  Type: ndbclus
+  Name: connection
+Status: cluster_node_id=4, connected_host=192.168.56.10, connected_port=1186, number_of_data_nodes=2, number_of_ready_data_nodes=2, connect_count=1
+*************************** 2. row ***************************
+  Type: ndbclus
+  Name: NdbTransaction
+Status: created=2, free=2, sizeof=392
 ...
+*************************** 15. row ***************************
+  Type: ndbclus
+  Name: binlog
+Status: latest_epoch=24966644891650, latest_trans_epoch=19142669238285, latest_received_binlog_epoch=0, latest_handled_binlog_epoch=23274427777029, latest_applied_binlog_epoch=0
 ```
-
 
 ### En conclusion
 
@@ -348,15 +349,15 @@ ndb_mgm -e 'SHOW'
 - Le `*` marque le nœud de stockage préféré pour certaines opérations.
 - **Piège** : si un seul nœud de stockage était présent, il n'y aurait pas de redondance (`NoOfReplicas = 1` de fait).
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
 [ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
@@ -422,10 +423,39 @@ echo '=== Etat apres arret ==='
 
 - `echo '=== Etat apres arret ==='` : affiche un séparateur avant le second affichage de l'état du cluster.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
 === Etat apres arret ===
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'SHOW'
+```
+
+**Explication de la commande**
+
+- `SHOW` : liste tous les nœuds et leur état ; confirme le failover : NodeId 2 en `not connected`, NodeId 3 toujours connecté (`*`), nœuds SQL toujours opérationnels.
+- **Piège** : le NodeId 2 reste listé (non supprimé) avec l'état `not connected` ; c'est le comportement attendu.
+
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
+
+```text
+Connected to Management Server at: localhost:1186
+Cluster Configuration
+---------------------
+[ndbd(NDB)]	2 node(s)
+id=2 (not connected, accepting connect from 192.168.56.11)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+[mysqld(API)]	2 node(s)
+id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -563,7 +593,7 @@ ndb_mgm -e 'SHOW'
 - `SHOW` : le NodeId 2 doit apparaître connecté, sans état `starting` ni `not connected`.
 - **Piège** : si le node reste en `starting` trop longtemps, consulter `/var/lib/mysql-cluster/ndb_2/ndbmtd_2.log` sur VM 2.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal avant la panne)
 
 ```text
 Connected to Management Server at: localhost:1186
@@ -578,6 +608,7 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
+
 
 
 ### En conclusion
@@ -904,15 +935,15 @@ ndb_mgm -e 'SHOW'
 - `ndb_mgm -e 'SHOW'` : vérifie que le gestionnaire est de retour et que le cluster est à nouveau joignable.
 - **Piège** : même après ce redémarrage, NodeId 6 peut rester absent de `SHOW` si le gestionnaire conserve un cache de configuration ; dans ce cas, purger les fichiers de cache du gestionnaire ou redémarrer complètement le cluster.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
 [ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
@@ -989,15 +1020,15 @@ ndb_mgm -e 'SHOW'
 - Avec `NoOfReplicas = 2` et 3 nœuds de stockage, le cluster forme un node group avec les deux premières répliques ; le NodeId 6 apparaît comme nœud de stockage supplémentaire.
 - **Piège** : si NodeId 6 apparaît en `not connected`, vérifier le fichier `ndbmtd_6.log` sur VM 2 et le connect-string.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
 [ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
@@ -1026,15 +1057,15 @@ ndb_mgm -e 'SHOW'
 
 - `SHOW` : confirme que tous les nœuds attendus sont connectés.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
 [ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
@@ -1329,15 +1360,15 @@ ndb_mgm -e 'SHOW'
 - `SHOW` : liste finale des nœuds ; les 5 doivent être connectés sans état `not connected`.
 - **Piège** : si un nœud manque, vérifier son journal de démarrage et le relancer.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
 [ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)

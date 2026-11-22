@@ -962,14 +962,13 @@ Installer les composants MySQL Cluster sur les trois VM configurées au Lab-01 :
 **Exemple de commande**
 
 ```bash
-dpkg -l | grep -i -E 'mysql-cluster|ndb'
+dpkg -l
 ```
 
 **Explication de la commande**
 
-- `dpkg -l` : liste tous les paquets installés sur le système.
-- `| grep -i -E 'mysql-cluster|ndb'` : filtre la sortie pour n'afficher que les paquets liés à MySQL Cluster ou NDB, insensible à la casse.
-- **Piège** : si la commande ne retourne aucune ligne, aucun paquet MySQL Cluster n'est installé ; il faut procéder à l'installation à l'étape 4 avant de continuer.
+- `dpkg -l` : liste tous les paquets installés sur le système. La sortie complète inclut les paquets MySQL Cluster s'ils sont installés.
+- **Piège** : si aucun paquet `mysql-cluster` n'apparaît dans la liste, MySQL Cluster n'est pas installé ; il faut procéder à l'installation à l'étape 4 avant de continuer.
 
 **Résultat attendu**
 
@@ -993,14 +992,13 @@ ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL
 **Exemple de commande**
 
 ```bash
-dpkg -l | grep -i -E 'mysql-cluster-community-data-node|ndbmtd'
+dpkg -l
 ```
 
 **Explication de la commande**
 
-- `dpkg -l` : liste tous les paquets installés sur le système.
-- `| grep -i -E 'mysql-cluster-community-data-node|ndbmtd'` : filtre la sortie pour n'afficher que le paquet de nœud de données NDB.
-- **Piège** : si la commande ne retourne aucune ligne, le paquet data-node est absent ; il faut l'installer à l'étape 4 avant de démarrer les nœuds de stockage.
+- `dpkg -l` : liste tous les paquets installés sur le système. La sortie complète inclut le paquet de nœud de données NDB s'il est installé.
+- **Piège** : si aucun paquet `mysql-cluster-community-data-node` n'apparaît dans la liste, le paquet de nœud de données est absent ; il faut l'installer à l'étape 4 avant de démarrer les nœuds de stockage.
 
 **Résultat attendu**
 
@@ -1024,13 +1022,12 @@ ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL
 **Exemple de commande**
 
 ```bash
-dpkg -l | grep -i -E 'mysql-cluster-community-server|mysqld'
+dpkg -l
 ```
 
 **Explication de la commande**
 
-- `dpkg -l` : liste tous les paquets installés sur le système.
-- `| grep -i -E 'mysql-cluster-community-server|mysqld'` : filtre la sortie pour n'afficher que le paquet serveur MySQL.
+- `dpkg -l` : liste tous les paquets installés sur le système. La sortie complète inclut le paquet serveur MySQL s'il est installé.
 - **Piège** : VM 3 doit disposer du même binaire `mysqld` avec le moteur NDB que VM 1.
 
 **Résultat attendu**
@@ -1597,15 +1594,15 @@ ndb_mgm -e "SHOW"
 - Le résultat doit afficher 1 `ndb_mgmd`, 2 `ndbd` et 2 `mysqld` sans état `not connected`.
 - **Piège** : un nœud absent apparaît avec l'état `not connected` ; investiguer avant de poursuivre.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0 ; état nominal : 5 nœuds connectés, le `*` marque le nœud de stockage préféré)
 
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
 [ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
@@ -1626,16 +1623,15 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-ndb_config --query-all | grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'
+ndb_config --query-all
 ```
 
 **Explication de la commande**
 
-- `ndb_config --query-all` : retourne tous les paramètres de configuration de tous les nœuds.
-- `| grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'` : filtre les paramètres clés de topologie et de dimensionnement.
+- `ndb_config --query-all` : retourne tous les paramètres de configuration de tous les nœuds. La sortie inclut `NodeId`, `HostName`, `NoOfReplicas`, `DataMemory` et `IndexMemory` pour chaque nœud.
 - `NoOfReplicas = 2` doit apparaître pour les nœuds de stockage.
 - `DataMemory` et `IndexMemory` montrent la mémoire allouée par node de stockage.
-- **Piège** : la sortie complète est très volumineuse ; le filtrage par `grep` concentre l'attention sur les paramètres pertinents.
+- **Piège** : la sortie complète est très volumineuse ; rechercher les paramètres pertinents dans la liste affichée.
 
 **Résultat attendu**
 

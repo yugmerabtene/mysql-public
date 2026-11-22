@@ -159,14 +159,14 @@ ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
 - Un usage proche de 100 % est une alerte de saturation ; prévoir l'augmentation des paramètres dans `config.ini`.
 - **Piège** : sur un cluster vide, l'usage est proche de 0 % ; ce n'est pas une anomalie en début de lab.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
 Connected to Management Server at: localhost:1186
-Node 2: Data usage is 0%(11 32K pages of total 12290)
-Node 2: Index usage is 0%(6 32K pages of total 12285)
-Node 3: Data usage is 0%(11 32K pages of total 12290)
-Node 3: Index usage is 0%(6 32K pages of total 12285)
+Node 2: Data usage is 0%(26 32K pages of total 24576)
+Node 2: Index usage is 0%(8 32K pages of total 24558)
+Node 3: Data usage is 0%(26 32K pages of total 24575)
+Node 3: Index usage is 0%(9 32K pages of total 24558)
 ```
 
 #### Étape 2b — Décrire une table NDB avec ndb_desc
@@ -542,7 +542,6 @@ ndb_restore -c 192.168.56.10 -b 1 --restore_meta --nodeid=2 --backup-path=/var/l
 - `--restore_meta` : restaure le schéma (métadonnées) une seule fois (recommandé pour un seul node).
 - `--nodeid=2` : identifie le nœud de stockage source de la sauvegarde.
 - `--backup-path` : chemin vers les fichiers de sauvegarde.
-- `| head -30` : limite la sortie aux premières lignes (statistiques de restauration).
 - **Piège** : `ndb_restore` nécessite que la table cible existe sur un nœud SQL avec le moteur NDB ; sinon la restauration est rejetée. `--restore_meta` ne doit être exécuté qu'une seule fois.
 
 **Résultat attendu**
@@ -967,14 +966,13 @@ L'accès aux VM se fait en SSH (mot de passe dans `.env`, non affiché en clair)
 **Exemple de commande**
 
 ```bash
-dpkg -l | grep -i -E 'mysql-cluster-manager|mcm' || echo 'paquet mcm non installé'
+dpkg -l
 ```
 
 **Explication de la commande**
 
-- `dpkg -l | grep -i -E 'mysql-cluster-manager|mcm'` : liste les paquets installés et filtre sur MCM.
-- `|| echo 'paquet mcm non installé'` : affiche un message explicite si aucun paquet MCM n'est trouvé.
-- **Piège** : l'absence de paquet confirme que la commande `mcm` est introuvable ; MCM est un produit commercial Oracle hors périmètre du lab.
+- `dpkg -l` : liste tous les paquets installés sur le système. La sortie inclut les paquets MySQL Cluster Manager s'ils sont installés.
+- **Piège** : si aucun paquet `mysql-cluster-manager` n'apparaît, MCM n'est pas installé ; ce produit est commercial Oracle et hors périmètre du lab.
 
 **Résultat attendu**
 

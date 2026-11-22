@@ -427,21 +427,20 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Prérequis** — Nœuds de stockage redémarrés (étape 4).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
 **Exemple de commande**
 
 ```bash
-ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfReplicas'
+ndb_config --query-all
 ```
+
 **Explication de la commande**
 
-- `ndb_config --query-all | grep` : affiche `DataMemory`, `IndexMemory` et `NoOfReplicas` pour vérifier la prise en compte.
+- `ndb_config --query-all` : retourne tous les paramètres de configuration de tous les nœuds. La sortie inclut `DataMemory`, `IndexMemory` et `NoOfReplicas` pour chaque nœud.
 - **Piège** : si les anciennes valeurs persistent, les nœuds n'ont pas été correctement redémarrés avec la nouvelle `config.ini`.
 
 **Résultat attendu**
 
-```text
-
-```
 ### En conclusion
 Ce lab couvre l'ajustement de `DataMemory` et `IndexMemory`, la vérification de la RAM et du disque de chaque VM, le redémarrage des nœuds de stockage pour appliquer les changements, et la confirmation de la nouvelle configuration. Les opérations `NDB-23` et `NDB-24` (paramètres performance et détection de goulots) sont réalisées. Renvoi : passer au Lab-11 pour le sharding, le partitionnement et les gros volumes.
 ## Lab-11 — Sharding, partitionnement et gros volumes
@@ -577,14 +576,14 @@ ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
 
 - `ALL REPORT MEMORYUSAGE` : détecte une saturation de `DataMemory`/`IndexMemory`.
 
-**Résultat attendu**
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
 Connected to Management Server at: localhost:1186
-Node 2: Data usage is 15%(1844 32K pages of total 12290)
-Node 2: Index usage is 5%(62 32K pages of total 12285)
-Node 3: Data usage is 15%(1844 32K pages of total 12290)
-Node 3: Index usage is 5%(62 32K pages of total 12285)
+Node 2: Data usage is 0%(26 32K pages of total 24576)
+Node 2: Index usage is 0%(8 32K pages of total 24558)
+Node 3: Data usage is 0%(26 32K pages of total 24575)
+Node 3: Index usage is 0%(9 32K pages of total 24558)
 ```
 
 #### Étape 3b — Vérifier les paramètres de configuration avec ndb_config
@@ -596,26 +595,21 @@ Node 3: Index usage is 5%(62 32K pages of total 12285)
 **Prérequis** — Cluster démarré, outils de supervision disponibles.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
 **Exemple de commande**
 
 ```bash
-ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfFragmentLogParts|RedoBuffer|NoOfReplicas'
+ndb_config --query-all
 ```
+
 **Explication de la commande**
 
-- `ndb_config --query-all | grep` : affiche `NoOfFragmentLogParts` (écriture parallèle des redo logs) et `RedoBuffer` (tampon redo).
+- `ndb_config --query-all` : retourne tous les paramètres de configuration de tous les nœuds. La sortie inclut `DataMemory`, `IndexMemory`, `NoOfFragmentLogParts`, `RedoBuffer` et `NoOfReplicas` pour chaque nœud.
 - Un `NoOfFragmentLogParts` faible limite l'écriture parallèle sur disque.
 - **Piège** : sur gros volumes, augmenter `NoOfFragmentLogParts` et `RedoBuffer` améliore le taux de commit.
 
 **Résultat attendu**
 
-```text
-DataMemory = 512M
-IndexMemory = 256M
-NoOfFragmentLogParts = 4
-RedoBuffer = 32M
-NoOfReplicas = 2
-```
 #### Étape 4 — Préconiser la montée en charge par ajout de nœuds de stockage
 **But** — Expliquer comment ajouter des nœuds de stockage pour créer plusieurs node groups et répartir le sharding sur plus de machines, comme préconisé par le livre pour la scalabilité horizontale.
 **Machine** — VM 2 (192.168.56.11) pour préparer un nouveau répertoire de stockage.
