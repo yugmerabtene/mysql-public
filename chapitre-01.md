@@ -8,7 +8,7 @@
 
 - Machine principale : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
-- Données : fictives, marquées `LAB-ONLY` (uniquement pour le laboratoire isolé).
+- Données : fictives, marquées `Lab` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
 - Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
@@ -44,7 +44,7 @@
 | Quorum | Règle de décision par majorité qui empêche deux partitions d'agir simultanément. |
 | Arbitrage | Mécanisme par lequel un nœud tranche en cas de perte de communication entre node groups. |
 | Connect-string | Adresse du nœud de gestion donnée à chaque node pour rejoindre le cluster (ex. `192.168.56.10`). |
-| LAB-ONLY | Mot de passe factice (uniquement pour le laboratoire) |
+| Lab | Mot de passe factice (uniquement pour le laboratoire) |
 | Auto-sharding | Répartition automatique des fragments de données sur les nœuds de stockage par le moteur NDB. |
 
 ## Introduction à MySQL Cluster — Architecture et composants (module 1.0)
@@ -231,45 +231,73 @@ Nettoyer et configurer manuellement les trois machines virtuelles du laboratoire
 **Exemple de commande**
 
 ```bash
-rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql 2>/dev/null; apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* 2>/dev/null || true; apt-get autoremove -y 2>/dev/null || true; echo 'nettoyage VM 1 terminé'
+rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 ```
 
 **Explication de la commande**
 
 - `rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql` : supprime les répertoires et fichiers de configuration MySQL/Cluster précédents.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
+```
+
+**Explication de la commande**
+
 - `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration.
+- `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get autoremove -y || true
+```
+
+**Explication de la commande**
+
 - `apt-get autoremove -y` : supprime les dépendances inutiles après la purge.
-- `2>/dev/null` : masque les erreurs attendues si un répertoire ou paquet n'existe pas (premier nettoyage).
-- `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête la chaîne de commandes.
+- `|| true` : évite qu'une absence de dépendances inutiles n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+echo 'nettoyage VM 1 terminé'
+```
+
+**Explication de la commande**
+
 - `echo 'nettoyage VM 1 terminé'` : confirme la fin de l'étape.
 - **Piège** : ne pas purger `mysql-common` si d'autres paquets système en dépendent ; vérifier après nettoyage qu'aucun processus `mysqld` ou `ndbmtd` ne reste en cours.
 
 **Résultat attendu**
 
 ```text
-Lecture des listes de paquets…
-Construction de l'arbre des dépendances…
-Lecture des informations d'état…
-Le paquet « mysql-cluster-commercial-client » n'est pas installé, et ne peut donc être supprimé
-Le paquet « mysql-server-8.0 » n'est pas installé, et ne peut donc être supprimé
-Les paquets suivants seront ENLEVÉS :
-  mysql-client* mysql-cluster-community-client*
-  mysql-cluster-community-client-core* mysql-cluster-community-client-plugins*
-  mysql-cluster-community-management-server* mysql-cluster-community-server*
-  mysql-cluster-community-server-core*
-0 mis à jour, 0 nouvellement installés, 7 à enlever et 40 non mis à jour.
-Après cette opération, 445 Mo d'espace disque seront libérés.
-Suppression de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
-Suppression de mysql-client (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-client (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-client-core (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-client-plugins (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-management-server (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-server-core (8.0.50-1ubuntu24.04) …
-Traitement des actions différées (« triggers ») pour man-db (2.12.0-4build2) …
-Traitement des actions différées (« triggers ») pour libc-bin (2.39-0ubuntu8.12) …
-Purge des fichiers de configuration de mysql-cluster-community-client (8.0.50-1ubuntu24.04) …
-Purge des fichiers de configuration de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
 nettoyage VM 1 terminé
 # rc=0
 ```
@@ -287,7 +315,25 @@ nettoyage VM 1 terminé
 **Exemple de commande**
 
 ```bash
-hostnamectl set-hostname gestion-sql; tee /etc/netplan/01-netcfg.yaml > /dev/null << 'YEOF'
+hostnamectl set-hostname gestion-sql
+```
+
+**Explication de la commande**
+
+- `hostnamectl set-hostname gestion-sql` : définit le nom d'hôte de VM 1.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+tee /etc/netplan/01-netcfg.yaml << 'YEOF'
 network:
   version: 2
   ethernets:
@@ -298,28 +344,73 @@ network:
       nameservers:
         addresses: [192.168.56.1, 8.8.8.8]
 YEOF
-netplan apply; systemctl enable --now ssh; echo 'config VM 1 terminé'
 ```
 
 **Explication de la commande**
 
-- `hostnamectl set-hostname gestion-sql` : définit le nom d'hôte de VM 1.
-- `tee /etc/netplan/01-netcfg.yaml` : rédige la configuration netplan avec IP statique `192.168.56.10/24`, DHCP désactivé, passerelle `192.168.56.1`.
-- `netplan apply` : applique la configuration réseau sans redémarrage.
+- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.10/24`, le DHCP désactivé, la passerelle `192.168.56.1` et les serveurs DNS.
+- Le bloc entre `<< 'YEOF'` et `YEOF` est le contenu écrit dans le fichier (les guillemets autour de `YEOF` interdisent l'expansion des variables).
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+netplan apply
+```
+
+**Explication de la commande**
+
+- `netplan apply` : applique la configuration réseau sans redémarrage de la VM.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+systemctl enable --now ssh
+```
+
+**Explication de la commande**
+
 - `systemctl enable --now ssh` : active et démarre le service SSH pour l'administration à distance.
+
+**Résultat attendu**
+
+```text
+Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+echo 'config VM 1 terminé'
+```
+
+**Explication de la commande**
+
 - `echo 'config VM 1 terminé'` : confirme la fin de l'étape.
 - **Piège** : le nom de l'interface host-only peut différer (`enp0s8`, `eth1`, etc.) ; vérifier avec `ip -br link show` avant d'écrire la configuration netplan.
 
 **Résultat attendu**
 
 ```text
-** (generate:10124): WARNING **: Permissions for /etc/netplan/01-netcfg.yaml are too open. Netplan configuration should NOT be accessible by others.
-** (generate:10124): WARNING **: `gateway4` has been deprecated, use default routes instead.
-See the 'Default routes' section of the documentation for more details.
-** (process:10122): WARNING **: Permissions for /etc/netplan/01-netcfg.yaml are too open. Netplan configuration should NOT be accessible by others.
-** (process:10122): WARNING **: `gateway4` has been deprecated, use default routes instead.
-Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
-Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
 config VM 1 terminé
 # rc=0
 ```
@@ -337,37 +428,73 @@ config VM 1 terminé
 **Exemple de commande**
 
 ```bash
-rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql 2>/dev/null; apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* 2>/dev/null || true; apt-get autoremove -y 2>/dev/null || true; echo 'nettoyage VM 2 terminé'
+rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 ```
 
 **Explication de la commande**
 
-- Identique à l'étape 1, ciblant VM 2 (`192.168.56.11`).
+- `rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql` : supprime les répertoires et fichiers de configuration MySQL/Cluster précédents sur VM 2.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
+```
+
+**Explication de la commande**
+
+- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration sur VM 2.
+- `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get autoremove -y || true
+```
+
+**Explication de la commande**
+
+- `apt-get autoremove -y` : supprime les dépendances inutiles après la purge sur VM 2.
+- `|| true` : évite qu'une absence de dépendances inutiles n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+echo 'nettoyage VM 2 terminé'
+```
+
+**Explication de la commande**
+
+- `echo 'nettoyage VM 2 terminé'` : confirme la fin de l'étape sur VM 2.
 - **Piège** : les deux nœuds de stockage de VM 2 utiliseront des répertoires distincts (`ndb_2`, `ndb_3`) au Lab-02 ; s'assurer que `/var/lib/mysql-cluster` est bien supprimé avant.
 
 **Résultat attendu**
 
 ```text
-Lecture des listes de paquets…
-Construction de l'arbre des dépendances…
-Lecture des informations d'état…
-Le paquet suivant a été installé automatiquement et n'est plus nécessaire :
-  libclass-methodmaker-perl
-Les paquets suivants seront ENLEVÉS :
-  mysql-cluster-community-data-node*
-0 mis à jour, 0 nouvellement installés, 1 à enlever et 40 non mis à jour.
-Après cette opération, 26,9 Mo d'espace disque seront libérés.
-Suppression de mysql-cluster-community-data-node (8.0.50-1ubuntu24.04) …
-Traitement des actions différées (« triggers ») pour man-db (2.12.0-4build2) …
-Lecture des listes de paquets…
-Construction de l'arbre des dépendances…
-Lecture des informations d'état…
-Les paquets suivants seront ENLEVÉS :
-  libclass-methodmaker-perl
-0 mis à jour, 0 nouvellement installés, 1 à enlever et 40 non mis à jour.
-Après cette opération, 21,9 Mo d'espace disque seront libérés.
-Suppression de libclass-methodmaker-perl (2.24-2build6) …
-Traitement des actions différées (« triggers ») pour man-db (2.12.0-4build2) …
 nettoyage VM 2 terminé
 # rc=0
 ```
@@ -385,7 +512,25 @@ nettoyage VM 2 terminé
 **Exemple de commande**
 
 ```bash
-hostnamectl set-hostname stockage; tee /etc/netplan/01-netcfg.yaml > /dev/null << 'YEOF'
+hostnamectl set-hostname stockage
+```
+
+**Explication de la commande**
+
+- `hostnamectl set-hostname stockage` : définit le nom d'hôte de VM 2.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+tee /etc/netplan/01-netcfg.yaml << 'YEOF'
 network:
   version: 2
   ethernets:
@@ -396,24 +541,73 @@ network:
       nameservers:
         addresses: [192.168.56.1, 8.8.8.8]
 YEOF
-netplan apply; systemctl enable --now ssh; echo 'config VM 2 terminé'
 ```
 
 **Explication de la commande**
 
-- Identique à l'étape 2, ciblant VM 2 avec l'IP `192.168.56.11/24` et le hostname `stockage`.
+- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.11/24`, le DHCP désactivé, la passerelle `192.168.56.1` et les serveurs DNS.
+- Le bloc entre `<< 'YEOF'` et `YEOF` est le contenu écrit dans le fichier (les guillemets autour de `YEOF` interdisent l'expansion des variables).
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+netplan apply
+```
+
+**Explication de la commande**
+
+- `netplan apply` : applique la configuration réseau sans redémarrage de la VM.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+systemctl enable --now ssh
+```
+
+**Explication de la commande**
+
+- `systemctl enable --now ssh` : active et démarre le service SSH pour l'administration à distance.
+
+**Résultat attendu**
+
+```text
+Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+echo 'config VM 2 terminé'
+```
+
+**Explication de la commande**
+
+- `echo 'config VM 2 terminé'` : confirme la fin de l'étape sur VM 2.
 - **Piège** : vérifier le nom de l'interface host-only avec `ip -br link show` avant d'appliquer netplan.
 
 **Résultat attendu**
 
 ```text
-** (generate:5697): WARNING **: Permissions for /etc/netplan/01-netcfg.yaml are too open. Netplan configuration should NOT be accessible by others.
-** (generate:5697): WARNING **: `gateway4` has been deprecated, use default routes instead.
-See the 'Default routes' section of the documentation for more details.
-** (process:5695): WARNING **: Permissions for /etc/netplan/01-netcfg.yaml are too open. Netplan configuration should NOT be accessible by others.
-** (process:5695): WARNING **: `gateway4` has been deprecated, use default routes instead.
-Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
-Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
 config VM 2 terminé
 # rc=0
 ```
@@ -431,36 +625,73 @@ config VM 2 terminé
 **Exemple de commande**
 
 ```bash
-rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql 2>/dev/null; apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* 2>/dev/null || true; apt-get autoremove -y 2>/dev/null || true; echo 'nettoyage VM 3 terminé'
+rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 ```
 
 **Explication de la commande**
 
-- Identique à l'étape 1, ciblant VM 3 (`192.168.56.12`).
+- `rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql` : supprime les répertoires et fichiers de configuration MySQL/Cluster précédents sur VM 3.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
+```
+
+**Explication de la commande**
+
+- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration sur VM 3.
+- `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get autoremove -y || true
+```
+
+**Explication de la commande**
+
+- `apt-get autoremove -y` : supprime les dépendances inutiles après la purge sur VM 3.
+- `|| true` : évite qu'une absence de dépendances inutiles n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+echo 'nettoyage VM 3 terminé'
+```
+
+**Explication de la commande**
+
+- `echo 'nettoyage VM 3 terminé'` : confirme la fin de l'étape sur VM 3.
 - **Piège** : VM 3 est un clone de VM 1 ; s'assurer que l'ancien hostname et l'ancienne configuration MySQL sont supprimés.
 
 **Résultat attendu**
 
 ```text
-Lecture des listes de paquets…
-Construction de l'arbre des dépendances…
-Lecture des informations d'état…
-Les paquets suivants seront ENLEVÉS :
-  mysql-client* mysql-cluster-community-client*
-  mysql-cluster-community-client-core* mysql-cluster-community-client-plugins*
-  mysql-cluster-community-server* mysql-cluster-community-server-core*
-0 mis à jour, 0 nouvellement installés, 6 à enlever et 40 non mis à jour.
-Après cette opération, 435 Mo d'espace disque seront libérés.
-Suppression de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
-Suppression de mysql-client (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-client (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-client-core (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-client-plugins (8.0.50-1ubuntu24.04) …
-Suppression de mysql-cluster-community-server-core (8.0.50-1ubuntu24.04) …
-Traitement des actions différées (« triggers ») pour man-db (2.12.0-4build2) …
-Traitement des actions différées (« triggers ») pour libc-bin (2.39-0ubuntu8.12) …
-Purge des fichiers de configuration de mysql-cluster-community-client (8.0.50-1ubuntu24.04) …
-Purge des fichiers de configuration de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
 nettoyage VM 3 terminé
 # rc=0
 ```
@@ -478,7 +709,25 @@ nettoyage VM 3 terminé
 **Exemple de commande**
 
 ```bash
-hostnamectl set-hostname mysql-node3; tee /etc/netplan/01-netcfg.yaml > /dev/null << 'YEOF'
+hostnamectl set-hostname mysql-node3
+```
+
+**Explication de la commande**
+
+- `hostnamectl set-hostname mysql-node3` : définit le nom d'hôte de VM 3.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+tee /etc/netplan/01-netcfg.yaml << 'YEOF'
 network:
   version: 2
   ethernets:
@@ -489,24 +738,73 @@ network:
       nameservers:
         addresses: [192.168.56.1, 8.8.8.8]
 YEOF
-netplan apply; systemctl enable --now ssh; echo 'config VM 3 terminé'
 ```
 
 **Explication de la commande**
 
-- Identique à l'étape 2, ciblant VM 3 avec l'IP `192.168.56.12/24` et le hostname `mysql-node3`.
+- `tee /etc/netplan/01-netcfg.yaml` : rédige le fichier de configuration netplan avec l'IP statique `192.168.56.12/24`, le DHCP désactivé, la passerelle `192.168.56.1` et les serveurs DNS.
+- Le bloc entre `<< 'YEOF'` et `YEOF` est le contenu écrit dans le fichier (les guillemets autour de `YEOF` interdisent l'expansion des variables).
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+netplan apply
+```
+
+**Explication de la commande**
+
+- `netplan apply` : applique la configuration réseau sans redémarrage de la VM.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+systemctl enable --now ssh
+```
+
+**Explication de la commande**
+
+- `systemctl enable --now ssh` : active et démarre le service SSH pour l'administration à distance.
+
+**Résultat attendu**
+
+```text
+Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+echo 'config VM 3 terminé'
+```
+
+**Explication de la commande**
+
+- `echo 'config VM 3 terminé'` : confirme la fin de l'étape sur VM 3.
 - **Piège** : vérifier le nom de l'interface host-only avec `ip -br link show` avant d'appliquer netplan.
 
 **Résultat attendu**
 
 ```text
-** (generate:5961): WARNING **: Permissions for /etc/netplan/01-netcfg.yaml are too open. Netplan configuration should NOT be accessible by others.
-** (generate:5961): WARNING **: `gateway4` has been deprecated, use default routes instead.
-See the 'Default routes' section of the documentation for more details.
-** (process:5959): WARNING **: Permissions for /etc/netplan/01-netcfg.yaml are too open. Netplan configuration should NOT be accessible by others.
-** (process:5959): WARNING **: `gateway4` has been deprecated, use default routes instead.
-Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
-Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
 config VM 3 terminé
 # rc=0
 ```
@@ -703,20 +1001,18 @@ Installer les composants MySQL Cluster sur les trois VM configurées au Lab-01 :
 **Exemple de commande**
 
 ```bash
-dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster|ndb' || echo 'aucun paquet ndb'
+dpkg -l | grep -i -E 'mysql-cluster|ndb'
 ```
 
 **Explication de la commande**
 
-- `dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster|ndb'` : liste les paquets installés et filtre ceux de MySQL Cluster (`mysql-cluster-community-*`).
-- `grep -i -E 'mysql-cluster|ndb'` : filtre insensible à la casse sur les noms de paquets cluster ou ndb.
-- `|| echo 'aucun paquet ndb'` : affiche un message explicite si aucun paquet cluster n'est trouvé.
-- **Piège** : si un paquet manque, l'installer depuis le dépôt officiel MySQL configuré sur le nœud avant de poursuivre.
+- `dpkg -l` : liste tous les paquets installés sur le système.
+- `| grep -i -E 'mysql-cluster|ndb'` : filtre la sortie pour n'afficher que les paquets liés à MySQL Cluster ou NDB, insensible à la casse.
+- **Piège** : si la commande ne retourne aucune ligne, aucun paquet MySQL Cluster n'est installé ; il faut procéder à l'installation à l'étape 4 avant de continuer.
 
 **Résultat attendu**
 
 ```text
-aucun paquet ndb
 # rc=0
 ```
 
@@ -733,18 +1029,18 @@ aucun paquet ndb
 **Exemple de commande**
 
 ```bash
-dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster-community-data-node|ndbmtd' || echo 'paquet data-node manquant'
+dpkg -l | grep -i -E 'mysql-cluster-community-data-node|ndbmtd'
 ```
 
 **Explication de la commande**
 
-- `dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster-community-data-node|ndbmtd'` : vérifie la présence du paquet de nœud de données sur VM 2.
-- **Piège** : si le paquet data-node est absent, l'installer depuis le dépôt MySQL avant le démarrage des nœuds de stockage.
+- `dpkg -l` : liste tous les paquets installés sur le système.
+- `| grep -i -E 'mysql-cluster-community-data-node|ndbmtd'` : filtre la sortie pour n'afficher que le paquet de nœud de données NDB.
+- **Piège** : si la commande ne retourne aucune ligne, le paquet data-node est absent ; il faut l'installer à l'étape 4 avant de démarrer les nœuds de stockage.
 
 **Résultat attendu**
 
 ```text
-aucun paquet ndb
 # rc=0
 ```
 
@@ -761,18 +1057,18 @@ aucun paquet ndb
 **Exemple de commande**
 
 ```bash
-dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster-community-server|mysqld' || echo 'paquet serveur manquant'
+dpkg -l | grep -i -E 'mysql-cluster-community-server|mysqld'
 ```
 
 **Explication de la commande**
 
-- `dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster-community-server|mysqld'` : vérifie la présence du paquet serveur MySQL sur VM 3.
+- `dpkg -l` : liste tous les paquets installés sur le système.
+- `| grep -i -E 'mysql-cluster-community-server|mysqld'` : filtre la sortie pour n'afficher que le paquet serveur MySQL.
 - **Piège** : VM 3 doit disposer du même binaire `mysqld` avec le moteur NDB que VM 1.
 
 **Résultat attendu**
 
 ```text
-aucun paquet ndb
 # rc=0
 ```
 
@@ -789,14 +1085,31 @@ aucun paquet ndb
 **Exemple de commande**
 
 ```bash
-apt-get update && apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+apt-get update
 ```
 
 **Explication de la commande**
 
-- `apt-get update` : rafraîchit la liste des paquets depuis le dépôt configuré.
-- `apt-get install -y ...` : installe `ndb_mgmd` (gestion), `ndbmtd` (stockage), `mysqld` (SQL) et le client MySQL Cluster.
-- Sur VM 1 : serveur de gestion + serveur SQL + client. Sur VM 2 : nœud de données uniquement. Sur VM 3 : serveur SQL + client.
+- `apt-get update` : rafraîchit la liste des paquets depuis le dépôt configuré sur VM 1.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
+**Explication de la commande**
+
+- `apt-get install -y ...` : installe `ndb_mgmd` (gestion), `ndbmtd` (stockage), `mysqld` (SQL) et le client MySQL Cluster sur VM 1.
+- Sur VM 1 : serveur de gestion + serveur SQL + client.
 - **Piège** : les paquets sont installés depuis le dépôt MySQL configuré ; une fois terminé, les nœuds restent sur le réseau host-only vboxnet0 (pas d'Internet permanent sur les nœuds).
 
 **Résultat attendu**
@@ -819,12 +1132,31 @@ Paramétrage de mysql-cluster-community-management-server (8.0.50-1ubuntu24.04) 
 **Exemple de commande**
 
 ```bash
-apt-get update && apt-get install -y mysql-cluster-community-data-node
+apt-get update
 ```
 
 **Explication de la commande**
 
-- Même principe que VM 1, mais seul le paquet de nœud de données (`ndbmtd`) est nécessaire sur le nœud de stockage.
+- `apt-get update` : rafraîchit la liste des paquets depuis le dépôt configuré sur VM 2.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get install -y mysql-cluster-community-data-node
+```
+
+**Explication de la commande**
+
+- `apt-get install -y mysql-cluster-community-data-node` : installe uniquement le paquet de nœud de données (`ndbmtd`) sur le nœud de stockage VM 2.
+- Même principe que VM 1, mais sans le serveur SQL inutile sur un nœud dédié au stockage.
 - **Piège** : ne pas installer le serveur SQL inutilement sur un nœud dédié au stockage.
 
 **Résultat attendu**
@@ -844,11 +1176,30 @@ Paramétrage de mysql-cluster-community-data-node (8.0.50-1ubuntu24.04) …
 **Exemple de commande**
 
 ```bash
-apt-get update && apt-get install -y mysql-cluster-community-server mysql-cluster-client
+apt-get update
 ```
 
 **Explication de la commande**
 
+- `apt-get update` : rafraîchit la liste des paquets depuis le dépôt configuré sur VM 3.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get install -y mysql-cluster-community-server mysql-cluster-client
+```
+
+**Explication de la commande**
+
+- `apt-get install -y mysql-cluster-community-server mysql-cluster-client` : installe le serveur SQL et le client sur VM 3 (second nœud SQL).
 - Même principe que VM 1, mais sans le serveur de gestion (VM 3 est un second nœud SQL).
 - **Piège** : le second nœud SQL doit disposer du même binaire `mysqld` avec le moteur NDB que VM 1.
 
@@ -911,18 +1262,50 @@ HostName = 192.168.56.10
 NodeId = 5
 HostName = 192.168.56.12
 EOF
-cat /tmp/config.ini > /var/lib/mysql-cluster/config.ini
+```
+
+**Explication de la commande**
+
+- `cat > /tmp/config.ini << 'EOF'` : rédige le fichier `config.ini` temporaire jusqu'au marqueur `EOF` (les guillemets autour de `EOF` interdisent l'expansion des variables).
+- `[ndb_mgmd] NodeId = 1` : définit le nœud de gestion avec l'identifiant unique 1 sur `192.168.56.10`.
+- `[ndbd] NodeId = 2` et `NodeId = 3` : définissent les deux nœuds de stockage, tous deux sur `192.168.56.11`, avec des identifiants uniques 2 et 3.
+- `[mysqld] NodeId = 4` et `NodeId = 5` : définissent les deux nœuds SQL, sur `192.168.56.10` et `192.168.56.12`.
+- `NoOfReplicas = 2` : chaque fragment de données existe en deux exemplaires pour tolérer la perte d'un nœud de stockage.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
+
+**Exemple de commande**
+
+```bash
+cp /tmp/config.ini /var/lib/mysql-cluster/config.ini
+```
+
+**Explication de la commande**
+
+- `cp /tmp/config.ini /var/lib/mysql-cluster/config.ini` : installe le fichier de topologie sur VM 1 dans le répertoire de données du gestionnaire.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
+
+**Exemple de commande**
+
+```bash
 cat /var/lib/mysql-cluster/config.ini
 ```
 
 **Explication de la commande**
 
-- `cat > /tmp/config.ini << 'EOF'` : rédige le fichier `config.ini` localement jusqu'au marqueur `EOF` (les guillemets autour d'EOF interdisent l'expansion des variables).
-- `[ndb_mgmd] NodeId = 1` : définit le nœud de gestion avec l'identifiant unique 1 sur `192.168.56.10`.
-- `[ndbd] NodeId = 2` et `NodeId = 3` : définissent les deux nœuds de stockage, tous deux sur `192.168.56.11`, avec des identifiants uniques 2 et 3.
-- `[mysqld] NodeId = 4` et `NodeId = 5` : définissent les deux nœuds SQL, sur `192.168.56.10` et `192.168.56.12`.
-- `NoOfReplicas = 2` : chaque fragment de données existe en deux exemplaires pour tolérer la perte d'un nœud de stockage.
-- `cat /tmp/config.ini > /var/lib/mysql-cluster/config.ini` : installe le fichier sur VM 1 dans le répertoire de données du gestionnaire.
 - `cat /var/lib/mysql-cluster/config.ini` : affiche le fichier installé pour en vérifier le contenu avant le démarrage.
 - **Piège** : les `NodeId` doivent être uniques dans tout le cluster ; les deux nœuds de stockage sur la même VM doivent utiliser des répertoires de données distincts.
 
@@ -977,14 +1360,31 @@ HostName = 192.168.56.12
 **Exemple de commande**
 
 ```bash
-mkdir -p /var/lib/mysql-cluster/ndb_2 /var/lib/mysql-cluster/ndb_3 && ls -la /var/lib/mysql-cluster/
+mkdir -p /var/lib/mysql-cluster/ndb_2 /var/lib/mysql-cluster/ndb_3
 ```
 
 **Explication de la commande**
 
-- `mkdir -p …/ndb_2 …/ndb_3` : crée les deux répertoires de données avec les privilèges root.
-- `ls -la /var/lib/mysql-cluster/` : affiche le contenu du répertoire pour confirmer la présence de `ndb_2` et `ndb_3`.
+- `mkdir -p /var/lib/mysql-cluster/ndb_2 /var/lib/mysql-cluster/ndb_3` : crée les deux répertoires de données avec les privilèges root.
 - **Piège** : les deux nœuds de stockage sur la même VM doivent impérativement utiliser des répertoires de données distincts, sinon leurs fichiers entrent en collision au démarrage.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
+
+**Exemple de commande**
+
+```bash
+ls -la /var/lib/mysql-cluster/
+```
+
+**Explication de la commande**
+
+- `ls -la /var/lib/mysql-cluster/` : affiche le contenu du répertoire pour confirmer la présence de `ndb_2` et `ndb_3`.
 
 **Résultat attendu**
 
@@ -1041,17 +1441,69 @@ MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 **Exemple de commande**
 
 ```bash
-(cd /var/lib/mysql-cluster/ndb_2 && nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log 2>&1 &) && (cd /var/lib/mysql-cluster/ndb_3 && nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_3.log 2>&1 &)
+cd /var/lib/mysql-cluster/ndb_2
 ```
 
 **Explication de la commande**
 
 - `cd /var/lib/mysql-cluster/ndb_2` : se place dans le répertoire dédié du node 2 avant le démarrage.
-- `nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log 2>&1 &` : lance `ndbmtd` en arrière-plan avec le connect-string du gestionnaire et l'initialisation propre du stockage.
-- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion (équivalent du connect-string du livre).
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
+
+**Exemple de commande**
+
+```bash
+nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
+```
+
+**Explication de la commande**
+
+- `nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &` : lance `ndbmtd` (node 2) en arrière-plan, détaché du terminal, avec le connect-string du gestionnaire et l'initialisation propre du stockage.
+- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion.
 - `--initial` : initialise le stockage du node ; à n'utiliser qu'au premier démarrage.
 - `&` : détache le processus pour qu'il tourne en arrière-plan.
-- La même commande est répétée pour `ndb_3` avec `--initial`.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
+
+**Exemple de commande**
+
+```bash
+cd /var/lib/mysql-cluster/ndb_3
+```
+
+**Explication de la commande**
+
+- `cd /var/lib/mysql-cluster/ndb_3` : se place dans le répertoire dédié du node 3 avant le démarrage.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_3
+
+**Exemple de commande**
+
+```bash
+nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
+```
+
+**Explication de la commande**
+
+- `nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &` : lance `ndbmtd` (node 3) en arrière-plan, détaché du terminal, avec le connect-string du gestionnaire et l'initialisation propre du stockage.
 - **Piège** : `--initial` réinitialise le stockage ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver. Les deux nodes sur VM 2 utilisent des répertoires distincts (`ndb_2`, `ndb_3`).
 
 **Résultat attendu**
@@ -1073,7 +1525,7 @@ MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 **Exemple de commande**
 
 ```bash
-nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld-4.log 2>&1 &
+nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize &
 ```
 
 **Explication de la commande**
@@ -1082,7 +1534,7 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 - `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion pour rejoindre le cluster.
 - `--user=mysql` : exécute le processus sous l'utilisateur `mysql` (pratique de moindre privilège).
 - `--daemonize` : lance `mysqld` en arrière-plan (démon).
-- `> /tmp/mysqld-4.log 2>&1 &` : redirige les journaux vers un fichier et détache le processus.
+- `&` : détache le processus pour qu'il tourne en arrière-plan.
 - **Piège** : si le datadir MySQL n'est pas initialisé (`mysqld --initialize` préalable), le démarrage échoue. Ne pas démarrer les nœuds SQL avant les nœuds de stockage.
 
 **Résultat attendu**
@@ -1096,12 +1548,29 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Exemple de commande**
 
 ```bash
-nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld-5.log 2>&1 &; sleep 5; echo 'démarrage des nœuds SQL terminé'
+nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize &
 ```
 
 **Explication de la commande**
 
 - Identique à l'étape précédente, ciblant le second nœud SQL (NodeId 5) sur VM 3.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+
+**Explication de la commande**
+
 - `sleep 5` : laisse le temps aux nœuds SQL de se connecter au gestionnaire.
 - `echo 'démarrage des nœuds SQL terminé'` : confirme la fin de l'étape.
 
@@ -1164,16 +1633,15 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-ndb_config --query-all 2>&1 | grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'
+ndb_config --query-all | grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'
 ```
 
 **Explication de la commande**
 
 - `ndb_config --query-all` : retourne tous les paramètres de configuration de tous les nœuds.
-- `grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'` : filtre les paramètres clés de topologie et de dimensionnement.
+- `| grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'` : filtre les paramètres clés de topologie et de dimensionnement.
 - `NoOfReplicas = 2` doit apparaître pour les nœuds de stockage.
 - `DataMemory` et `IndexMemory` montrent la mémoire allouée par node de stockage.
-- `2>&1` : redirige stderr vers stdout pour que le filtre `grep` voie également les éventuelles erreurs.
 - **Piège** : la sortie complète est très volumineuse ; le filtrage par `grep` concentre l'attention sur les paramètres pertinents.
 
 **Résultat attendu**
@@ -1215,23 +1683,77 @@ id=5    @192.168.56.12 (mysqld)
 
 **Exemple de commande**
 
+**Exemple de commande**
+
 ```bash
-ndb_mgm -e "2 STOP"; sleep 5; echo '=== Etat apres arret NodeId 2 ==='; ndb_mgm -e "SHOW"
+ndb_mgm -e "2 STOP"
 ```
 
 **Explication de la commande**
 
 - `2 STOP` : demande l'arrêt propre du nœud de stockage NodeId 2.
-- `sleep 5` : laisse au gestionnaire le temps de détecter la perte (heartbeat manqué).
-- Le deuxième `SHOW` confirme le failover : NodeId 2 en `not connected`, NodeId 3 toujours connecté (`*`), nœuds SQL toujours opérationnels.
-- **Piège** : le NodeId 2 reste listé (non supprimé) avec l'état `not connected` ; c'est le comportement attendu. Le service continue via NodeId 3.
 
 **Résultat attendu**
 
 ```text
 Connected to Management Server at: localhost:1186
 Node 2 has shutdown.
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+
+**Explication de la commande**
+
+- `sleep 5` : laisse au gestionnaire le temps de détecter la perte (heartbeat manqué).
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+echo '=== Etat apres arret NodeId 2 ==='
+```
+
+**Explication de la commande**
+
+- `echo '=== Etat apres arret NodeId 2 ==='` : affiche un séparateur avant le second affichage de l'état du cluster.
+
+**Résultat attendu**
+
+```text
 === Etat apres arret NodeId 2 ===
+# rc=0
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e "SHOW"
+```
+
+**Explication de la commande**
+
+- `SHOW` : liste tous les nœuds et leur état ; confirme le failover : NodeId 2 en `not connected`, NodeId 3 toujours connecté (`*`), nœuds SQL toujours opérationnels.
+- **Piège** : le NodeId 2 reste listé (non supprimé) avec l'état `not connected` ; c'est le comportement attendu. Le service continue via NodeId 3.
+
+**Résultat attendu**
+
+```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
@@ -1253,13 +1775,49 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-(cd /var/lib/mysql-cluster/ndb_2 && nohup ndbmtd --ndb-connectstring=192.168.56.10 > ndbmtd_2.log 2>&1 &); sleep 8
+cd /var/lib/mysql-cluster/ndb_2
 ```
 
 **Explication de la commande**
 
-- `cd …/ndb_2` : se place dans le répertoire dédié du node 2.
+- `cd /var/lib/mysql-cluster/ndb_2` : se place dans le répertoire dédié du node 2.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
+
+**Exemple de commande**
+
+```bash
+nohup ndbmtd --ndb-connectstring=192.168.56.10 &
+```
+
+**Explication de la commande**
+
 - `nohup ndbmtd --ndb-connectstring=192.168.56.10 &` : relance `ndbmtd` sans `--initial` pour conserver les données et resynchroniser depuis le NodeId 3.
+- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion.
+- `&` : détache le processus pour qu'il tourne en arrière-plan.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
+
+**Exemple de commande**
+
+```bash
+sleep 8
+```
+
+**Explication de la commande**
+
 - `sleep 8` : laisse le temps à la resynchronisation et à la réintégration dans le cluster.
 - **Piège** : `ndb_mgm -e '2 START'` ne peut pas redémarrer un node lancé manuellement ; il faut le relancer directement avec `ndbmtd`. Sans `--initial`, le node resynchronise ses données depuis la réplica vivante.
 

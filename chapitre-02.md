@@ -7,7 +7,7 @@
 ## Avertissement et périmètre
 
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
-- Données : fictives, marquées `LAB-ONLY` (uniquement pour le laboratoire isolé).
+- Données : fictives, marquées `Lab` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
 - Accès distant : une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
@@ -203,13 +203,13 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-ndb_config --query-all 2>&1 | grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'
+ndb_config --query-all | grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'
 ```
 
 **Explication de la commande**
 
 - `ndb_config --query-all` : retourne tous les paramètres de configuration de tous les nœuds.
-- `grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'` : filtre les paramètres clés de topologie et de dimensionnement.
+- `| grep -E 'NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory'` : filtre les paramètres clés de topologie et de dimensionnement.
 - `NoOfReplicas = 2` doit apparaître pour les nœuds de stockage.
 - `DataMemory` et `IndexMemory` montrent la mémoire allouée par node de stockage.
 - **Piège** : la sortie complète est très volumineuse ; le filtrage par `grep` concentre l'attention sur les paramètres pertinents.
@@ -291,14 +291,14 @@ Node 3: Index usage is 0%(6 32K pages of total 12285)
 **Exemple de commande**
 
 ```bash
-mysql -u root -e 'SHOW ENGINE NDB STATUS\G' 2>&1 | head -40
+mysql -u root -e 'SHOW ENGINE NDB STATUS\G' | head -40
 ```
 
 **Explication de la commande**
 
 - `mysql -u root` : se connecte au serveur MySQL local en root.
 - `SHOW ENGINE NDB STATUS\G` : affiche l'état détaillé du moteur NDB côté SQL (cluster connecté, opérations, transactions).
-- `head -40` : limite la sortie aux premières lignes pertinentes.
+- `| head -40` : limite la sortie aux premières lignes pertinentes.
 - La ligne « Cluster connection » doit indiquer que le nœud SQL est connecté au gestionnaire.
 - **Piège** : si `mysqld` a été lancé sans `--ndbcluster`, cette commande renvoie une erreur « Unknown ENGINE ».
 
@@ -391,22 +391,74 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-ndb_mgm -e '2 STOP'; sleep 5; echo '=== Etat apres arret ==='; ndb_mgm -e 'SHOW'
+ndb_mgm -e '2 STOP'
 ```
 
 **Explication de la commande**
 
 - `2 STOP` : demande l'arrêt propre du nœud de stockage NodeId 2.
-- `sleep 5` : laisse au gestionnaire le temps de détecter la perte.
-- Le deuxième `SHOW` confirme le failover : NodeId 2 en `not connected`, NodeId 3 toujours connecté (`*`), nœuds SQL toujours opérationnels.
-- **Piège** : le NodeId 2 reste listé (non supprimé) avec l'état `not connected` ; c'est le comportement attendu.
 
 **Résultat attendu**
 
 ```text
 Connected to Management Server at: localhost:1186
 Node 2 has shutdown.
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+
+**Explication de la commande**
+
+- `sleep 5` : laisse au gestionnaire le temps de détecter la perte.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+echo '=== Etat apres arret ==='
+```
+
+**Explication de la commande**
+
+- `echo '=== Etat apres arret ==='` : affiche un séparateur avant le second affichage de l'état du cluster.
+
+**Résultat attendu**
+
+```text
 === Etat apres arret ===
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'SHOW'
+```
+
+**Explication de la commande**
+
+- `SHOW` : liste tous les nœuds et leur état ; confirme le failover : NodeId 2 en `not connected`, NodeId 3 toujours connecté (`*`), nœuds SQL toujours opérationnels.
+- **Piège** : le NodeId 2 reste listé (non supprimé) avec l'état `not connected` ; c'est le comportement attendu.
+
+**Résultat attendu**
+
+```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
@@ -435,14 +487,49 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-(cd /var/lib/mysql-cluster/ndb_2 && nohup ndbmtd --ndb-connectstring=192.168.56.10 > ndbmtd_2.log 2>&1 &); sleep 6
+cd /var/lib/mysql-cluster/ndb_2
 ```
 
 **Explication de la commande**
 
-- `cd …/ndb_2` : se place dans le répertoire dédié du node 2.
-- `nohup ndbmtd … &` : lance `ndbmtd` en arrière-plan, détaché du terminal.
-- Sans `--initial` : le node conserve ses données et resynchronise depuis le NodeId 3.
+- `cd /var/lib/mysql-cluster/ndb_2` : se place dans le répertoire dédié du node 2.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
+
+**Exemple de commande**
+
+```bash
+nohup ndbmtd --ndb-connectstring=192.168.56.10 &
+```
+
+**Explication de la commande**
+
+- `nohup ndbmtd --ndb-connectstring=192.168.56.10 &` : relance `ndbmtd` sans `--initial` pour conserver les données et resynchroniser depuis le NodeId 3.
+- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion.
+- `&` : détache le processus pour qu'il tourne en arrière-plan.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
+
+**Exemple de commande**
+
+```bash
+sleep 6
+```
+
+**Explication de la commande**
+
 - `sleep 6` : laisse le temps à la resynchronisation et à la réintégration.
 - **Piège** : `ndb_mgm -e '2 START'` ne peut pas redémarrer un node lancé manuellement ; il faut le relancer directement avec `ndbmtd`.
 
@@ -466,12 +553,29 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Exemple de commande**
 
 ```bash
-sleep 8; ndb_mgm -e 'SHOW'
+sleep 8
 ```
 
 **Explication de la commande**
 
 - `sleep 8` : laisse au NodeId 2 le temps de finir sa resynchronisation.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'SHOW'
+```
+
+**Explication de la commande**
+
 - `SHOW` : le NodeId 2 doit apparaître connecté, sans état `starting` ni `not connected`.
 - **Piège** : si le node reste en `starting` trop longtemps, consulter `/var/lib/mysql-cluster/ndb_2/ndbmtd_2.log` sur VM 2.
 
@@ -527,13 +631,30 @@ Configurer finement les nœuds du cluster (`config.ini`), ajouter et supprimer u
 **Exemple de commande**
 
 ```bash
-cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.save.$(date +%Y%m%d%H%M%S) && cat /var/lib/mysql-cluster/config.ini
+cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.save
 ```
 
 **Explication de la commande**
 
-- `cp … config.ini.save.<date>` : crée une sauvegarde horodatée avant modification.
-- `cat config.ini` : affiche le contenu pour vérification.
+- `cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.save` : crée une copie de sauvegarde de `config.ini` avant toute modification.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+cat /var/lib/mysql-cluster/config.ini
+```
+
+**Explication de la commande**
+
+- `cat /var/lib/mysql-cluster/config.ini` : affiche le contenu du fichier pour vérification.
 - La sauvegarde permet de revenir en arrière en cas d'erreur de configuration.
 - **Piège** : toujours sauvegarder `config.ini` avant de le modifier ; une erreur de syntaxe empêche le démarrage du gestionnaire.
 
@@ -582,14 +703,32 @@ HostName = 192.168.56.12
 **Exemple de commande**
 
 ```bash
-mkdir -p /var/lib/mysql-cluster/ndb_6 && ls -la /var/lib/mysql-cluster/
+mkdir -p /var/lib/mysql-cluster/ndb_6
 ```
 
 **Explication de la commande**
 
-- `mkdir -p …/ndb_6` : crée le répertoire de données du futur NodeId 6.
+- `mkdir -p /var/lib/mysql-cluster/ndb_6` : crée le répertoire de données du futur NodeId 6.
 - Un nouveau nœud de stockage doit avoir son propre répertoire pour éviter les collisions de fichiers.
 - **Piège** : deux nœuds de stockage sur la même VM doivent impérativement utiliser des répertoires distincts.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+ls -la /var/lib/mysql-cluster/
+```
+
+**Explication de la commande**
+
+- `ls -la /var/lib/mysql-cluster/` : affiche le contenu du répertoire pour confirmer la présence de `ndb_6`.
 
 **Résultat attendu**
 
@@ -617,15 +756,12 @@ drwxr-xr-x 2 root root 4096 … ndb_6
 **Exemple de commande**
 
 ```bash
-ndb_mgm -e 'SHOW'; echo '---'; ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
+ndb_mgm -e 'SHOW'
 ```
 
 **Explication de la commande**
 
 - `SHOW` : confirme que tous les nœuds attendus sont connectés.
-- `ALL REPORT MEMORYUSAGE` : affiche l'usage `DataMemory`/`IndexMemory` par node de stockage.
-- Un usage stable et faible confirme qu'aucun nœud n'est en saturation.
-- **Piège** : un nœud `not connected` dans le `SHOW` signale un problème à investiguer avant d'ajouter des nœuds.
 
 **Résultat attendu**
 
@@ -641,7 +777,46 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+echo '---'
+```
+
+**Explication de la commande**
+
+- `echo '---'` : affiche un séparateur visuel entre les deux commandes de supervision.
+
+**Résultat attendu**
+
+```text
 --- 
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
+```
+
+**Explication de la commande**
+
+- `ALL REPORT MEMORYUSAGE` : affiche l'usage `DataMemory`/`IndexMemory` par node de stockage.
+- Un usage stable et faible confirme qu'aucun nœud n'est en saturation.
+- **Piège** : un nœud `not connected` dans le `SHOW` signale un problème à investiguer avant d'ajouter des nœuds.
+
+**Résultat attendu**
+
+```text
+Connected to Management Server at: localhost:1186
 Node 2: Data usage is 0%(11 32K pages of total 12290)
 Node 2: Index usage is 0%(6 32K pages of total 12285)
 Node 3: Data usage is 0%(11 32K pages of total 12290)
@@ -683,24 +858,59 @@ Tester la résilience opérationnelle : arrêt simulé d'un nœud de stockage av
 
 **Exemple de commande**
 
+**Exemple de commande**
+
 ```bash
-echo "T0=$(date +%s)"; ndb_mgm -e '2 STOP'; sleep 3; ndb_mgm -e 'SHOW'; echo "T1=$(date +%s) après failover"
+ndb_mgm -e '2 STOP'
 ```
 
 **Explication de la commande**
 
-- `date +%s` : affiche l'heure Unix pour horodater le début du test.
 - `2 STOP` : arrête le NodeId 2.
-- Le `SHOW` intermédiaire confirme que NodeId 3 reste connecté (failover immédiat, service continu).
-- `T1` : horodatage après détection du failover (quelques secondes).
+- Le `SHOW` suivant confirme que NodeId 3 reste connecté (failover immédiat, service continu).
+
+**Résultat attendu**
+
+```text
+Connected to Management Server at: localhost:1186
+Node 2 has shutdown.
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+sleep 3
+```
+
+**Explication de la commande**
+
+- `sleep 3` : laisse au gestionnaire le temps de détecter la perte (heartbeat manqué).
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'SHOW'
+```
+
+**Explication de la commande**
+
+- `SHOW` : confirme le failover : NodeId 2 en `not connected`, NodeId 3 toujours connecté (`*`), nœuds SQL toujours opérationnels.
 - **Piège** : le failover est quasi immédiat (détection en quelques secondes) grâce au heartbeat du gestionnaire.
 
 **Résultat attendu**
 
 ```text
-T0=1763800000
-Connected to Management Server at: localhost:1186
-Node 2 has shutdown.
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
@@ -712,7 +922,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-T1=1763800005 après failover
 # rc=0
 ```
 
@@ -729,25 +938,117 @@ T1=1763800005 après failover
 
 **Exemple de commande**
 
+**Exemple de commande**
+
 ```bash
-pkill -x mysqld; sleep 3; pgrep -a mysqld || echo 'mysqld arrete'; nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld-4-rolling.log 2>&1 & sleep 5; pgrep -a mysqld
+pkill -x mysqld
 ```
 
 **Explication de la commande**
 
 - `pkill -x mysqld` : arrête le processus `mysqld` (nœud SQL NodeId 4).
 - Le cluster reste opérationnel via le NodeId 5 sur VM 3 (maintenance à chaud).
-- `nohup mysqld --ndbcluster … &` : redémarre le nœud SQL avec le moteur NDB.
-- `pgrep -a mysqld` : confirme le retour du processus.
-- **Piège** : ne pas arrêter les deux nœuds SQL simultanément, ce qui couperait l'accès SQL au cluster.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+sleep 3
+```
+
+**Explication de la commande**
+
+- `sleep 3` : laisse le temps au processus de s'arrêter proprement.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+pgrep -a mysqld
+```
+
+**Explication de la commande**
+
+- `pgrep -a mysqld` : vérifie qu'aucun processus `mysqld` ne reste en cours (aucune ligne = arrêt confirmé).
 
 **Résultat attendu**
 
 ```text
 mysqld arrete
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize &
+```
+
+**Explication de la commande**
+
+- `mysqld --ndbcluster` : active le moteur NDB sur l'instance MySQL.
+- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion pour rejoindre le cluster.
+- `--user=mysql` : exécute le processus sous l'utilisateur `mysql` (pratique de moindre privilège).
+- `--daemonize` : lance `mysqld` en arrière-plan (démon).
+- `&` : détache le processus pour qu'il tourne en arrière-plan.
+- **Piège** : ne pas arrêter les deux nœuds SQL simultanément, ce qui couperait l'accès SQL au cluster.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+
+**Explication de la commande**
+
+- `sleep 5` : laisse le temps au nœud SQL de redémarrer et de se reconnecter au gestionnaire.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+pgrep -a mysqld
+```
+
+**Explication de la commande**
+
+- `pgrep -a mysqld` : confirme le retour du processus `mysqld` après le redémarrage rolling.
+
+**Résultat attendu**
+
+```text
 5138 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
-7790 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
-7793 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
 # rc=0
 ```
 

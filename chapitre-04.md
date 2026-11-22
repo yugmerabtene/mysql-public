@@ -3,7 +3,7 @@
 À la fin de ce chapitre, l'apprenant sait optimiser les paramètres de performance du moteur NDB (`DataMemory`, `IndexMemory`, `ThreadConfig`, `NoOfReplicas`), diagnostiquer et résoudre les goulots d'étranglement (réseau, disque, RAM), mettre en œuvre le sharding et le partitionnement pour répartir la charge sur plusieurs nœuds de stockage, analyser les erreurs récurrentes sur gros volumes avec leurs corrections, configurer la réplication inter-clusters (site principal vers site de secours) et gérer la tolérance aux pannes : détection de panne de nœud, basculement automatique (failover) et retour arrière (failback) avec resynchronisation.
 ## Avertissement et périmètre
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
-- Données : fictives, marquées `LAB-ONLY` (uniquement pour le laboratoire isolé).
+- Données : fictives, marquées `Lab` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
 - Accès distant : une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
@@ -108,20 +108,102 @@ Node 3: Index usage is 0%(6 32K pages of total 12285)
 **Prérequis** — Outils `free` et `df` disponibles sur chaque VM.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
+
 ```bash
-free -m; df -h /var/lib/mysql-cluster; free -m; df -h /var/lib/mysql-cluster; free -m; df -h /
+free -m
 ```
+
 **Explication de la commande**
+
 - `free -m` : affiche la mémoire RAM disponible et utilisée (en Mo).
-- `df -h` : affiche l'espace disque disponible sur les partitions de données.
-- Avec 1 Go de RAM par VM dans ce lab, `DataMemory` + `IndexMemory` doivent laisser une marge pour éviter le swap.
-- **Piège** : si `DataMemory` + `IndexMemory` dépassent la RAM disponible, le système swappe et les performances s'effondrent.
+
 **Résultat attendu**
+
 ```text
                total        used        free      shared  buff/cache   available
 Mem:           1011         210         650          15         150         650
 Swap:          1023           0        1023
+# rc=0
+```
+
+#### Étape 2b — Vérifier l'espace disque sur VM 1
+
+**But** — Afficher l'espace disque disponible sur les partitions de données de VM 1.
+
+**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+
+**Prérequis** — Outil `df` disponible sur VM 1.
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+df -h /var/lib/mysql-cluster
+```
+
+**Explication de la commande**
+
+- `df -h /var/lib/mysql-cluster` : affiche l'espace disque disponible sur la partition de données.
+
+**Résultat attendu**
+
+```text
 /dev/sda1        15G        3,0G         12G       21% /var/lib/mysql-cluster
+# rc=0
+```
+
+#### Étape 2c — Vérifier l'espace disque sur VM 2
+
+**But** — Afficher l'espace disque disponible sur les partitions de données de VM 2.
+
+**Machine** — VM 2 (192.168.56.11), nœud de stockage.
+
+**Prérequis** — Outil `df` disponible sur VM 2.
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+df -h /var/lib/mysql-cluster
+```
+
+**Explication de la commande**
+
+- `df -h /var/lib/mysql-cluster` : affiche l'espace disque disponible sur la partition de données de VM 2.
+
+**Résultat attendu**
+
+```text
+/dev/sda1        15G        3,0G         12G       21% /var/lib/mysql-cluster
+# rc=0
+```
+
+#### Étape 2d — Vérifier l'espace disque sur VM 3
+
+**But** — Afficher l'espace disque disponible sur la partition racine de VM 3.
+
+**Machine** — VM 3 (192.168.56.12), second nœud SQL.
+
+**Prérequis** — Outil `df` disponible sur VM 3.
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+df -h /
+```
+
+**Explication de la commande**
+
+- `df -h /` : affiche l'espace disque disponible sur la partition racine de VM 3.
+
+**Résultat attendu**
+
+```text
+/dev/sda1        15G        3,0G         12G       21% /
 # rc=0
 ```
 #### Étape 3 — Ajuster DataMemory et IndexMemory dans config.ini
@@ -130,16 +212,66 @@ Swap:          1023           0        1023
 **Prérequis** — Sauvegarde de `config.ini` avant modification (Lab-05).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 **Exemple de commande**
+
 ```bash
-cp config.ini config.ini.bak.optim; sed -i 's/^DataMemory = .*/DataMemory = 512M/; s/^IndexMemory = .*/IndexMemory = 256M/' config.ini && grep -E 'DataMemory|IndexMemory|NoOfReplicas' config.ini
+cp config.ini config.ini.bak.optim
 ```
 **Explication de la commande**
+
 - `cp config.ini config.ini.bak.optim` : sauvegarde avant modification.
-- `sed -i` : modifie `DataMemory` (512M) et `IndexMemory` (256M) sur place.
-- `grep` : vérifie les nouvelles valeurs et que `NoOfReplicas = 2` est conservé.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 3b — Modifier DataMemory et IndexMemory dans config.ini
+
+**But** — Augmenter `DataMemory` et `IndexMemory` pour supporter un jeu de données plus important.
+
+**Machine** — VM 1 (fichier `config.ini`).
+
+**Prérequis** — Sauvegarde de `config.ini` créée (étape 3a).
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+**Exemple de commande**
+
+```bash
+sed -i 's/^DataMemory = .*/DataMemory = 512M/; s/^IndexMemory = .*/IndexMemory = 256M/' config.ini
+```
+**Explication de la commande**
+
+- `sed -i` : modifie `DataMemory` (512M) et `IndexMemory` (256M) sur place dans `config.ini`.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 3c — Vérifier les nouvelles valeurs de config.ini
+
+**But** — Vérifier que `DataMemory`, `IndexMemory` et `NoOfReplicas` sont correctement définis dans `config.ini`.
+
+**Machine** — VM 1 (fichier `config.ini`).
+
+**Prérequis** — `config.ini` modifié (étape 3b).
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+**Exemple de commande**
+
+```bash
+grep -E 'DataMemory|IndexMemory|NoOfReplicas' config.ini
+```
+**Explication de la commande**
+
+- `grep -E 'DataMemory|IndexMemory|NoOfReplicas' config.ini` : affiche les nouvelles valeurs et que `NoOfReplicas = 2` est conservé.
 - Le redémarrage des nœuds de stockage est nécessaire pour prendre en compte les nouveaux paramètres.
 - **Piège** : toute modification de `config.ini` nécessite un redémarrage des nœuds concernés ; prévoir une fenêtre de maintenance.
+
 **Résultat attendu**
+
 ```text
 NoOfReplicas = 2
 DataMemory = 512M
@@ -152,16 +284,116 @@ IndexMemory = 256M
 **Prérequis** — `config.ini` modifié (étape 3), répertoires `ndb_2` et `ndb_3` présents.
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 **Exemple de commande**
+
 ```bash
-pkill -x ndbmtd; sleep 2; (cd /var/lib/mysql-cluster/ndb_2 && nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log 2>&1 &) && (cd /var/lib/mysql-cluster/ndb_3 && nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_3.log 2>&1 &); sleep 5; pgrep -a ndbmtd
+pkill -x ndbmtd
 ```
 **Explication de la commande**
+
 - `pkill -x ndbmtd` : arrête les processus de stockage existants.
-- `nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &` : relance chaque node avec réinitialisation de son stockage (après modification de config).
-- `sleep 5` : laisse le temps aux nodes de se déclarer et de charger la nouvelle config.
-- `pgrep -a ndbmtd` : confirme le retour des processus.
-- **Piège** : `--initial` réinitialise le stockage de chaque node ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver.
+
 **Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4b — Redémarrer le nœud de stockage Id=2
+
+**But** — Relancer le nœud de stockage `ndbmtd` NodeId 2 avec réinitialisation de son stockage après modification de `config.ini`.
+
+**Machine** — VM 2 (192.168.56.11), nœud de stockage.
+
+**Prérequis** — Processus `ndbmtd` arrêtés (étape 4a).
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
+**Exemple de commande**
+
+```bash
+nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log &
+```
+**Explication de la commande**
+
+- `nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &` : relance le nœud de stockage Id=2 avec réinitialisation de son stockage, en arrière-plan.
+- `--initial` : force l'initialisation propre du stockage (après modification de config).
+- **Piège** : `--initial` réinitialise le stockage de chaque node ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4c — Redémarrer le nœud de stockage Id=3
+
+**But** — Relancer le nœud de stockage `ndbmtd` NodeId 3 avec réinitialisation de son stockage après modification de `config.ini`.
+
+**Machine** — VM 2 (192.168.56.11), nœud de stockage.
+
+**Prérequis** — Nœud de stockage Id=2 redémarré (étape 4b).
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_3`
+**Exemple de commande**
+
+```bash
+nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_3.log &
+```
+**Explication de la commande**
+
+- `nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &` : relance le nœud de stockage Id=3 avec réinitialisation de son stockage, en arrière-plan.
+- `--initial` : force l'initialisation propre du stockage (après modification de config).
+- **Piège** : `--initial` réinitialise le stockage ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4d — Vérifier les processus de stockage
+
+**But** — Confirmer que les processus `ndbmtd` sont de retour après le redémarrage.
+
+**Machine** — VM 2 (192.168.56.11), nœud de stockage.
+
+**Prérequis** — Nœuds de stockage Id=2 et Id=3 redémarrés (étapes 4b et 4c).
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+**Explication de la commande**
+
+- `sleep 5` : laisse le temps aux nodes de se déclarer et de charger la nouvelle config.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4e — Lister les processus ndbmtd
+
+**But** — Afficher la liste des processus `ndbmtd` actifs sur VM 2.
+
+**Machine** — VM 2 (192.168.56.11), nœud de stockage.
+
+**Prérequis** — Nœuds de stockage Id=2 et Id=3 redémarrés (étapes 4b et 4c).
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+**Exemple de commande**
+
+```bash
+pgrep -a ndbmtd
+```
+**Explication de la commande**
+
+- `pgrep -a ndbmtd` : confirme le retour des processus.
+
+**Résultat attendu**
+
 ```text
 7714 ndbmtd --ndb-connectstring=192.168.56.10
 7715 ndbmtd --ndb-connectstring=192.168.56.10
@@ -175,20 +407,59 @@ pkill -x ndbmtd; sleep 2; (cd /var/lib/mysql-cluster/ndb_2 && nohup ndbmtd --ndb
 **Prérequis** — Nœuds de stockage redémarrés (étape 4).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
+
 ```bash
-ndb_mgm -e 'SHOW'; echo '---'; ndb_config --query-all 2>&1 | grep -E 'DataMemory|IndexMemory|NoOfReplicas'
+ndb_mgm -e 'SHOW'
 ```
 **Explication de la commande**
-- `SHOW` : confirme que tous les nœuds sont connectés après le redémarrage.
-- `ndb_config --query-all | grep` : affiche `DataMemory`, `IndexMemory` et `NoOfReplicas` pour vérifier la prise en compte.
-- **Piège** : si les anciennes valeurs persistent, les nœuds n'ont pas été correctement redémarrés avec la nouvelle `config.ini`.
+
+- `ndb_mgm -e 'SHOW'` : confirme que tous les nœuds sont connectés après le redémarrage.
+
 **Résultat attendu**
+
 ```text
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
 [ndbd(NDB)]	2 node(s)
 id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+[mysqld(API)]	2 node(s)
+id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
+# rc=0
+```
+
+#### Étape 5b — Vérifier la nouvelle configuration avec ndb_config
+
+**But** — Afficher `DataMemory`, `IndexMemory` et `NoOfReplicas` pour vérifier la prise en compte des nouveaux paramètres.
+
+**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+
+**Prérequis** — Nœuds de stockage redémarrés (étape 4).
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+**Exemple de commande**
+
+```bash
+ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfReplicas'
+```
+**Explication de la commande**
+
+- `ndb_config --query-all | grep` : affiche `DataMemory`, `IndexMemory` et `NoOfReplicas` pour vérifier la prise en compte.
+- **Piège** : si les anciennes valeurs persistent, les nœuds n'ont pas été correctement redémarrés avec la nouvelle `config.ini`.
+
+**Résultat attendu**
+
+```text
+---
+DataMemory = 512M
+IndexMemory = 256M
+NoOfReplicas = 2
+# rc=0
+```
 id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
@@ -249,7 +520,7 @@ Records: 5  Duplicates: 0  Warnings: 0
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-ndb_desc -d labperf t_shard 2>&1 | head -40
+ndb_desc -d labperf t_shard
 ```
 **Explication de la commande**
 - `ndb_desc -d labperf t_shard` : décrit la table NDB `t_shard` dans la base `labperf`.
@@ -297,20 +568,56 @@ frag 1: NodeId: 2
 **Prérequis** — Cluster démarré, outils de supervision disponibles.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
+
 ```bash
-ndb_mgm -e 'ALL REPORT MEMORYUSAGE'; echo '---'; ndb_config --query-all 2>&1 | grep -E 'DataMemory|IndexMemory|NoOfFragmentLogParts|RedoBuffer|NoOfReplicas'
+ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
 ```
 **Explication de la commande**
+
 - `ALL REPORT MEMORYUSAGE` : détecte une saturation de `DataMemory`/`IndexMemory`.
-- `ndb_config | grep` : affiche `NoOfFragmentLogParts` (écriture parallèle des redo logs) et `RedoBuffer` (tampon redo).
-- Un `NoOfFragmentLogParts` faible limite l'écriture parallèle sur disque.
-- **Piège** : sur gros volumes, augmenter `NoOfFragmentLogParts` et `RedoBuffer` améliore le taux de commit.
+
 **Résultat attendu**
+
 ```text
 Connected to Management Server at: localhost:1186
 Node 2: Data usage is 15%(1844 32K pages of total 12290)
 Node 2: Index usage is 5%(62 32K pages of total 12285)
 Node 3: Data usage is 15%(1844 32K pages of total 12290)
+Node 3: Index usage is 5%(62 32K pages of total 12285)
+# rc=0
+```
+
+#### Étape 3b — Vérifier les paramètres de configuration avec ndb_config
+
+**But** — Afficher `DataMemory`, `IndexMemory`, `NoOfFragmentLogParts`, `RedoBuffer` et `NoOfReplicas` pour diagnostiquer les goulots d'étranglement.
+
+**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+
+**Prérequis** — Cluster démarré, outils de supervision disponibles.
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+**Exemple de commande**
+
+```bash
+ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfFragmentLogParts|RedoBuffer|NoOfReplicas'
+```
+**Explication de la commande**
+
+- `ndb_config --query-all | grep` : affiche `NoOfFragmentLogParts` (écriture parallèle des redo logs) et `RedoBuffer` (tampon redo).
+- Un `NoOfFragmentLogParts` faible limite l'écriture parallèle sur disque.
+- **Piège** : sur gros volumes, augmenter `NoOfFragmentLogParts` et `RedoBuffer` améliore le taux de commit.
+
+**Résultat attendu**
+
+```text
+---
+DataMemory = 512M
+IndexMemory = 256M
+NoOfFragmentLogParts = 4
+RedoBuffer = 32M
+NoOfReplicas = 2
+# rc=0
+```
 Node 3: Index usage is 5%(62 32K pages of total 12285)
 --- 
 DataMemory = 512M
@@ -326,15 +633,43 @@ NoOfReplicas = 2
 **Prérequis** — Espace disque sur VM 2, `ndbmtd` installé.
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 **Exemple de commande**
+
 ```bash
-mkdir -p /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8 && ls -ld /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
+mkdir -p /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
 ```
 **Explication de la commande**
+
 - `mkdir -p …/ndb_7 …/ndb_8` : prépare les répertoires de deux futurs nœuds de stockage (NodeId 7 et 8 par exemple).
 - Chaque nouveau nœud de stockage doit avoir son propre répertoire pour éviter les collisions.
 - L'ajout de nœuds de stockage crée de nouveaux node groups et répartit l'auto-sharding sur plus de machines.
 - **Piège** : après ajout de nœuds, le cluster redresse progressivement les fragments (reorganisation) ; prévoir du temps et de la bande passante.
+
 **Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4b — Vérifier les répertoires de stockage créés
+
+**But** — Confirmer que les répertoires `ndb_7` et `ndb_8` ont été créés sur VM 2.
+
+**Machine** — VM 2 (192.168.56.11), nœud de stockage.
+
+**Prérequis** — Répertoires de stockage créés (étape 4a).
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+**Exemple de commande**
+
+```bash
+ls -ld /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
+```
+**Explication de la commande**
+
+- `ls -ld …/ndb_7 …/ndb_8` : affiche les détails des répertoires créés pour confirmer leur existence.
+
+**Résultat attendu**
+
 ```text
 drwxr-xr-x 2 root root 4096 … ndb_7
 drwxr-xr-x 2 root root 4096 … ndb_8
@@ -488,20 +823,144 @@ Binlog_Ignore_DB: NULL
 **Prérequis** — Espace disque et binaires MySQL Cluster installés sur VM 3 ; répertoire de données dédié pour Cluster B.
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 **Exemple de commande**
+
 ```bash
-mkdir -p /var/lib/mysql-cluster/clusterB && cd /var/lib/mysql-cluster/clusterB && ndb_mgmd --ndb-nodeid=10 --initial --configdir=/var/lib/mysql-cluster/clusterB > mgmdB.log 2>&1 & sleep 2 && ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtdB.log 2>&1 & sleep 3 && pgrep -a 'ndb_mgmd|ndbmtd'
+mkdir -p /var/lib/mysql-cluster/clusterB
 ```
 **Explication de la commande**
+
 - `mkdir -p …/clusterB` : prépare un répertoire de données dédié pour le cluster de secours (évite toute collision avec Cluster A).
-- `ndb_mgmd --ndb-nodeid=10 --initial --configdir=…` : démarre le gestionnaire de Cluster B avec l'identifiant 10 (initial pour créer ses fichiers de configuration).
-- `ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial` : démarre le nœud de stockage Id=20 de Cluster B, connecté au gestionnaire local sur 1188.
-- `sleep` : laisse le temps aux processus de se déclarer.
-- `pgrep -a` : confirme le retour des processus de Cluster B.
-- **Piège** : `--initial` réinitialise les métadonnées du cluster ; ne pas l'utiliser sur un cluster contenant des données à conserver.
+
 **Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4b — Démarrer le gestionnaire de Cluster B
+
+**But** — Démarrer le nœud de gestion `ndb_mgmd` de Cluster B avec l'identifiant 10 sur VM 3.
+
+**Machine** — VM 3 (192.168.56.12), nœud de gestion du site de secours.
+
+**Prérequis** — Répertoire `clusterB` créé (étape 4a).
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
+**Exemple de commande**
+
+```bash
+ndb_mgmd --ndb-nodeid=10 --initial --configdir=/var/lib/mysql-cluster/clusterB > mgmdB.log &
+```
+**Explication de la commande**
+
+- `ndb_mgmd --ndb-nodeid=10 --initial --configdir=…` : démarre le gestionnaire de Cluster B avec l'identifiant 10 (initial pour créer ses fichiers de configuration).
+- `> mgmdB.log &` : redirige les journaux vers un fichier et détache le processus en arrière-plan.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4c — Attendre le démarrage du gestionnaire
+
+**But** — Laisser le temps au gestionnaire de Cluster B de s'initialiser.
+
+**Machine** — VM 3 (192.168.56.12), nœud de gestion du site de secours.
+
+**Prérequis** — Gestionnaire de Cluster B lancé (étape 4b).
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
+**Exemple de commande**
+
+```bash
+sleep 2
+```
+**Explication de la commande**
+
+- `sleep 2` : laisse le temps au gestionnaire de s'initialiser.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4d — Démarrer le nœud de stockage de Cluster B
+
+**But** — Démarrer le nœud de stockage `ndbmtd` Id=20 de Cluster B sur VM 3.
+
+**Machine** — VM 3 (192.168.56.12), nœud de stockage du site de secours.
+
+**Prérequis** — Gestionnaire de Cluster B démarré (étape 4b).
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
+**Exemple de commande**
+
+```bash
+ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtdB.log &
+```
+**Explication de la commande**
+
+- `ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial` : démarre le nœud de stockage Id=20 de Cluster B, connecté au gestionnaire local sur 1188.
+- `> ndbmtdB.log &` : redirige les journaux vers un fichier et détache le processus en arrière-plan.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4e — Attendre le démarrage du nœud de stockage
+
+**But** — Laisser le temps au nœud de stockage de Cluster B de se déclarer au gestionnaire.
+
+**Machine** — VM 3 (192.168.56.12), nœud de stockage du site de secours.
+
+**Prérequis** — Nœud de stockage de Cluster B lancé (étape 4d).
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
+**Exemple de commande**
+
+```bash
+sleep 3
+```
+**Explication de la commande**
+
+- `sleep 3` : laisse le temps au nœud de stockage de se déclarer au gestionnaire.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 4f — Vérifier les processus de Cluster B
+
+**But** — Confirmer que les processus `ndb_mgmd` et `ndbmtd` de Cluster B sont en cours d'exécution.
+
+**Machine** — VM 3 (192.168.56.12), nœud de gestion et nœud de stockage du site de secours.
+
+**Prérequis** — Gestionnaire et nœud de stockage de Cluster B lancés (étapes 4b et 4d).
+
+> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
+**Exemple de commande**
+
+```bash
+pgrep -a 'ndb_mgmd|ndbmtd'
+```
+**Explication de la commande**
+
+- `pgrep -a 'ndb_mgmd|ndbmtd'` : confirme le retour des processus de Cluster B.
+- **Piège** : `--initial` réinitialise les métadonnées du cluster ; ne pas l'utiliser sur un cluster contenant des données à conserver.
+
+**Résultat attendu**
+
 ```text
 xxxx ndb_mgmd --ndb-nodeid=10 --initial --configdir=/var/lib/mysql-cluster/clusterB
 yyyy ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial
+# rc=0
+```
 # rc=0
 ```
 #### Étape 5 — Configurer le canal de réplication sur le replica (SQL Id=6)
@@ -625,17 +1084,19 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Prérequis** — Nœud de stockage Id=2 connecté (étape 1).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
+
 ```bash
-date +%s.%N; ndb_mgm -e "2 STOP" ```
+ndb_mgm -e "2 STOP"
+```
 **Explication de la commande**
-- `date +%s.%N` : enregistre l'horodatage de début de la panne (référence pour mesurer le failover).
+
 - `ndb_mgm -e "2 STOP"` : demande l'arrêt ordonné du nœud de stockage Id=2 via le gestionnaire.
-- `tee -a` : ajoute la sortie au même fichier de preuve.
 - L'arrêt d'un seul nœud de stockage ne stoppe pas le cluster grâce à `NoOfReplicas = 2`.
 - **Piège** : n'arrêter qu'un seul nœud à la fois (ici Id=2) ; arrêter les deux nœuds de stockage rendrait le cluster indisponible.
+
 **Résultat attendu**
+
 ```text
-1700000000.123456789
 Node 2: Node shutdown initiated
 # rc=0
 ```
@@ -672,7 +1133,7 @@ id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-date +%s.%N; mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl;" ```
+mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl;" ```
 **Explication de la commande**
 - `date +%s.%N` (début et fin) : encadre la requête SQL pour mesurer le temps de réponse.
 - `mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl;"` : vérifie que le service SQL répond via le nœud de stockage restant (Id=3).
@@ -696,20 +1157,76 @@ date +%s.%N; mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl;" ```
 **Prérequis** — Nœud Id=2 arrêté, service continu via Id=3.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
+
 ```bash
-ndb_mgm -e "2 START"; sleep 5; ndb_mgm -e 'SHOW' ```
+ndb_mgm -e "2 START"
+```
 **Explication de la commande**
+
 - `ndb_mgm -e "2 START"` : demande le redémarrage du nœud de stockage Id=2.
+
+**Résultat attendu**
+
+```text
+Node 2: Node restart initiated
+# rc=0
+```
+
+#### Étape 5b — Attendre le redémarrage du nœud de stockage
+
+**But** — Laisser le temps au nœud de stockage Id=2 de démarrer et de se resynchroniser.
+
+**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+
+**Prérequis** — Nœud de stockage Id=2 en cours de redémarrage (étape 5a).
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+**Explication de la commande**
+
 - `sleep 5` : laisse le temps au nœud de démarrer et de se resynchroniser.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 5c — Vérifier l'état du cluster après redémarrage
+
+**But** — Afficher l'état du cluster après le redémarrage du nœud Id=2.
+
+**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+
+**Prérequis** — Nœud de stockage Id=2 redémarré (étape 5a).
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'SHOW'
+```
+**Explication de la commande**
+
 - `ndb_mgm -e 'SHOW'` : affiche l'état après redémarrage.
-- `tee -a` : ajoute la sortie au fichier de preuve.
 - On attend le nœud Id=2 en état `recovering` puis `connected` (failback).
 - **Piège** : le nœud redémarré passe par un état `recovering` avant de réintégrer le node group ; ne pas l'arrêter pendant cette phase.
+
 **Résultat attendu**
+
 ```text
 Node 2: Node shutdown completed
 Node 2: Node restart initiated
 Connected to Management Server at: localhost:1186
+...
+id=2	@192.168.56.11  (...) connected
+id=3	@192.168.56.11  (...) connected
+# rc=0
+```
 ...
 id=2	@192.168.56.11  (...) connected
 id=3	@192.168.56.11  (...) connected
@@ -721,24 +1238,59 @@ id=3	@192.168.56.11  (...) connected
 **Prérequis** — Nœud Id=2 redémarré et en état `connected` (étape 5).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
+
 ```bash
-ndb_mgm -e 'SHOW'; echo '---'; mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl; SELECT * FROM labrep.t_repl ORDER BY id;" ```
+ndb_mgm -e 'SHOW'
+```
 **Explication de la commande**
+
 - `ndb_mgm -e 'SHOW'` : confirme que tous les nœuds (y compris Id=2) sont connectés.
-- `mysql … SELECT COUNT(*)` et `SELECT *` : vérifie l'intégrité des données après le failback (aucune perte).
-- `tee -a` : enregistre la sortie dans le fichier de preuve.
-- **Piège** : si des données manquent, le failback n'a pas été complété ; vérifier la resynchronisation.
+
 **Résultat attendu**
+
 ```text
 Connected to Management Server at: localhost:1186
 ...
 id=2	@192.168.56.11  (...) connected
 id=3	@192.168.56.11  (...) connected
-...
----
+# rc=0
+```
+
+#### Étape 6b — Vérifier l'intégrité des données après le failback
+
+**But** — Vérifier qu'aucune donnée n'a été perdue après le failback.
+
+**Machine** — VM 1 (192.168.56.10), nœud SQL.
+
+**Prérequis** — Nœud Id=2 redémarré et en état `connected` (étape 5).
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+**Exemple de commande**
+
+```bash
+mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl; SELECT * FROM labrep.t_repl ORDER BY id;"
+```
+**Explication de la commande**
+
+- `mysql … SELECT COUNT(*)` et `SELECT *` : vérifie l'intégrité des données après le failback (aucune perte).
+- **Piège** : si des données manquent, le failback n'a pas été complété ; vérifier la resynchronisation.
+
+**Résultat attendu**
+
+```text
 +----------+
 | COUNT(*) |
 +----------+
+|        2 |
++----------+
++-----+----------+
+| id  | val      |
++-----+----------+
+| 101 | principal|
+| 102 | secours  |
++-----+----------+
+# rc=0
+```
 |        2 |
 +----------+
 +-----+----------+
