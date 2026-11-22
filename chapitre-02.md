@@ -12,10 +12,6 @@
 - Accès distant : une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
 
-## Durée estimée
-
-- Durée : non spécifiée (à adapter selon le rythme de l'apprenant).
-
 ## Prérequis
 
 Le chapitre 1 doit avoir été réalisé : les 3 VM sont nettoyées et configurées (IP statiques, SSH root), MySQL Cluster est installé et les 5 nœuds sont connectés (`ndb_mgm -e "SHOW"` liste 5 nœuds sans état `not connected`). Le fichier `config.ini` est présent sur VM 1 avec `NoOfReplicas = 2`. Le cluster est démarré dans l'ordre (gestion → stockage → SQL).
@@ -182,7 +178,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 
@@ -234,7 +229,6 @@ id=4    @192.168.56.10 (mysqld)
 id=5    @192.168.56.12 (mysqld)
         NodeId = 5
         HostName = 192.168.56.12
-# rc=0
 ```
 
 
@@ -270,7 +264,6 @@ Node 2: Data usage is 0%(11 32K pages of total 12290)
 Node 2: Index usage is 0%(6 32K pages of total 12285)
 Node 3: Data usage is 0%(11 32K pages of total 12290)
 Node 3: Index usage is 0%(6 32K pages of total 12285)
-# rc=0
 ```
 
 
@@ -307,7 +300,6 @@ Status:
 Connectstring: 192.168.56.10
 Cluster state: connected
 ...
-# rc=0
 ```
 
 
@@ -370,7 +362,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 
@@ -399,7 +390,6 @@ ndb_mgm -e '2 STOP'
 ```text
 Connected to Management Server at: localhost:1186
 Node 2 has shutdown.
-# rc=0
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -417,7 +407,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -436,7 +426,6 @@ echo '=== Etat apres arret ==='
 
 ```text
 === Etat apres arret ===
-# rc=0
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -466,7 +455,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 
@@ -493,7 +481,7 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
@@ -513,7 +501,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
@@ -532,7 +520,7 @@ sleep 6
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 
@@ -559,7 +547,7 @@ sleep 8
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -589,7 +577,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 
@@ -637,7 +624,7 @@ cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.save
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -682,7 +669,6 @@ HostName = 192.168.56.10
 [mysqld]
 NodeId = 5
 HostName = 192.168.56.12
-# rc=0
 ```
 
 
@@ -711,7 +697,7 @@ mkdir -p /var/lib/mysql-cluster/ndb_6
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -735,7 +721,6 @@ drwxr-xr-x 6 root root 4096 … ..
 drwxr-xr-x 2 root root 4096 … ndb_2
 drwxr-xr-x 2 root root 4096 … ndb_3
 drwxr-xr-x 2 root root 4096 … ndb_6
-# rc=0
 ```
 
 #### Étape 2b — Déclarer le NodeId 6 dans config.ini (VM 1)
@@ -761,7 +746,7 @@ cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.pre-node6
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -788,7 +773,38 @@ EOF
 **Résultat attendu**
 
 ```text
-# rc=0
+[ndb_mgmd default]
+DataDir = /var/lib/mysql-cluster
+
+[ndbd default]
+NoOfReplicas = 2
+DataMemory = 512M
+IndexMemory = 256M
+
+[tcp default]
+
+[ndb_mgmd]
+NodeId = 1
+HostName = 192.168.56.10
+DataDir = /var/lib/mysql-cluster
+
+[ndbd]
+NodeId = 2
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_2
+
+[ndbd]
+NodeId = 3
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_3
+
+[mysqld]
+NodeId = 4
+HostName = 192.168.56.10
+
+[mysqld]
+NodeId = 5
+HostName = 192.168.56.12
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -809,7 +825,6 @@ grep -A3 'NodeId = 6' /var/lib/mysql-cluster/config.ini
 NodeId = 6
 HostName = 192.168.56.11
 DataDir = /var/lib/mysql-cluster/ndb_6
-# rc=0
 ```
 
 #### Étape 2c — Démarrer le nœud de stockage NodeId 6 (VM 2)
@@ -838,7 +853,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_6.log &
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
@@ -856,7 +871,7 @@ sleep 6
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 2d — Vérifier l'apparition de NodeId 6 dans SHOW (VM 1)
@@ -884,7 +899,17 @@ ndb_mgm -e 'SHOW'
 **Résultat attendu**
 
 ```text
-# rc=0
+Connected to Management Server at: localhost:1186
+Cluster Configuration
+---------------------
+[ndbd(NDB)]	2 node(s)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+[mysqld(API)]	2 node(s)
+id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
 
@@ -922,7 +947,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -940,8 +964,7 @@ echo '---'
 **Résultat attendu**
 
 ```text
---- 
-# rc=0
+---
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -966,7 +989,6 @@ Node 2: Data usage is 0%(11 32K pages of total 12290)
 Node 2: Index usage is 0%(6 32K pages of total 12285)
 Node 3: Data usage is 0%(11 32K pages of total 12290)
 Node 3: Index usage is 0%(6 32K pages of total 12285)
-# rc=0
 ```
 
 
@@ -1017,7 +1039,6 @@ ndb_mgm -e '2 STOP'
 ```text
 Connected to Management Server at: localhost:1186
 Node 2 has shutdown.
-# rc=0
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1035,7 +1056,7 @@ sleep 3
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1065,7 +1086,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 
@@ -1095,7 +1115,7 @@ pkill -x mysqld
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1113,7 +1133,7 @@ sleep 3
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1131,9 +1151,7 @@ pgrep -a mysqld
 **Résultat attendu**
 
 ```text
-# date: 2026-11-22T00:00:00+01:00
-# cmd: pgrep -a mysqld
-# rc=1
+
 ```
 - `pgrep -a mysqld` ne retourne aucune ligne (rc=1) : le processus `mysqld` a bien été arrêté, confirmant l'arrêt du nœud SQL NodeId 4.
 
@@ -1157,7 +1175,7 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1175,7 +1193,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -1194,7 +1212,6 @@ pgrep -a mysqld
 
 ```text
 5138 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
-# rc=0
 ```
 
 
@@ -1233,7 +1250,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 

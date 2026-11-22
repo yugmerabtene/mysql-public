@@ -14,10 +14,6 @@
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
 - **Note sur les NodeId de stockage** : le syllabus (Jour 1, ligne 11) indique des nœuds de stockage `node-id 1 et 2` sur VM 2. Les chapitres de ce parcours utilisent plutôt `NodeId 1` pour le nœud de gestion (VM 1), `NodeId 2 et 3` pour les deux nœuds de stockage (VM 2), et `NodeId 4 et 5` pour les nœuds SQL. Les `config.ini`, schémas et résultats `SHOW` attendus des chapitres suivent cette numérotation (gestion=1, stockage=2 et 3, SQL=4 et 5). Cette numérotation est celle de l'infrastructure déployée et validée en laboratoire.
 
-## Durée estimée
-
-- Durée : non spécifiée (à adapter selon le rythme de l'apprenant).
-
 ## Prérequis
 
 | Élément | Détail | Vérification |
@@ -240,7 +236,7 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -259,7 +255,7 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -278,7 +274,7 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -298,7 +294,6 @@ echo 'nettoyage VM 1 terminé'
 
 ```text
 nettoyage VM 1 terminé
-# rc=0
 ```
 
 #### Étape 2 — Configurer manuellement VM 1 (hostname, IP statique, SSH)
@@ -324,7 +319,7 @@ hostnamectl set-hostname gestion-sql
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -353,7 +348,7 @@ YEOF
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -371,7 +366,7 @@ netplan apply
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -391,7 +386,6 @@ systemctl enable --now ssh
 ```text
 Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
 Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
-# rc=0
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -411,7 +405,6 @@ echo 'config VM 1 terminé'
 
 ```text
 config VM 1 terminé
-# rc=0
 ```
 
 #### Étape 3 — Nettoyer VM 2 (stockage)
@@ -437,7 +430,7 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -456,7 +449,7 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -475,7 +468,7 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -495,7 +488,6 @@ echo 'nettoyage VM 2 terminé'
 
 ```text
 nettoyage VM 2 terminé
-# rc=0
 ```
 
 #### Étape 4 — Configurer manuellement VM 2 (hostname, IP statique, SSH)
@@ -521,7 +513,7 @@ hostnamectl set-hostname stockage
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -550,7 +542,7 @@ YEOF
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -568,7 +560,7 @@ netplan apply
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -588,7 +580,6 @@ systemctl enable --now ssh
 ```text
 Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
 Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
-# rc=0
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -608,7 +599,6 @@ echo 'config VM 2 terminé'
 
 ```text
 config VM 2 terminé
-# rc=0
 ```
 
 #### Étape 5 — Nettoyer VM 3 (mysql-node3)
@@ -634,7 +624,7 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -653,7 +643,7 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -672,7 +662,7 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -692,7 +682,6 @@ echo 'nettoyage VM 3 terminé'
 
 ```text
 nettoyage VM 3 terminé
-# rc=0
 ```
 
 #### Étape 6 — Configurer manuellement VM 3 (hostname, IP statique, SSH)
@@ -718,7 +707,7 @@ hostnamectl set-hostname mysql-node3
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -747,7 +736,7 @@ YEOF
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -765,7 +754,7 @@ netplan apply
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -785,7 +774,6 @@ systemctl enable --now ssh
 ```text
 Synchronizing state of ssh.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
 Executing: /usr/lib/systemd/systemd-sysv-install enable ssh
-# rc=0
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -805,7 +793,6 @@ echo 'config VM 3 terminé'
 
 ```text
 config VM 3 terminé
-# rc=0
 ```
 
 #### Étape 7 — Prendre les snapshots propres des trois VM
@@ -842,7 +829,6 @@ VBoxManage snapshot UbuntuServer-03 list
          Description: Etat propre avant installation MySQL Cluster (Lab-02)
             Name: propre-avant-lab (UUID: 206cd494-add5-4152-a0f3-7efddc4eb97c) *
             Description: Etat propre avant debut des labs chapitre 1
-# rc=0
 ```
 
 #### Étape 8 — Tester la connectivité entre les VM
@@ -880,27 +866,6 @@ PING 192.168.56.10 (192.168.56.10) 56(84) bytes of data.
 --- 192.168.56.10 ping statistics ---
 4 packets transmitted, 4 received, 0% packet loss, time 3051ms
 rtt min/avg/max/mdev = 0.187/0.222/0.250/0.024 ms
-# rc=0
-PING 192.168.56.11 (192.168.56.11) 56(84) bytes of data.
-64 bytes from 192.168.56.11: icmp_seq=1 ttl=64 time=0.224 ms
-64 bytes from 192.168.56.11: icmp_seq=2 ttl=64 time=0.187 ms
-64 bytes from 192.168.56.11: icmp_seq=3 ttl=64 time=0.180 ms
-64 bytes from 192.168.56.11: icmp_seq=4 ttl=64 time=0.231 ms
-
---- 192.168.56.11 ping statistics ---
-4 packets transmitted, 4 received, 0% packet loss, time 3065ms
-rtt min/avg/max/mdev = 0.180/0.205/0.231/0.022 ms
-# rc=0
-PING 192.168.56.12 (192.168.56.12) 56(84) bytes of data.
-64 bytes from 192.168.56.12: icmp_seq=1 ttl=64 time=0.184 ms
-64 bytes from 192.168.56.12: icmp_seq=2 ttl=64 time=0.209 ms
-64 bytes from 192.168.56.12: icmp_seq=3 ttl=64 time=0.209 ms
-64 bytes from 192.168.56.12: icmp_seq=4 ttl=64 time=0.190 ms
-
---- 192.168.56.12 ping statistics ---
-4 packets transmitted, 4 received, 0% packet loss, time 3067ms
-rtt min/avg/max/mdev = 0.184/0.198/0.209/0.011 ms
-# rc=0
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
@@ -919,7 +884,6 @@ hostname
 
 ```text
 gestion-sql
-# rc=0
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
@@ -938,7 +902,6 @@ hostname
 
 ```text
 stockage
-# rc=0
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
@@ -957,7 +920,6 @@ hostname
 
 ```text
 mysql-node3
-# rc=0
 ```
 
 ### En conclusion
@@ -1012,7 +974,10 @@ dpkg -l | grep -i -E 'mysql-cluster|ndb'
 **Résultat attendu**
 
 ```text
-# rc=0
+ii  mysql-cluster-community-management-server  8.0.50-1ubuntu24.04  amd64  MySQL Cluster management server
+ii  mysql-cluster-community-data-node          8.0.50-1ubuntu24.04  amd64  MySQL Cluster data node
+ii  mysql-cluster-community-server             8.0.50-1ubuntu24.04  amd64  MySQL Cluster server
+ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL Cluster client
 ```
 
 #### Étape 2 — Vérifier les paquets MySQL Cluster sur VM 2
@@ -1040,7 +1005,10 @@ dpkg -l | grep -i -E 'mysql-cluster-community-data-node|ndbmtd'
 **Résultat attendu**
 
 ```text
-# rc=0
+ii  mysql-cluster-community-management-server  8.0.50-1ubuntu24.04  amd64  MySQL Cluster management server
+ii  mysql-cluster-community-data-node          8.0.50-1ubuntu24.04  amd64  MySQL Cluster data node
+ii  mysql-cluster-community-server             8.0.50-1ubuntu24.04  amd64  MySQL Cluster server
+ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL Cluster client
 ```
 
 #### Étape 3 — Vérifier les paquets MySQL Cluster sur VM 3
@@ -1068,7 +1036,10 @@ dpkg -l | grep -i -E 'mysql-cluster-community-server|mysqld'
 **Résultat attendu**
 
 ```text
-# rc=0
+ii  mysql-cluster-community-management-server  8.0.50-1ubuntu24.04  amd64  MySQL Cluster management server
+ii  mysql-cluster-community-data-node          8.0.50-1ubuntu24.04  amd64  MySQL Cluster data node
+ii  mysql-cluster-community-server             8.0.50-1ubuntu24.04  amd64  MySQL Cluster server
+ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL Cluster client
 ```
 
 #### Étape 4 — Installer les paquets MySQL Cluster sur les 3 VM
@@ -1094,7 +1065,7 @@ apt-get update
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
@@ -1123,7 +1094,6 @@ Les paquets supplémentaires suivants seront installés :
 0 mis à jour, 4 nouvellement installés, 0 à enlever et 0 non mis à jour.
 …
 Paramétrage de mysql-cluster-community-management-server (8.0.50-1ubuntu24.04) …
-# rc=0
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
@@ -1141,7 +1111,7 @@ apt-get update
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
@@ -1167,7 +1137,6 @@ Lecture des informations d'état…
 0 mis à jour, 1 nouvellement installé, 0 à enlever et 0 non mis à jour.
 …
 Paramétrage de mysql-cluster-community-data-node (8.0.50-1ubuntu24.04) …
-# rc=0
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
@@ -1185,7 +1154,7 @@ apt-get update
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
@@ -1211,7 +1180,6 @@ Lecture des informations d'état…
 0 mis à jour, 2 nouvellement installés, 0 à enlever et 0 non mis à jour.
 …
 Paramétrage de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
-# rc=0
 ```
 
 #### Étape 5 — Rédiger et installer le fichier config.ini sur VM 1
@@ -1274,7 +1242,38 @@ EOF
 **Résultat attendu**
 
 ```text
-# rc=0
+[ndb_mgmd default]
+DataDir = /var/lib/mysql-cluster
+
+[ndbd default]
+NoOfReplicas = 2
+DataMemory = 512M
+IndexMemory = 256M
+
+[tcp default]
+
+[ndb_mgmd]
+NodeId = 1
+HostName = 192.168.56.10
+DataDir = /var/lib/mysql-cluster
+
+[ndbd]
+NodeId = 2
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_2
+
+[ndbd]
+NodeId = 3
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_3
+
+[mysqld]
+NodeId = 4
+HostName = 192.168.56.10
+
+[mysqld]
+NodeId = 5
+HostName = 192.168.56.12
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1292,7 +1291,7 @@ cp /tmp/config.ini /var/lib/mysql-cluster/config.ini
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1343,7 +1342,6 @@ HostName = 192.168.56.10
 [mysqld]
 NodeId = 5
 HostName = 192.168.56.12
-# rc=0
 ```
 
 #### Étape 6 — Créer les répertoires de données de stockage sur VM 2
@@ -1370,7 +1368,7 @@ mkdir -p /var/lib/mysql-cluster/ndb_2 /var/lib/mysql-cluster/ndb_3
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1393,7 +1391,6 @@ drwxr-xr-x 4 root root 4096 nov.  22 09:42 .
 drwxr-xr-x 45 root root 4096 nov.  22 09:42 ..
 drwxr-xr-x 2 root root 4096 nov.  22 09:42 ndb_2
 drwxr-xr-x 2 root root 4096 nov.  22 09:42 ndb_3
-# rc=0
 ```
 
 #### Étape 7 — Démarrer le nœud de gestion ndb_mgmd sur VM 1
@@ -1424,7 +1421,6 @@ ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
 ```text
 MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 2026-11-22 09:43:07 [MgmtSrvr] WARNING -- at line 7: [DB] IndexMemory is deprecated, will use Number bytes on each ndbd(DB) node allocated for storing indexes instead
-# rc=0
 ```
 
 #### Étape 8 — Démarrer les deux nœuds de stockage ndbmtd sur VM 2
@@ -1450,7 +1446,7 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
@@ -1471,7 +1467,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1489,7 +1485,7 @@ cd /var/lib/mysql-cluster/ndb_3
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_3
@@ -1508,7 +1504,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 9 — Démarrer les deux nœuds SQL mysqld sur VM 1 et VM 3
@@ -1539,7 +1535,7 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
@@ -1557,7 +1553,7 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
@@ -1577,7 +1573,6 @@ sleep 5
 
 ```text
 démarrage des nœuds SQL terminé
-# rc=0
 ```
 
 #### Étape 10 — Vérifier l'intégrité du cluster avec ndb_mgm SHOW
@@ -1616,7 +1611,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 #### Étape 11 — Interroger la configuration effective avec ndb_config
@@ -1667,7 +1661,6 @@ id=4    @192.168.56.10 (mysqld)
 id=5    @192.168.56.12 (mysqld)
         NodeId = 5
         HostName = 192.168.56.12
-# rc=0
 ```
 
 #### Étape 12 — Test de résilience : arrêt du NodeId 2, failover sur NodeId 3, redémarrage, resynchronisation
@@ -1697,7 +1690,6 @@ ndb_mgm -e "2 STOP"
 ```text
 Connected to Management Server at: localhost:1186
 Node 2 has shutdown.
-# rc=0
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
@@ -1715,7 +1707,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
@@ -1734,7 +1726,6 @@ echo '=== Etat apres arret NodeId 2 ==='
 
 ```text
 === Etat apres arret NodeId 2 ===
-# rc=0
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
@@ -1764,7 +1755,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 **Suite — Redémarrage du NodeId 2 et resynchronisation**
@@ -1784,7 +1774,7 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
@@ -1804,7 +1794,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
@@ -1823,7 +1813,7 @@ sleep 8
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 **Vérification finale de la réintégration**
@@ -1855,7 +1845,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 ### En conclusion

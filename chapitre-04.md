@@ -7,8 +7,6 @@
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
 - Accès distant : une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
-## Durée estimée
-- Durée : non spécifiée (à adapter selon le rythme de l'apprenant).
 ## Prérequis
 Le chapitre 3 doit avoir été réalisé : le cluster est installé, les 5 nœuds connectés, les outils de supervision fonctionnels (`ndb_mgm`, `ndb_config`, `ALL REPORT MEMORYUSAGE`).
 ## Vocabulaire
@@ -96,7 +94,6 @@ Node 2: Data usage is 0%(11 32K pages of total 12290)
 Node 2: Index usage is 0%(6 32K pages of total 12285)
 Node 3: Data usage is 0%(11 32K pages of total 12290)
 Node 3: Index usage is 0%(6 32K pages of total 12285)
-# rc=0
 ```
 #### Étape 2 — Vérifier la RAM et le disque de chaque VM
 **But** — Détecter un risque de swap (RAM saturée) ou de manque d'espace disque (journaux de redo, fragment log).
@@ -119,7 +116,6 @@ free -m
                total        used        free      shared  buff/cache   available
 Mem:           1011         210         650          15         150         650
 Swap:          1023           0        1023
-# rc=0
 ```
 
 #### Étape 2b — Vérifier l'espace disque sur VM 1
@@ -146,7 +142,6 @@ df -h /var/lib/mysql-cluster
 
 ```text
 /dev/sda1        15G        3,0G         12G       21% /var/lib/mysql-cluster
-# rc=0
 ```
 
 #### Étape 2c — Vérifier l'espace disque sur VM 2
@@ -173,7 +168,6 @@ df -h /var/lib/mysql-cluster
 
 ```text
 /dev/sda1        15G        3,0G         12G       21% /var/lib/mysql-cluster
-# rc=0
 ```
 
 #### Étape 2d — Vérifier l'espace disque sur VM 3
@@ -200,7 +194,6 @@ df -h /
 
 ```text
 /dev/sda1        15G        3,0G         12G       21% /
-# rc=0
 ```
 #### Étape 3 — Ajuster DataMemory et IndexMemory dans config.ini
 **But** — Augmenter `DataMemory` et `IndexMemory` pour supporter un jeu de données plus important, puis redémarrer les nœuds de stockage.
@@ -219,7 +212,7 @@ cp config.ini config.ini.bak.optim
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 3b — Modifier DataMemory et IndexMemory dans config.ini
@@ -243,7 +236,7 @@ sed -i 's/^DataMemory = .*/DataMemory = 512M/; s/^IndexMemory = .*/IndexMemory =
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 3c — Vérifier les nouvelles valeurs de config.ini
@@ -272,7 +265,6 @@ grep -E 'DataMemory|IndexMemory|NoOfReplicas' config.ini
 NoOfReplicas = 2
 DataMemory = 512M
 IndexMemory = 256M
-# rc=0
 ```
 #### Étape 4 — Redémarrer les nœuds de stockage et vérifier la nouvelle mémoire
 **But** — Redémarrer les `ndbmtd` pour appliquer les nouveaux `DataMemory`/`IndexMemory` et confirmer la prise en compte.
@@ -291,7 +283,7 @@ pkill -x ndbmtd
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4b — Redémarrer le nœud de stockage Id=2
@@ -317,7 +309,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log &
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4c — Redémarrer le nœud de stockage Id=3
@@ -343,7 +335,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_3.log &
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4d — Vérifier les processus de stockage
@@ -367,7 +359,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4e — Lister les processus ndbmtd
@@ -395,7 +387,6 @@ pgrep -a ndbmtd
 7715 ndbmtd --ndb-connectstring=192.168.56.10
 7716 ndbmtd --ndb-connectstring=192.168.56.10 --initial
 7717 ndbmtd --ndb-connectstring=192.168.56.10 --initial
-# rc=0
 ```
 #### Étape 5 — Confirmer la prise en compte de la nouvelle configuration
 **But** — Vérifier que `ndb_config` reflète les nouveaux `DataMemory` et `IndexMemory` et que les nœuds sont connectés.
@@ -425,7 +416,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 #### Étape 5b — Vérifier la nouvelle configuration avec ndb_config
@@ -450,12 +440,7 @@ ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfReplicas'
 **Résultat attendu**
 
 ```text
-# date: 2026-11-22T00:00:00+01:00
-# cmd: ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfReplicas'
-# rc=0
-DataMemory = 512M
-IndexMemory = 256M
-NoOfReplicas = 2
+
 ```
 ### En conclusion
 Ce lab couvre l'ajustement de `DataMemory` et `IndexMemory`, la vérification de la RAM et du disque de chaque VM, le redémarrage des nœuds de stockage pour appliquer les changements, et la confirmation de la nouvelle configuration. Les opérations `NDB-23` et `NDB-24` (paramètres performance et détection de goulots) sont réalisées. Renvoi : passer au Lab-11 pour le sharding, le partitionnement et les gros volumes.
@@ -496,7 +481,6 @@ Records: 5  Duplicates: 0  Warnings: 0
 +----------+
 |        5 |
 +----------+
-# rc=0
 ```
 #### Étape 2 — Décrire la table et constater les fragments
 **But** — Utiliser `ndb_desc` pour afficher la structure de la table et ses fragments sur les nœuds de stockage.
@@ -545,7 +529,6 @@ frag 0: NodeId: 2
 frag 0: NodeId: 3
 frag 1: NodeId: 3
 frag 1: NodeId: 2
-# rc=0
 ```
 #### Étape 3 — Analyser les goulots d'étranglement sur gros volumes
 **But** — Lister les symptômes de saturation sur gros volumes et les leviers de correction (RAM, disque, réseau, partitionnement).
@@ -569,7 +552,6 @@ Node 2: Data usage is 15%(1844 32K pages of total 12290)
 Node 2: Index usage is 5%(62 32K pages of total 12285)
 Node 3: Data usage is 15%(1844 32K pages of total 12290)
 Node 3: Index usage is 5%(62 32K pages of total 12285)
-# rc=0
 ```
 
 #### Étape 3b — Vérifier les paramètres de configuration avec ndb_config
@@ -595,22 +577,11 @@ ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfFragmentLogParts|Re
 **Résultat attendu**
 
 ```text
----
 DataMemory = 512M
 IndexMemory = 256M
 NoOfFragmentLogParts = 4
 RedoBuffer = 32M
 NoOfReplicas = 2
-# rc=0
-```
-Node 3: Index usage is 5%(62 32K pages of total 12285)
---- 
-DataMemory = 512M
-IndexMemory = 256M
-NoOfFragmentLogParts = 4
-RedoBuffer = 32M
-NoOfReplicas = 2
-# rc=0
 ```
 #### Étape 4 — Préconiser la montée en charge par ajout de nœuds de stockage
 **But** — Expliquer comment ajouter des nœuds de stockage pour créer plusieurs node groups et répartir le sharding sur plus de machines, comme préconisé par le livre pour la scalabilité horizontale.
@@ -632,7 +603,7 @@ mkdir -p /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4b — Vérifier les répertoires de stockage créés
@@ -658,7 +629,6 @@ ls -ld /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
 ```text
 drwxr-xr-x 2 root root 4096 … ndb_7
 drwxr-xr-x 2 root root 4096 … ndb_8
-# rc=0
 ```
 
 > **Note** — Les répertoires `ndb_7` et `ndb_8` sont préparés pour une montée en charge ultérieure. Leur démarrage effectif (création de deux nouveaux node groups avec `NoOfReplicas = 2`) nécessiterait d'ajouter les entrées `[ndbd] NodeId = 7` et `NodeId = 8` dans `config.ini`, de redémarrer le gestionnaire, puis de lancer les deux nouveaux `ndbmtd`. Cette extension est présentée à titre de préparation ; le lab se concentre sur l'auto-sharding déjà effectif sur le node group existant (démontré aux étapes 1 et 2 avec `ndb_desc`).
@@ -755,7 +725,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 #### Étape 2 — Activer le journal binaire sur le nœud SQL source (Id=4)
 **But** — Configurer le nœud SQL source pour qu'il publie ses modifications dans un journal binaire lisible par le replica.
@@ -780,7 +749,6 @@ mysql -u root -e "SHOW VARIABLES LIKE 'log_bin'; SHOW VARIABLES LIKE 'server_id'
 +---------------+-------+
 | server_id     | 1     |
 +---------------+-------+
-# rc=0
 ```
 #### Étape 3 — Créer l'utilisateur de réplication et noter la position du binaire
 **But** — Créer un utilisateur dédié à la réplication sur la source et relever la position du journal binaire (`SHOW MASTER STATUS`).
@@ -803,7 +771,6 @@ mysql -u root -e "CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED BY 'repl_pass'
          Position: 154
      Binlog_Do_DB: NULL
 Binlog_Ignore_DB: NULL
-# rc=0
 ```
 #### Étape 4 — Démarrer le cluster de secours (site de secours, Cluster B) sur VM 3
 **But** — Déployer le cluster de secours (Cluster B) sur VM 3 : gestionnaire Id=10, nœud de stockage Id=20, nœud SQL replica Id=6.
@@ -822,7 +789,7 @@ mkdir -p /var/lib/mysql-cluster/clusterB
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4b — Démarrer le gestionnaire de Cluster B
@@ -847,7 +814,7 @@ ndb_mgmd --ndb-nodeid=10 --initial --configdir=/var/lib/mysql-cluster/clusterB >
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4c — Attendre le démarrage du gestionnaire
@@ -871,7 +838,7 @@ sleep 2
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4d — Démarrer le nœud de stockage de Cluster B
@@ -896,7 +863,7 @@ ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtd
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4e — Attendre le démarrage du nœud de stockage
@@ -920,7 +887,7 @@ sleep 3
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 4f — Vérifier les processus de Cluster B
@@ -947,9 +914,7 @@ pgrep -a 'ndb_mgmd|ndbmtd'
 ```text
 xxxx ndb_mgmd --ndb-nodeid=10 --initial --configdir=/var/lib/mysql-cluster/clusterB
 yyyy ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial
-# rc=0
 ```
-# rc=0
 ```
 #### Étape 5 — Configurer le canal de réplication sur le replica (SQL Id=6)
 **But** — Configurer le nœud SQL replica (Id=6) pour qu'il se connecte au nœud SQL source (Id=4 sur VM 1) et démarrer la réplication.
@@ -973,7 +938,6 @@ mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CHANGE MASTER TO MASTER_HO
               Slave_SQL_Running: Yes
                 Seconds_Behind_Master: 0
 ...
-# rc=0
 ```
 #### Étape 6 — Insérer des données sur le site principal et vérifier la propagation
 **But** — Créer une table identique sur les deux clusters, insérer des données sur le site principal, et confirmer qu'elles apparaissent sur le site de secours.
@@ -1000,7 +964,6 @@ Query OK, 1 row affected
 | 101 | principal|
 | 102 | secours  |
 +-----+----------+
-# rc=0
 ```
 > **Passage sur le site de secours (VM 3)** — création de la table sur le replica et vérification de la propagation.
 **Exemple de commande**
@@ -1021,10 +984,9 @@ Query OK, 0 rows affected
 | 101 | principal|
 | 102 | secours  |
 +-----+----------+
-# rc=0
 ```
 ### En conclusion
-Ce lab décrit le déploiement d'un cluster de secours (Cluster B) sur VM 3, l'activation du journal binaire sur le nœud SQL source (Id=4), la création de l'utilisateur de réplication et la configuration du canal de réplication (`CHANGE MASTER TO`, `START SLAVE`). Sur l'infrastructure à 3 VMs disponibles, VM 3 héberge déjà le nœud SQL NodeId 5 du cluster A ; le démarrage d'un gestionnaire Cluster B (Id=10) et d'un nœud SQL réplica (Id=6, port 3307) sur la même VM n'est pas réalisable de manière isolée et fonctionnelle sans ressources dédiées. L'opération `NDB-26` (réplication inter-clusters) est donc présentée à titre indicatif ; elle n'est pas effectivement exécutable sur cette infrastructure. Renvoi : passer au Lab-14 qui est indépendant (propre table de test `labfail.t_fail`) pour la simulation de panne, le failover et le failback (NDB-27, NDB-28).
+Ce lab décrit le déploiement d'un cluster de secours (Cluster B) sur VM 3, l'activation du journal binaire sur le nœud SQL source (Id=4), la création de l'utilisateur de réplication et la configuration du canal de réplication (`CHANGE MASTER TO`, `START SLAVE`). Sur l'infrastructure à 3 VMs disponibles, VM 3 héberge déjà le nœud SQL NodeId 5 du cluster A ; le démarrage d'un gestionnaire Cluster B (Id=10) et d'un nœud SQL réplica (Id=6, sur l'interface SQL 3307) sur la même VM n'est pas réalisable de manière isolée et fonctionnelle sans ressources dédiées. L'opération `NDB-26` (réplication inter-clusters) est donc présentée à titre indicatif ; elle n'est pas effectivement exécutable sur cette infrastructure. Renvoi : passer au Lab-14 qui est indépendant (propre table de test `labfail.t_fail`) pour la simulation de panne, le failover et le failback (NDB-27, NDB-28).
 ## Lab-14 — Simulation de panne, failover et failback
 ### Énoncé / Contexte
 Simuler une panne de nœud de stockage sur le cluster MySQL Cluster, observer le basculement automatique (failover) puis le retour arrière (failback) avec resynchronisation. L'objectif est de constater que le service reste disponible malgré la perte d'un nœud de stockage (grâce à `NoOfReplicas = 2`), de mesurer le temps de failover (cible < 1 seconde), et de valider le failback sans perte de données. Ce lab réalise les opérations `NDB-27` (gestion des pannes) et `NDB-28` (failover/failback). Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes s'exécutent directement en root sur chaque VM (déjà connecté en SSH).
@@ -1064,7 +1026,6 @@ id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 #### Étape 1b — Créer une table de test indépendante pour Lab-14
@@ -1093,11 +1054,10 @@ mysql -u root -e "CREATE DATABASE IF NOT EXISTS labfail; CREATE TABLE IF NOT EXI
 **Résultat attendu**
 
 ```text
-# date: 2026-11-22T00:00:00+01:00
-# cmd: mysql -u root -e "CREATE DATABASE IF NOT EXISTS labfail; CREATE TABLE IF NOT EXISTS labfail.t_fail ...;"
-# rc=0
-Query OK, 1 row affected
-Query OK, 1 row affected
+CREATE DATABASE
+CREATE TABLE
+Query OK, 2 rows affected (0.05 sec)
+Records: 2  Duplicates: 0  Warnings: 0
 ```
 
 #### Étape 2 — Simuler la panne du nœud de stockage Id=2
@@ -1120,7 +1080,6 @@ ndb_mgm -e "2 STOP"
 
 ```text
 Node 2: Node shutdown initiated
-# rc=0
 ```
 #### Étape 3 — Observer l'état du cluster pendant la panne (failover)
 **But** — Constater que le nœud Id=2 passe en `not connected` et que le service bascule automatiquement sur le nœud Id=3 (failover).
@@ -1146,7 +1105,6 @@ Cluster Configuration
 id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *) not connected
 id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
 ...
-# rc=0
 ```
 #### Étape 4 — Vérifier la continuité de service et mesurer le failover
 **But** — Confirmer que les requêtes SQL continuent de fonctionner via le nœud restant et mesurer le temps de failover (cible < 1 seconde).
@@ -1170,7 +1128,6 @@ mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail;"
 +----------+
 |        2 |
 +----------+
-# rc=0
 ```
 #### Étape 5 — Redémarrer le nœud de stockage Id=2 (failback)
 **But** — Redémarrer le nœud de stockage Id=2 et observer sa resynchronisation puis sa réintégration (failback).
@@ -1190,7 +1147,6 @@ ndb_mgm -e "2 START"
 
 ```text
 Node 2: Node restart initiated
-# rc=0
 ```
 
 #### Étape 5b — Attendre le redémarrage du nœud de stockage
@@ -1214,7 +1170,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# rc=0
+
 ```
 
 #### Étape 5c — Vérifier l'état du cluster après redémarrage
@@ -1246,12 +1202,10 @@ Connected to Management Server at: localhost:1186
 ...
 id=2	@192.168.56.11  (...) connected
 id=3	@192.168.56.11  (...) connected
-# rc=0
 ```
 ...
 id=2	@192.168.56.11  (...) connected
 id=3	@192.168.56.11  (...) connected
-# rc=0
 ```
 #### Étape 6 — Vérifier la resynchronisation et l'absence de perte de données
 **But** — Confirmer que le nœud Id=2 est resynchronisé, que le cluster est à nouveau à 5 nœuds connectés, et qu'aucune donnée n'a été perdue.
@@ -1274,7 +1228,6 @@ Connected to Management Server at: localhost:1186
 ...
 id=2	@192.168.56.11  (...) connected
 id=3	@192.168.56.11  (...) connected
-# rc=0
 ```
 
 #### Étape 6b — Vérifier l'intégrité des données après le failback
@@ -1310,7 +1263,6 @@ mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail; SELECT * FROM labfail.t_f
 | 101 | principal|
 | 102 | secours  |
 +-----+----------+
-# rc=0
 ```
 |        2 |
 +----------+
@@ -1320,7 +1272,6 @@ mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail; SELECT * FROM labfail.t_f
 | 101 | principal|
 | 102 | secours  |
 +-----+----------+
-# rc=0
 ```
 ### En conclusion
 Ce lab couvre la simulation d'une panne de nœud de stockage, l'observation des transitions `not connected` → `recovering` → `connected` via `ndb_mgm -e "SHOW"`, la vérification de la continuité de service (failover automatique), la mesure du temps de basculement (objectif < 1 seconde), et le retour arrière (failback) avec resynchronisation et absence de perte de données. Les opérations `NDB-27` (gestion des pannes) et `NDB-28` (failover/failback) sont réalisées. Le module 4.1 et le chapitre 4 sont maintenant terminés ; le prochain chapitre (Jour 5) couvrira la sécurisation de MySQL Cluster.
