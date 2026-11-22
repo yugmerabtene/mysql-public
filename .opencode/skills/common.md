@@ -272,13 +272,13 @@ En cas de blocage : `student` alerte, `prof` corrige, `orchestrator` décide de 
 - **Lab** : environnement isolé et autorisé.
 - **Périmètre** : ensemble des cibles et actions autorisées.
 - **Preuve** : sortie, capture, journal ou fichier horodaté.
-- **IOC** : indicateur de compromission.
-- **Détection** : télémétrie + règle + alerte.
-- **Mitigation** : mesure préventive, détective ou corrective.
-- **Finding** : vulnérabilité documentée avec impact et remédiation.
+- **IOC** : indicateur opérationnel de contrôle.
+- **Détection** : journal + événement + vérification.
+- **Mitigation** : mesure corrective ou préventive.
+- **Finding** : constat documenté avec impact et correction.
 - **VM** : machine virtuelle du laboratoire.
 - **PCAP** : fichier de capture de trafic réseau (packet capture).
-- **Payload** : code exécuté sur la cible après le succès de l'exploit.
+- **Payload** : charge de données transmise entre les nœuds du cluster MySQL.
 - **Nœud de gestion** : serveur qui gère la configuration du cluster MySQL (ndb_mgmd).
 - **Nœud de stockage** : serveur qui stocke les données (ndbmtd/ndbd).
 - **Nœud SQL** : serveur MySQL qui fournit l'interface SQL (mysqld).
@@ -298,10 +298,9 @@ est explicite et chaque résultat est annoncé.
 2. Impératif ou « vous » pour les instructions (« Lancez la commande », « Vous devez voir »).
    Jamais de tour impersonnel flou (« il faut », « on peut envisager »).
 3. Tout terme technique est défini **à sa première occurrence** :
-   `**Terme** — définition en une ligne`. Exemple : **Payload** — code exécuté sur la
-   machine cible après le succès de l'exploit.
+`**Terme** — définition en une ligne`. Exemple : **Payload** — charge de données transmise entre les nœuds du cluster MySQL.
 4. Un anglicisme est traduit, expliqué. Pas de sigle non développé
-   (ex. `IOC (Indicateur de Compromission : trace mesurable d'une attaque)`).
+   (ex. `IOC (indicateurs de contrôle : trace d'une opération de cluster)`).
 5. Vocabulaire constant : un même concept garde le même mot du début à la fin du document
    (glossaire commun, section 13 ; IDs de référence, section 4).
 6. Aucune référence vague : pas de « comme d'habitude », « cf. plus haut », « la commande
@@ -344,8 +343,8 @@ Règles :
    est tronquée ou déplacée dans un encadré `> **À retenir**`.
 2. Un paragraphe de plus de 4 lignes sans bloc de code ni schéma est une anomalie de style :
    signature `minor` minimum en relecture, `major` si la notion clé reste non illustrée.
-3. Chaque schéma est suivi d'une phrase qui le traduit en mots (« L'exploit livre le payload
-   à xxx… »). Dans un lab, chaque bloc de commande est suivi de son explication en liste,
+3. Chaque schéma est suivi d'une phrase qui le traduit en mots (« La commande livre le résultat
+    à xxx… »). Dans un lab, chaque bloc de commande est suivi de son explication en liste,
    puis de sa sortie attendue.
 4. Les travaux pratiques alternent « faire et comprendre » : chaque étape de lab référence
    la notion du cours qu'elle démontre (« Cette étape illustre `NDB-XX`, vu plus haut »).
@@ -435,8 +434,8 @@ refusé, même sans faute d'orthographe.
    `leur`/`leurs`, `quel`/`quelle`/`qu'elle`, `davantage`/`d'avantage`,
    `plutôt`/`plus tôt`, `quoique`/`quoi que`.
 4. **Participe passé et infinitif** : « J'ai dû relancer le service » (participe
-   passé de *devoir*), pas « J'ai du relancer ». « Une attaque ciblée » (participe)
-   s'oppose à « cibler une machine » (infinitif).
+passé de *devoir*), pas « J'ai du relancer ». « Une opération ciblée » (participe)
+    s'oppose à « cibler une machine » (infinitif).
 5. **Accord du participe passé** : avec `être`, accord avec le sujet ; avec `avoir`,
    accord avec le complément d'objet direct placé avant. Exemple : « les commandes
    que vous avez exécutées ».
@@ -476,7 +475,7 @@ refusé, même sans faute d'orthographe.
 | Unités | Espace entre la valeur et l'unité | `512 Mo` · `10 Gbit/s` |
 | Dates et heures | Format français en clair | `16 novembre 2026` · `14 h 32` |
 | Majuscules | Noms propres, sigles, début de phrase ; pas aux noms communs | `la sécurité du réseau` |
-| Abréviations | Développées à la première occurrence, puis sigle seul | `IOC (indicateur de compromission)` |
+| Abréviations | Développées à la première occurrence, puis sigle seul | `IOC (indicateurs de contrôle)` |
 
 Règles complémentaires :
 
@@ -494,7 +493,7 @@ Règles complémentaires :
    « timing », « processus » plutôt que « process », « formation » plutôt que
    « training ».
 2. **Terme technique anglais consacré** : conservé lorsqu'il est la norme du domaine
-   (`payload`, `exploit`, `shell`, `spoofing`, `pentest`). Il est mis en forme et
+   (`ndb_mgmd`, `ndbmtd`, `mysqld`, `ndb_mgm`, `ndb_config`). Il est mis en forme et
    défini à sa première occurrence.
 3. **Verbes francisés de l'anglais** : à éviter dès qu'un équivalent clair existe.
    « Brute-forcer » → « tester par essais successifs » ; « pinger » → « envoyer une
@@ -561,7 +560,7 @@ Règles complémentaires :
 | 3.14 | 3,14 | Virgule décimale française |
 | "guillemets anglais" | « guillemets français » | Typographie française |
 | Erreur: port fermé | Erreur : port fermé | Espace avant le deux-points |
-| une attaque , puis un scan | une attaque, puis un scan | Espace avant la virgule |
+| une opération , puis une vérification | une opération, puis une vérification | Espace avant la virgule |
 
 #### 14.6.6 Contrôle, seuils et sanctions
 
@@ -658,7 +657,7 @@ Durée totale, puis durée par lab.
 |---|---|
 | Terme | Définition en une ligne, à sa première occurrence |
 
-## Modèle de menace et cartographie de référence
+## Cartographie des opérations et contrôles de référence
 
 Tableau au format de la section 4.2 : opération, ID, composant, source de données,
 règle de détection et mitigation. Toutes les opérations des labs figurent dans le
@@ -677,7 +676,7 @@ ne précède ce plan.
 
 | Contrôle | Méthode | Résultat attendu | Preuve |
 |---|---|---|---|
-| CVE, service, domaine, capture ou baseline | ... | ... | `preuves/chN-labX/...` |
+| nœud, service, base, table ou ligne | ... | ... | `preuves/chN-labX/...` |
 
 Les contrôles sont spécifiques au chapitre (section 15.4). Toute commande de
 vérification est développée dans un lab `Lab-00 — Vérification préalable` au format
@@ -723,7 +722,7 @@ recopiée dans le chapitre livré.
 | Durée estimée | Total et durée par lab | Mesurée pendant l'auto-test |
 | Prérequis | VM, outil, service, snapshot | Chaque ligne a une vérification exécutable |
 | Vocabulaire | Termes techniques du chapitre | Définition à la première occurrence |
-| Modèle de menace et cartographie de référence | Tableau complet de la section 4.2 | Toute opération a un ID, une détection et une mitigation |
+| Cartographie des opérations et contrôles | Tableau complet de la section 4.2 | Toute opération a un ID, une détection et une mitigation |
 | Plan d'installation maître | Tous les labs, cibles, opérations, preuves | Précède toute action de configuration |
 | Vérification préalable | Contrôles spécifiques au chapitre | Commandes développées au format lab, exécutées et prouvées avant le premier lab de configuration |
 | Labs | Blocs canoniques `Lab-XX` | Quatre sections, étapes explicites, preuve par commande |

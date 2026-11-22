@@ -94,13 +94,13 @@ sections 1.1 à 1.4, 9 et 10.
 
 Pour chaque module :
 
-1. **Cours** (10–15 min de lecture) : architecture, composants, surface d'attaque, objectif, vocabulaire.
-2. **Modèle de menace** : ce que l'attaquant cherche, ce que le défenseur voit.
+1. **Cours** (10–15 min de lecture) : architecture, composants, zone d'exposition, objectif, vocabulaire.
+2. **Risques et contrôles** : ce qui peut compromettre le cluster, ce que l'administrateur vérifie.
 3. **Démonstration contrôlée** (20–30 min) : commandes, résultat attendu, limites.
 4. **Fiche de lab** : prérequis, étapes, points de contrôle, preuves à collecter.
 5. **Exercices** : du guidé vers l'autonome, difficulté croissante.
 6. **Solution intégrée** : dans le déroulé du lab, variantes et erreurs fréquentes.
-7. **Détection** : journaux, événements, IOC, règles. Chaque technique classée par son identifiant de référence, sa source de données et son contrôle de défense (skill `common`, section 5).
+7. **Surveillance** : journaux, événements, indicateurs. Chaque point classé par son identifiant de référence, sa source de données et son contrôle de défense (skill `common`, section 5).
 8. **Diagrammes Mermaid** : minimum 2 par module, maximum 15 noeuds chacun, légende obligatoire (`**Fig X.Y** — Description`), aucun nom de noeud hardcodé à un client.
 9. **Mitigation** : mesure préventive, détective et corrective.
 10. **Debrief** : ce qu'il faut retenir, question de vérification, auto-évaluation.

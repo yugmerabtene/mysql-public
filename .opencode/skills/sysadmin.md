@@ -147,7 +147,7 @@ Procédure :
 
 - Redémarrer une cible bloquée.
 - Restaurer un snapshot en cas de corruption.
-- Vérifier la connectivité entre l'attaquant et les cibles.
+- Vérifier la connectivité entre les nœuds et les cibles.
 - Fournir les IP et les identifiants factices à `student` et `prof`.
 
 ### 5.3 Après le module

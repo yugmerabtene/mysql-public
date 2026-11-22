@@ -131,7 +131,7 @@ Remarques issues du livre :
 - `DataDir` : répertoire de travail de chaque node ; les deux nœuds de stockage collocés sur VM 2 utilisent des répertoires distincts (`ndb_2` et `ndb_3`) pour éviter les collisions de fichiers.
 - `NoOfReplicas = 2` : chaque fragment de données existe en deux exemplaires, sur deux nœuds de stockage distincts.
 
-## Modèle de menace et résilience du clustering NDB
+## Risques et résilience du clustering NDB
 
 ### Réplication synchrone et NoOfReplicas = 2
 

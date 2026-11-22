@@ -81,9 +81,9 @@ graph TD
 
 **Fig 4.2** — Montée en charge par sharding : avec plusieurs node groups, chaque fragment est répliqué sur une paire de nœuds, répartissant la charge sur plus de machines de stockage.
 
-## Modèle de menace
+## Risques et contrôles
 
-L'attaquant ou la charge cherche à saturer une ressource (RAM, disque, réseau) pour dégrader les performances. Le défenseur voit : l'usage mémoire via `ALL REPORT MEMORYUSAGE`, les temps de montée des requêtes, et les erreurs de saturation. La détection précoce des goulots et le dimensionnement préventif sont les contrôles principaux.
+La charge ou une défaillance cherche à saturer une ressource (RAM, disque, réseau) pour dégrader les performances. L'administrateur voit : l'usage mémoire via `ALL REPORT MEMORYUSAGE`, les temps de montée des requêtes, et les erreurs de saturation. La détection précoce des goulots et le dimensionnement préventif sont les contrôles principaux.
 
 ## Cartographie de référence des opérations (NDB-nn)
 
@@ -544,9 +544,9 @@ graph TD
 | Failback | Retour du service vers le nœud ou site principal après sa réparation et sa resynchronisation. |
 | Seconds_Behind_Master | Retard de réplication du replica par rapport à la source (en secondes). |
 
-### Modèle de menace (module 4.1)
+### Risques et contrôles (module 4.1)
 
-La panne ou l'incident cherche à rendre indisponible un site entier ou à provoquer une divergence de données entre le site principal et le site de secours. Le défenseur observe : l'état des nœuds via `ndb_mgm -e "SHOW"`, le retard de réplication (`Seconds_Behind_Master`), et les erreurs du canal de réplication. Les contrôles sont le failover automatique, la vérification de la cohérence des données et le failback validé.
+La panne ou l'incident cherche à rendre indisponible un site entier ou à provoquer une divergence de données entre le site principal et le site de secours. L'administrateur observe : l'état des nœuds via `ndb_mgm -e "SHOW"`, le retard de réplication (`Seconds_Behind_Master`), et les erreurs du canal de réplication. Les contrôles sont le failover automatique, la vérification de la cohérence des données et le failback validé.
 
 ### Cartographie de référence des opérations (NDB-nn) — module 4.1
 

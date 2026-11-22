@@ -47,7 +47,7 @@ La sécurité de l'administration MySQL Cluster repose sur trois piliers concret
 
 3. **Sécurité des nœuds serveurs (NDB-31)** : durcissement des serveurs qui hébergent les nœuds du cluster. Accès SSH limité, utilisation d'un utilisateur non-root pour `mysqld` quand possible (`--user=mysql`), application des patchs système, et surveillance des processus `ndb_mgmd`, `ndbmtd` et `mysqld`.
 
-L'isolement réseau (pas d'accès Internet sur les nœuds de production, vboxnet0 isolé) complète ces trois piliers en réduisant la surface d'exposition.
+L'isolement réseau (pas d'accès Internet sur les nœuds de production, vboxnet0 isolé) complète ces trois piliers en réduisant l'exposition aux risques.
 
 Le schéma ci-dessous présente les flux de communication à sécuriser dans le cluster.
 
@@ -80,9 +80,9 @@ graph TD
 
 **Fig 5.2** — Moindre privilège : `root` réservé à l'administration, un compte applicatif avec droits limités sur une base, un compte de sauvegarde en lecture.
 
-## Modèle de menace
+## Risques et contrôles
 
-L'attaquant cherche à intercepter les communications inter-nœuds en clair, à se connecter avec un compte SQL sur-privilégié, ou à accéder aux données de sauvegarde non protégées. Le défenseur (administrateur MySQL Cluster) voit : l'absence de `TLS = 1` dans `config.ini`, les comptes SQL avec des droits excessifs (`SHOW GRANTS`), et l'existence de comptes anonymes ou sans mot de passe (`mysql.user`). Les contrôles principaux sont l'activation de TLS inter-nœuds, l'application du moindre privilège, et l'isolement réseau des nœuds.
+Les risques à surveiller sont l'interception des communications inter-nœuds en clair, l'utilisation d'un compte SQL sur-privilégié, ou l'accès aux données de sauvegarde non protégées. L'administrateur MySQL Cluster vérifie : l'absence de `TLS = 1` dans `config.ini`, les comptes SQL avec des droits excessifs (`SHOW GRANTS`), et l'existence de comptes anonymes ou sans mot de passe (`mysql.user`). Les contrôles principaux sont l'activation de TLS inter-nœuds, l'application du moindre privilège, et l'isolement réseau des nœuds.
 
 ## Cartographie de référence des opérations (NDB-nn)
 
@@ -517,7 +517,7 @@ ip route show default 2>/dev/null || echo 'aucune route par défaut'; ip -br add
 
 - `ip route show default` : affiche la route par défaut ; si aucune route n'est retournée, le nœud est isolé d'Internet (aucune passerelle vers l'extérieur).
 - `ip -br addr show enp0s8` : confirme l'adresse IP sur l'interface host-only (`192.168.56.10/24`).
-- L'absence de route par défaut vers Internet réduit la surface d'attaque des nœuds de production.
+- L'absence de route par défaut vers Internet réduit l'exposition aux risques des nœuds de production.
 - **Piège** : si une route par défaut existe vers une passerelle Internet, le nœud est exposé ; supprimer la route ou l'interface NAT correspondante.
 
 **Résultat attendu**
@@ -624,7 +624,7 @@ pgrep -a mysqld
 
 ### En conclusion
 
-Ce lab couvre la sécurisation concrète d'un cluster MySQL Cluster en administration : activation du chiffrement TLS inter-nœuds via `config.ini` (`TLS = 1`, `TLSCAFile`, `TLSCertificateFile`, `TLSKeyFile`) et redémarrage des nœuds (`ndb_mgmd`, `ndbmtd`, `mysqld` avec `--user=mysql`), création de comptes SQL à moindre privilège (compte applicatif limité sur une base, compte de sauvegarde en lecture, `root` réservé à l'administration), absence de comptes anonymes ou sans mot de passe, sauvegarde protégée (`START BACKUP` avec répertoires à droits restreints `chmod 700`), et vérification de l'isolement réseau (pas de route par défaut vers Internet, vboxnet0 isolé). Les opérations `NDB-29`, `NDB-30` et `NDB-31` du syllabus sont réalisées. Le chapitre reste dans le périmètre de l'administration MySQL Cluster : aucun contenu de type pentest, red team, SOC, SIEM, CVE, exploit, malware, IDS/IPS ou firewall complexe n'est abordé. Renvoi : le parcours de formation MySQL Cluster est maintenant couvert dans son ensemble (chapitres 1 à 5).
+Ce lab couvre la sécurisation concrète d'un cluster MySQL Cluster en administration : activation du chiffrement TLS inter-nœuds via `config.ini` (`TLS = 1`, `TLSCAFile`, `TLSCertificateFile`, `TLSKeyFile`) et redémarrage des nœuds (`ndb_mgmd`, `ndbmtd`, `mysqld` avec `--user=mysql`), création de comptes SQL à moindre privilège (compte applicatif limité sur une base, compte de sauvegarde en lecture, `root` réservé à l'administration), absence de comptes anonymes ou sans mot de passe, sauvegarde protégée (`START BACKUP` avec répertoires à droits restreints `chmod 700`), et vérification de l'isolement réseau (pas de route par défaut vers Internet, vboxnet0 isolé). Les opérations `NDB-29`, `NDB-30` et `NDB-31` du syllabus sont réalisées. Le chapitre reste dans le périmètre de l'administration MySQL Cluster : aucun contenu de type test d'intrusion, équipe rouge, centre d'opérations de sécurité, gestion d'événements de sécurité, vulnérabilité référencée, code d'exploitation, logiciel malveillant, détection d'intrusion, prévention d'intrusion ou pare-feu complexe n'est abordé. Renvoi : le parcours de formation MySQL Cluster est maintenant couvert dans son ensemble (chapitres 1 à 5).
 
 ## Erreurs fréquentes et corrections détaillées (Partie D)
 
@@ -640,7 +640,7 @@ Ce lab couvre la sécurisation concrète d'un cluster MySQL Cluster en administr
 
 | Symptôme | Cause probable | Correction |
 |---|---|---|
-| Nœuds avec accès Internet | Surface d'attaque élargie | Pas d'Internet sur les nœuds de production, réseau vboxnet0 isolé |
+| Nœuds avec accès Internet | Exposition élargie aux risques | Pas d'Internet sur les nœuds de production, réseau vboxnet0 isolé |
 | Tous les nœuds sur un même segment | Propagation rapide d'une compromission | Segreger les réseaux de gestion, stockage et SQL si possible |
 
 ### Erreurs de configuration

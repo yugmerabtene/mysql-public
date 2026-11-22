@@ -89,7 +89,7 @@ graph TD
 
 **Fig 2.2** — Partitionnement et réplication : chaque fragment existe en deux répliques sur les deux nœuds de stockage du node group ; les nœuds SQL accèdent aux données via le moteur NDB.
 
-## Modèle de menace et résilience
+## Risques et résilience
 
 Le moteur NDB valide chaque écriture uniquement après réplication sur tous les nœuds d'un node group. La perte d'un nœud de stockage ne rompt pas le service : la réplique restante répond immédiatement.
 
