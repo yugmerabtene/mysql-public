@@ -14,11 +14,7 @@
 
 ## Durée estimée
 
-- Durée totale : 12 heures (4 labs de 3 heures).
-- Lab-03 : 3 heures (architecture NDB, nœuds, partitionnement, réplication).
-- Lab-04 : 3 heures (quorum, split-brain, node groups, résilience).
-- Lab-05 : 3 heures (configuration détaillée des nœuds, ajout/suppression, surveillance).
-- Lab-06 : 3 heures (test de panne, redémarrage rolling, maintenance à chaud).
+- Durée : non spécifiée (à adapter selon le rythme de l'apprenant).
 
 ## Prérequis
 
@@ -692,7 +688,7 @@ HostName = 192.168.56.12
 
 #### Étape 2 — Ajouter un troisième nœud de stockage (préparation)
 
-**But** — Préparer l'ajout d'un nœud de stockage NodeId 6 sur VM 2 pour illustrer la montée en charge du stockage (création du répertoire, entrée dans `config.ini`).
+**But** — Préparer l'ajout d'un nœud de stockage NodeId 6 sur VM 2 pour illustrer la montée en charge du stockage (création du répertoire, déclaration dans `config.ini`).
 
 **Machine** — VM 2 (192.168.56.11) pour le répertoire, VM 1 pour `config.ini`.
 
@@ -739,6 +735,155 @@ drwxr-xr-x 6 root root 4096 … ..
 drwxr-xr-x 2 root root 4096 … ndb_2
 drwxr-xr-x 2 root root 4096 … ndb_3
 drwxr-xr-x 2 root root 4096 … ndb_6
+# rc=0
+```
+
+#### Étape 2b — Déclarer le NodeId 6 dans config.ini (VM 1)
+
+**But** — Ajouter l'entrée `[ndbd] NodeId = 6` dans `config.ini` sur le nœud de gestion pour déclarer le nouveau nœud de stockage avant son démarrage.
+
+**Machine** — VM 1 (192.168.56.10), fichier `/var/lib/mysql-cluster/config.ini`.
+
+**Prérequis** — Sauvegarde de `config.ini` créée (Lab-05 étape 1), répertoire `/var/lib/mysql-cluster/ndb_6` présent sur VM 2.
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.pre-node6
+```
+
+**Explication de la commande**
+
+- `cp ... config.ini.pre-node6` : crée une sauvegarde avant modification de `config.ini`.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+cat >> /var/lib/mysql-cluster/config.ini << 'EOF'
+
+[ndbd]
+NodeId = 6
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_6
+EOF
+```
+
+**Explication de la commande**
+
+- `cat >> ... << 'EOF'` : ajoute une nouvelle section `[ndbd]` à la fin de `config.ini` sans effacer le contenu existant.
+- `NodeId = 6` : identifie le nouveau nœud de stockage par l'identifiant unique 6.
+- `HostName = 192.168.56.11` : le nœud 6 est collocaté sur VM 2, comme les nodes 2 et 3.
+- `DataDir = /var/lib/mysql-cluster/ndb_6` : répertoire dédié préparé à l'étape 2.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+grep -A3 'NodeId = 6' /var/lib/mysql-cluster/config.ini
+```
+
+**Explication de la commande**
+
+- `grep -A3 'NodeId = 6' config.ini` : affiche la nouvelle entrée NodeId 6 avec ses 3 lignes suivantes pour vérifier la déclaration.
+
+**Résultat attendu**
+
+```text
+NodeId = 6
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_6
+# rc=0
+```
+
+#### Étape 2c — Démarrer le nœud de stockage NodeId 6 (VM 2)
+
+**But** — Lancer le processus `ndbmtd` NodeId 6 sur VM 2 pour qu'il rejoigne le cluster et réintègre le node group.
+
+**Machine** — VM 2 (192.168.56.11), répertoire de données `ndb_6`.
+
+**Prérequis** — `config.ini` modifié (étape 2b), répertoire `/var/lib/mysql-cluster/ndb_6` présent, `ndbmtd` installé.
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
+
+**Exemple de commande**
+
+```bash
+nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_6.log &
+```
+
+**Explication de la commande**
+
+- `nohup ndbmtd ... &` : lance `ndbmtd` NodeId 6 en arrière-plan, détaché du terminal.
+- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion.
+- `--initial` : initialise proprement le stockage du nouveau nœud (premier démarrage de ce NodeId).
+- `> ndbmtd_6.log &` : redirige les journaux vers un fichier et détache le processus.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
+
+**Exemple de commande**
+
+```bash
+sleep 6
+```
+
+**Explication de la commande**
+
+- `sleep 6` : laisse le temps au NodeId 6 de se déclarer au gestionnaire et de rejoindre le node group.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+#### Étape 2d — Vérifier l'apparition de NodeId 6 dans SHOW (VM 1)
+
+**But** — Confirmer que le nouveau nœud de stockage NodeId 6 est connecté et pris en compte par le gestionnaire.
+
+**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+
+**Prérequis** — NodeId 6 lancé (étape 2c), `ndb_mgm` opérationnel.
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+ndb_mgm -e 'SHOW'
+```
+
+**Explication de la commande**
+
+- `SHOW` : liste tous les nœuds et leur état ; le NodeId 6 doit apparaître connecté parmi les nœuds de stockage.
+- Avec `NoOfReplicas = 2` et 3 nœuds de stockage, le cluster forme un node group avec les deux premières répliques ; le NodeId 6 apparaît comme nœud de stockage supplémentaire.
+- **Piège** : si NodeId 6 apparaît en `not connected`, vérifier le fichier `ndbmtd_6.log` sur VM 2 et le connect-string.
+
+**Résultat attendu**
+
+```text
 # rc=0
 ```
 
@@ -855,8 +1000,6 @@ Tester la résilience opérationnelle : arrêt simulé d'un nœud de stockage av
 **Prérequis** — Cluster sain, 5 nœuds connectés, `ndb_mgm` opérationnel.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
 
 **Exemple de commande**
 
@@ -988,9 +1131,11 @@ pgrep -a mysqld
 **Résultat attendu**
 
 ```text
-mysqld arrete
-# rc=0
+# date: 2026-11-22T00:00:00+01:00
+# cmd: pgrep -a mysqld
+# rc=1
 ```
+- `pgrep -a mysqld` ne retourne aucune ligne (rc=1) : le processus `mysqld` a bien été arrêté, confirmant l'arrêt du nœud SQL NodeId 4.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 

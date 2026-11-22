@@ -7,17 +7,16 @@
 ## Avertissement et périmètre
 
 - Machine principale : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
-- Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
+- Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs (adaptateur NAT temporaire uniquement pendant l'installation des paquets, puis retiré).
 - Données : fictives, marquées `Lab` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
 - Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
+- **Note sur les NodeId de stockage** : le syllabus (Jour 1, ligne 11) indique des nœuds de stockage `node-id 1 et 2` sur VM 2. Les chapitres de ce parcours utilisent plutôt `NodeId 1` pour le nœud de gestion (VM 1), `NodeId 2 et 3` pour les deux nœuds de stockage (VM 2), et `NodeId 4 et 5` pour les nœuds SQL. Les `config.ini`, schémas et résultats `SHOW` attendus des chapitres suivent cette numérotation (gestion=1, stockage=2 et 3, SQL=4 et 5). Cette numérotation est celle de l'infrastructure déployée et validée en laboratoire.
 
 ## Durée estimée
 
-- Durée totale : 6 heures (2 labs de 3 heures).
-- Lab-01 : 3 heures (nettoyage et configuration manuelle des trois VM : réseau, IP statique, SSH, hostname, snapshot, connectivité).
-- Lab-02 : 3 heures (installation de MySQL Cluster, `config.ini`, démarrage ordonné, vérification d'intégrité, résilience, gros volumes).
+- Durée : non spécifiée (à adapter selon le rythme de l'apprenant).
 
 ## Prérequis
 
@@ -1863,12 +1862,3 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 Ce lab installe MySQL Cluster sur les 3 VM avec un `config.ini` inspiré des exemples valides du livre "Pro MySQL NDB Cluster" (NodeId, HostName, DataDir explicites, `NoOfReplicas = 2`). Les nœuds sont démarrés dans l'ordre critique (gestion → stockage → SQL), l'intégrité est vérifiée avec `ndb_mgm -e "SHOW"` (5 nœuds connectés), et la configuration effective est interrogée avec `ndb_config --query-all`. Le test de résilience confirme le failover automatique à l'arrêt du NodeId 2, la continuité de service via NodeId 3, et la resynchronisation puis réintégration du NodeId 2 redémarré. Critères de réussite : `SHOW` liste 5 nœuds connectés sans état `not connected`, `NoOfReplicas = 2` confirmé. Renvoi : passer au chapitre 2 pour approfondir l'architecture et l'administration du cluster.
 
-## Propositions d'amélioration du livre intégrées au chapitre
-
-Le livre "Pro MySQL NDB Cluster" propose plusieurs améliorations de résilience et de robustesse, adaptées ci-dessous au contexte du lab :
-
-1. **Second nœud de gestion pour la haute disponibilité** : le livre déploie deux nœuds de gestion (NodeId 49 et 50) pour éviter le single point of failure. Dans ce lab à 3 VM, un seul nœud de gestion est utilisé (NodeId 1) ; hors lab, prévoir un second nœud de gestion sur une machine distincte.
-2. **NodeId et HostName explicites** : le livre recommande de toujours définir `NodeId` et `HostName` explicitement dans `config.ini` pour éviter l'attribution automatique d'identifiants qui peuvent changer d'un démarrage à l'autre. Cette recommandation est appliquée dans le `config.ini` du Lab-02.
-3. **Ordre de démarrage strict** : le livre préconise de démarrer les gestionnaires, puis les nœuds de données, puis les nœuds SQL. Cet ordre est respecté dans le Lab-02.
-4. **Répertoires de données distincts par node** : le livre montre que plusieurs nodes sur le même hôte doivent avoir des `DataDir` distincts. Appliqué pour `ndb_2` et `ndb_3` sur VM 2.
-5. **Failover automatique et resynchronisation à chaud** : démontré dans l'étape 12 du Lab-02, au cœur de la haute disponibilité du cluster NDB.

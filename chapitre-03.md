@@ -14,10 +14,7 @@
 
 ## Durée estimée
 
-- Durée totale : 9 heures (3 labs de 3 heures).
-- Lab-07 : 3 heures (outils de supervision, alertes ndb_mgm, surveillance).
-- Lab-08 : 3 heures (sauvegarde START BACKUP, restauration ndb_restore, remplacement nœud).
-- Lab-09 : 3 heures (MySQL Cluster Manager).
+- Durée : non spécifiée (à adapter selon le rythme de l'apprenant).
 
 ## Prérequis
 
@@ -178,6 +175,42 @@ Node 3: Index usage is 0%(6 32K pages of total 12285)
 # rc=0
 ```
 
+#### Étape 2b — Décrire une table NDB avec ndb_desc
+
+**But** — Utiliser `ndb_desc` pour afficher la structure et la fragmentation d'une table NDB, conformément à l'outil documenté dans ce lab.
+
+**Machine** — VM 1 (192.168.56.10), premier nœud SQL.
+
+**Prérequis** — `ndb_desc` installé, nœud SQL connecté, une table NDB existe (créée si nécessaire).
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS labndb; CREATE TABLE IF NOT EXISTS labndb.t_ndb_desc (id INT PRIMARY KEY, val VARCHAR(50)) ENGINE=NDB;" 2>/dev/null; ndb_desc -d labndb t_ndb_desc
+```
+
+**Explication de la commande**
+
+- `mysql -u root -e "CREATE DATABASE ... CREATE TABLE ... ENGINE=NDB"` : crée (si nécessaire) une table NDB sur laquelle porter `ndb_desc`. `2>/dev/null` masque les messages "already exists".
+- `ndb_desc -d labndb t_ndb_desc` : décrit la table NDB `t_ndb_desc` dans la base `labndb` (fragments, attributs, index, nœuds de stockage).
+- Le résultat affiche le nombre de fragments, les `NodeId` qui les contiennent, et les attributs de la table.
+- **Piège** : `ndb_desc` nécessite que le cluster soit opérationnel et que le nœud SQL soit connecté au gestionnaire.
+
+**Résultat attendu**
+
+```text
+# date: 2026-11-22T00:00:00+01:00
+# cmd: ndb_desc -d labndb t_ndb_desc
+# rc=0
+-- labndb.t_ndb_desc --
+...
+FragmentCount: ...
+-- Fragments --
+frag 0: NodeId: 2
+frag 0: NodeId: 3
+```
 
 #### Étape 3 — Détecter un nœud en état not connected (alerte)
 
@@ -591,25 +624,45 @@ NDBT_ProgramExit: 0
 ```
 
 
-#### Étape 5 — Remplacer un nœud de stockage défaillant
+#### Étape 5 — Simuler la panne d'un nœud de stockage avant remplacement
 
-**But** — Simuler la défaillance d'un nœud de stockage, le remplacer par un nouveau nœud (nouveau NodeId) et vérifier la réintégration sans interruption de service.
+**But** — Arrêter le NodeId 2 pour simuler une défaillance, confirmer le passage en `not connected` et le maintien du service via NodeId 3, avant d'introduire le nœud de remplacement NodeId 6.
 
-**Machine** — VM 1 (192.168.56.10) pour `ndb_mgm`, VM 2 (192.168.56.11) pour le nouveau `ndbmtd`.
+**Machine** — VM 1 (192.168.56.10) pour `ndb_mgm`, VM 2 (192.168.56.11) pour constater le processus.
 
-**Prérequis** — Cluster sain, répertoire `/var/lib/mysql-cluster/ndb_6` préparé (Lab-05), `ndbmtd` installé.
+**Prérequis** — Cluster sain, 5 nœuds connectés, `ndb_mgm` opérationnel, répertoire `/var/lib/mysql-cluster/ndb_6` préparé sur VM 2.
 
-> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
 **Exemple de commande**
 
 ```bash
-cd /var/lib/mysql-cluster/ndb_6
+ndb_mgm -e '2 STOP'
 ```
 
 **Explication de la commande**
 
-- `cd /var/lib/mysql-cluster/ndb_6` : se place dans le répertoire dédié du nouveau nœud de stockage.
+- `2 STOP` : demande l'arrêt propre du nœud de stockage NodeId 2 (panne simulée).
+
+**Résultat attendu**
+
+```text
+Connected to Management Server at: localhost:1186
+Node 2 has shutdown.
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+sleep 5
+```
+
+**Explication de la commande**
+
+- `sleep 5` : laisse au gestionnaire le temps de détecter la perte.
 
 **Résultat attendu**
 
@@ -617,13 +670,115 @@ cd /var/lib/mysql-cluster/ndb_6
 # rc=0
 ```
 
-#### Étape 5b — Lancer le nouveau nœud de stockage Id=6
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**But** — Démarrer le nouveau nœud de stockage `ndbmtd` avec initialisation propre de son stockage.
+**Exemple de commande**
 
-**Machine** — VM 2 (192.168.56.11), nouveau nœud de stockage.
+```bash
+ndb_mgm -e 'SHOW'
+```
 
-**Prérequis** — Répertoire `/var/lib/mysql-cluster/ndb_6` préparé, `ndbmtd` installé.
+**Explication de la commande**
+
+- `SHOW` : confirme le failover, NodeId 2 en `not connected`, NodeId 3 toujours connecté (`*`), nœuds SQL opérationnels.
+
+**Résultat attendu**
+
+```text
+# date: 2026-11-22T00:00:00+01:00
+# cmd: ndb_mgm -e 'SHOW'
+# rc=0
+Connected to Management Server at: localhost:1186
+Cluster Configuration
+---------------------
+[ndbd(NDB)]	2 node(s)
+id=2 (not connected, accepting connect from 192.168.56.11)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+[mysqld(API)]	2 node(s)
+id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
+```
+
+#### Étape 5b — Déclarer le NodeId 6 dans config.ini et redémarrer le gestionnaire
+
+**But** — Ajouter l'entrée `[ndbd] NodeId = 6` dans `config.ini` sur VM 1 et redémarrer `ndb_mgmd` pour qu'il prenne en compte le nouveau nœud de stockage avant son démarrage.
+
+**Machine** — VM 1 (192.168.56.10), fichier `config.ini` et nœud de gestion.
+
+**Prérequis** — NodeId 2 arrêté (étape 5), répertoire `/var/lib/mysql-cluster/ndb_6` présent sur VM 2, sauvegarde de `config.ini`.
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+cp config.ini config.ini.pre-node6
+```
+
+**Explication de la commande**
+
+- `cp config.ini config.ini.pre-node6` : sauvegarde avant modification.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+cat >> config.ini << 'EOF'
+
+[ndbd]
+NodeId = 6
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_6
+EOF
+```
+
+**Explication de la commande**
+
+- `cat >> config.ini << 'EOF'` : ajoute la section `[ndbd] NodeId = 6` à la fin de `config.ini`.
+
+**Résultat attendu**
+
+```text
+# rc=0
+```
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
+
+**Exemple de commande**
+
+```bash
+pkill -x ndb_mgmd; sleep 2; ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
+```
+
+**Explication de la commande**
+
+- `pkill -x ndb_mgmd` : arrête le gestionnaire actuel pour qu'il relise la nouvelle `config.ini` (y compris NodeId 6).
+- `sleep 2` : laisse le temps à l'arrêt effectif.
+- `ndb_mgmd --config-file=... --initial` : redémarre le gestionnaire avec la nouvelle topologie. Les nœuds déjà connectés (NodeId 3, SQL) restent en place.
+
+**Résultat attendu**
+
+```text
+MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
+# rc=0
+```
+
+#### Étape 5c — Lancer le nœud de stockage de remplacement Id=6
+
+**But** — Démarrer le nouveau nœud de stockage `ndbmtd` NodeId 6 sur VM 2 pour remplacer le NodeId 2 défaillant.
+
+**Machine** — VM 2 (192.168.56.11), répertoire de données `ndb_6`.
+
+**Prérequis** — `config.ini` mis à jour et gestionnaire redémarré (étape 5b), répertoire `/var/lib/mysql-cluster/ndb_6` présent.
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
 
@@ -635,9 +790,9 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_6.log &
 
 **Explication de la commande**
 
-- `nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &` : lance le nouveau nœud avec initialisation propre de son stockage, en arrière-plan.
-- `--initial` : force l'initialisation propre du stockage du nouveau nœud.
-- **Piège** : `--initial` réinitialise le stockage ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver.
+- `nohup ndbmtd ... --initial &` : lance `ndbmtd` NodeId 6 en arrière-plan avec initialisation propre de son stockage.
+- `--initial` : force l'initialisation propre du stockage (premier démarrage de ce NodeId).
+- `> ndbmtd_6.log &` : redirige les journaux et détache le processus.
 
 **Résultat attendu**
 
@@ -645,25 +800,17 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_6.log &
 # rc=0
 ```
 
-#### Étape 5c — Vérifier les processus de stockage
-
-**But** — Confirmer que les processus `ndbmtd` sont en cours d'exécution après le lancement du nouveau nœud.
-
-**Machine** — VM 2 (192.168.56.11), nouveau nœud de stockage.
-
-**Prérequis** — Nouveau nœud lancé (étape 5b).
-
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
 
 **Exemple de commande**
 
 ```bash
-sleep 6
+sleep 8
 ```
 
 **Explication de la commande**
 
-- `sleep 6` : laisse le temps au nouveau nœud de se déclarer au gestionnaire et de rejoindre le node group.
+- `sleep 8` : laisse le temps au NodeId 6 de se déclarer au gestionnaire et de rejoindre le cluster.
 
 **Résultat attendu**
 
@@ -673,11 +820,11 @@ sleep 6
 
 #### Étape 5d — Lister les processus ndbmtd
 
-**But** — Afficher la liste des processus `ndbmtd` actifs sur VM 2.
+**But** — Confirmer que les processus `ndbmtd` sont en cours d'exécution sur VM 2 (NodeId 3 existant + NodeId 6 nouveau).
 
 **Machine** — VM 2 (192.168.56.11), nouveau nœud de stockage.
 
-**Prérequis** — Nouveau nœud lancé (étape 5b).
+**Prérequis** — Nouveau nœud lancé (étape 5c).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
 
@@ -694,21 +841,19 @@ pgrep -a ndbmtd
 **Résultat attendu**
 
 ```text
-7714 ndbmtd --ndb-connectstring=192.168.56.10
-7715 ndbmtd --ndb-connectstring=192.168.56.10
-7716 ndbmtd --ndb-connectstring=192.168.56.10 --initial
-7717 ndbmtd --ndb-connectstring=192.168.56.10 --initial
+# date: 2026-11-22T00:00:00+01:00
+# cmd: pgrep -a ndbmtd
 # rc=0
 ```
 
 
-#### Étape 6 — Vérifier l'état du cluster après remplacement
+#### Étape 6 — Vérifier l'état du cluster après remplacement (NodeId 6 présent)
 
-**But** — Confirmer que le nouveau nœud de stockage est connecté et que le cluster reste opérationnel.
+**But** — Confirmer que le nouveau nœud de stockage NodeId 6 est connecté et pris en compte, et que le cluster reste opérationnel malgré la panne simulée de NodeId 2.
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 
-**Prérequis** — Nouveau nœud lancé (étape 5).
+**Prérequis** — Nouveau nœud NodeId 6 lancé (étape 5c).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
@@ -720,24 +865,27 @@ ndb_mgm -e 'SHOW'
 
 **Explication de la commande**
 
-- `SHOW` : liste les nœuds et leur état ; le nouveau NodeId doit apparaître connecté.
-- **Piège** : si le nouveau nœud n'apparaît pas, vérifier son journal `/var/lib/mysql-cluster/ndb_6/ndbmtd_6.log` et le connect-string.
+- `SHOW` : liste les nœuds et leur état ; le nouveau NodeId 6 doit apparaître connecté parmi les nœuds de stockage, et NodeId 2 reste en `not connected`.
+- **Piège** : si NodeId 6 n'apparaît pas, vérifier son journal `/var/lib/mysql-cluster/ndb_6/ndbmtd_6.log` sur VM 2 et que `config.ini` contient bien l'entrée NodeId 6.
 
 **Résultat attendu**
 
 ```text
+# date: 2026-11-22T00:00:00+01:00
+# cmd: ndb_mgm -e 'SHOW'
+# rc=0
 Connected to Management Server at: localhost:1186
 Cluster Configuration
 ---------------------
-[ndbd(NDB)]	2 node(s)
-id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+[ndbd(NDB)]	3 node(s)
+id=2 (not connected, accepting connect from 192.168.56.11)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+id=6	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
 [ndb_mgmd(MGM)]	1 node(s)
 id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 [mysqld(API)]	2 node(s)
 id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
-# rc=0
 ```
 
 
@@ -821,218 +969,87 @@ binaires mcm absents
 ```
 
 
-#### Étape 2 — Initialiser un agent MCM sur chaque nœud
+#### Étape 2 — Constat d'absence des binaires MCM (démonstration théorique)
 
-**But** — Démarrer l'agent `mcmd` sur chaque VM pour permettre la gestion centralisée.
-
-**Machine** — VM 1, VM 2, VM 3.
-
-**Prérequis** — Binaire `mcmd` installé sur chaque VM.
-
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
-
-```bash
-nohup mcmd --nodeid=1 --manager-server=192.168.56.10 > /tmp/mcmd-1.log &
-```
-
-**Explication de la commande**
-
-- `mcmd --nodeid=1 --manager-server=192.168.56.10` : lance l'agent MCM sur VM 1, pointant vers le serveur de gestion.
-- `nohup … &` : détache l'agent du terminal pour qu'il tourne en arrière-plan.
-- **Piège** : sans agent sur un nœud, MCM ne peut pas piloter ce nœud.
-
-**Résultat attendu**
-
-```text
-# rc=0
-```
-
-#### Étape 2b — Démarrer l'agent MCM sur VM 2
-
-**But** — Démarrer l'agent `mcmd` sur VM 2 pour permettre la gestion centralisée du nœud de stockage.
-
-**Machine** — VM 2 (192.168.56.11), nœud de stockage.
-
-**Prérequis** — Binaire `mcmd` installé sur VM 2.
-
-> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
-
-```bash
-nohup mcmd --nodeid=2 --manager-server=192.168.56.10 > /tmp/mcmd-2.log &
-```
-
-**Explication de la commande**
-
-- `mcmd --nodeid=2 --manager-server=192.168.56.10` : lance l'agent MCM sur VM 2, pointant vers le serveur de gestion sur VM 1.
-- `nohup … &` : détache l'agent du terminal pour qu'il tourne en arrière-plan.
-
-**Résultat attendu**
-
-```text
-# rc=0
-```
-
-#### Étape 2c — Démarrer l'agent MCM sur VM 3
-
-**But** — Démarrer l'agent `mcmd` sur VM 3 pour permettre la gestion centralisée du second nœud SQL.
-
-**Machine** — VM 3 (192.168.56.12), second nœud SQL.
-
-**Prérequis** — Binaire `mcmd` installé sur VM 3.
-
-> **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
-
-```bash
-nohup mcmd --nodeid=3 --manager-server=192.168.56.10 > /tmp/mcmd-3.log &
-```
-
-**Explication de la commande**
-
-- `mcmd --nodeid=3 --manager-server=192.168.56.10` : lance l'agent MCM sur VM 3, pointant vers le serveur de gestion sur VM 1.
-- `nohup … &` : détache l'agent du terminal pour qu'il tourne en arrière-plan.
-- Un agent par VM permet à MCM de piloter tous les nœuds du cluster.
-- **Piège** : sans agent sur un nœud, MCM ne peut pas piloter ce nœud ; vérifier que `mcmd` tourne sur les 3 VM.
-
-**Résultat attendu**
-
-```text
-# rc=0
-```
-
-#### Étape 2d — Attendre le démarrage des agents
-
-**But** — Laisser le temps aux agents MCM de démarrer sur chaque VM.
+**But** — Confirmer que MySQL Cluster Manager (MCM) n'est pas installé sur l'infrastructure actuelle, et documenter ce que ferait une installation MCM sans tenter d'exécution (binaires `mcm`/`mcmd` absents).
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 
-**Prérequis** — Agents MCM lancés sur les 3 VM (étapes 2a à 2c).
+**Prérequis** — Aucun binaire MCM attendu sur les VM.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
 **Exemple de commande**
 
 ```bash
-sleep 3
+dpkg -l | grep -i -E 'mysql-cluster-manager|mcm' || echo 'paquet mcm non installé'
 ```
 
 **Explication de la commande**
 
-- `sleep 3` : laisse le temps aux agents de s'initialiser et de se déclarer au serveur de gestion.
+- `dpkg -l | grep -i -E 'mysql-cluster-manager|mcm'` : vérifie la présence des paquets MCM.
+- `|| echo 'paquet mcm non installé'` : affiche un message explicite si aucun paquet MCM n'est trouvé.
+- **Piège** : ce constat est réel sur l'infrastructure actuelle ; il justifie le passage en démonstration théorique pour la suite de ce lab.
 
 **Résultat attendu**
 
 ```text
+paquet mcm non installé
 # rc=0
 ```
-
-#### Étape 2e — Confirmer le démarrage des agents
-
-**But** — Afficher un message confirmant que les agents MCM sont démarrés.
-
-**Machine** — VM 1 (192.168.56.10), nœud de gestion.
-
-**Prérequis** — Agents MCM lancés sur les 3 VM (étapes 2a à 2c).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
 **Exemple de commande**
 
 ```bash
-echo 'agents demarres'
+which mcm mcmd || echo 'binaires mcm absents'
 ```
 
 **Explication de la commande**
 
-- `echo 'agents demarres'` : affiche un message de confirmation.
+- `which mcm mcmd` : vérifie la présence des binaires client (`mcm`) et agent (`mcmd`) dans le PATH.
+- `|| echo 'binaires mcm absents'` : confirme l'absence des binaires.
+- **Piège** : sans les binaires, aucune commande MCM ne peut être exécutée ; les étapes suivantes sont donc présentées comme démonstration théorique commentée, sans exécution réelle.
 
 **Résultat attendu**
 
 ```text
-agents demarres
+binaires mcm absents
 # rc=0
 ```
 
+#### Étape 3 — Démonstration théorique : ce que ferait MCM (non exécutable)
 
-#### Étape 3 — Créer un cluster géré par MCM
+**But** — Décrire, sans exécution réelle, les opérations que MySQL Cluster Manager permettrait d'automatiser : démarrage des agents, création d'un cluster, modification de configuration. Ce lab est non réalisable sur l'infrastructure actuelle car les binaires `mcm`/`mcmd` sont absents et leur installation nécessite un dépôt MySQL avec accès Internet (interdit hors phase d'installation des paquets).
 
-**But** — Se connecter au client `mcm` et créer un cluster rassemblant les nœuds existants.
+**Machine** — VM 1 (192.168.56.10), nœud de gestion (exposé théorique uniquement).
 
-**Machine** — VM 1 (192.168.56.10), client MCM.
-
-**Prérequis** — Agents MCM démarrés sur les 3 VM, client `mcm` disponible.
+**Prérequis** — Constat d'absence des binaires MCM (étapes 1 et 1b).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Explication de la démonstration théorique**
 
-```bash
-mcm -u admin -p admin -e 'create cluster moncluster; add process ndb_mgmd 192.168.56.10; add process ndbmtd 192.168.56.11; add process mysqld 192.168.56.10; add process mysqld 192.168.56.12; start cluster moncluster;'
-```
-
-**Explication de la commande**
-
-- `mcm -u admin -p admin` : s'authentifie au client MCM (mot de passe à définir selon la politique du lab).
-- `create cluster moncluster` : crée un cluster logique nommé `moncluster`.
-- `add process …` : déclare chaque processus (gestion, stockage, SQL) avec son hôte.
-- `start cluster moncluster` : démarre le cluster via MCM.
-- **Piège** : les adresses des nœuds doivent correspondre aux `HostName` du `config.ini` ; une incohérence empêche l'ajout.
+- **Installation MCM** : il faudrait installer le paquet `mysql-cluster-manager` sur chaque VM depuis le dépôt MySQL (nécessite un accès réseau vers le dépôt, donc l'adaptateur NAT temporaire uniquement pendant l'installation des paquets).
+- **Démarrage des agents** : sur chaque VM, lancer `mcmd --nodeid=<n> --manager-server=192.168.56.10` en arrière-plan. Un agent par VM permet à MCM de piloter tous les nœuds.
+- **Création d'un cluster** : via le client `mcm -u admin -p <pass>`, exécuter `create cluster <nom>; add process ndb_mgmd 192.168.56.10; add process ndbmtd 192.168.56.11; add process mysqld 192.168.56.10; add process mysqld 192.168.56.12; start cluster <nom>;`.
+- **Interrogation/modification** : `get NoOfReplicas cluster <nom>`, `set NoOfReplicas=2 cluster <nom>`, `show status cluster <nom>`.
+- **Limite du lab** : comme les binaires sont absents et que l'installation de MCM sort du périmètre « sans accès Internet permanent », les opérations `NDB-20`, `NDB-21` et `NDB-22` ne peuvent pas être réalisées en pratique sur cette infrastructure. Elles sont présentées à titre indicatif.
 
 **Résultat attendu**
 
 ```text
-MySQL Cluster Manager 8.0.x
-Cluster 'moncluster' created.
-Process ndb_mgmd added on 192.168.56.10.
-Process ndbmtd added on 192.168.56.11.
-Process mysqld added on 192.168.56.10.
-Process mysqld added on 192.168.56.12.
-Cluster 'moncluster' started.
+# date: 2026-11-22T00:00:00+01:00
+# cmd: (démonstration théorique, aucune commande mcm/mcmd exécutée)
 # rc=0
-```
-
-
-#### Étape 4 — Interroger et modifier la configuration via MCM
-
-**But** — Utiliser `get` et `set` pour lire et ajuster un paramètre de cluster via MCM.
-
-**Machine** — VM 1 (192.168.56.10), client MCM.
-
-**Prérequis** — Cluster `moncluster` créé et démarré (étape 3).
-
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
-
-```bash
-mcm -u admin -p admin -e 'get NoOfReplicas cluster moncluster; set NoOfReplicas=2 cluster moncluster; show status cluster moncluster;'
-```
-
-**Explication de la commande**
-
-- `get NoOfReplicas cluster moncluster` : lit la valeur actuelle du facteur de réplication.
-- `set NoOfReplicas=2 cluster moncluster` : définit/confirme le facteur de réplication à 2.
-- `show status cluster moncluster` : affiche l'état du cluster géré par MCM.
-- **Piège** : certains paramètres nécessitent un redémarrage des nœuds pour être pris en compte ; MCM le signale.
-
-**Résultat attendu**
-
-```text
-NoOfReplicas = 2
-NoOfReplicas set to 2 for cluster moncluster.
-Cluster 'moncluster' status: started
-# rc=0
+Démonstration théorique MCM non exécutable : binaires mcm/mcmd absents des VM.
 ```
 
 
 ### En conclusion
 
-Ce lab couvre l'installation de MySQL Cluster Manager, le démarrage des agents sur chaque nœud, la création d'un cluster géré, et l'interrogation/modification de la configuration via `mcm` (`get`, `set`, `show status`). Les opérations `NDB-20`, `NDB-21` et `NDB-22` sont réalisées. Le chapitre 3 est terminé ; le prochain chapitre (Jour 4) couvrira l'optimisation, les performances et la scalabilité.
+Ce lab couvre les outils de supervision (`SHOW`, `ndb_config`, `ALL REPORT MEMORYUSAGE`, `ndb_desc`) et la détection d'alerte lorsqu'un nœud passe en `not connected`, ainsi que la sauvegarde consistante (`START BACKUP`), la restauration du schéma (`--restore_meta`) puis des données (`-r`) sur chaque nœud de stockage en parallèle, et le remplacement d'un nœud de stockage sans interruption de service. Les opérations `NDB-16`, `NDB-17`, `NDB-18` et `NDB-19` sont réalisées. L'opération `NDB-20` à `NDB-22` (MySQL Cluster Manager) est présentée en démonstration théorique uniquement, les binaires `mcm`/`mcmd` étant absents de l'infrastructure actuelle. Le chapitre 3 est terminé ; le prochain chapitre (Jour 4) couvrira l'optimisation, les performances et la scalabilité.
 
 ## Erreurs fréquentes et corrections détaillées (Partie D)
 

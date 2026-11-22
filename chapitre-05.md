@@ -17,8 +17,7 @@
 
 ## Durée estimée
 
-- Durée totale : 6 heures (1 lab de 6 heures).
-- Lab-12 : 6 heures (TLS inter-nœuds, comptes SQL à moindre privilège, sauvegardes protégées, isolement réseau, sécurité des serveurs).
+- Durée : non spécifiée (à adapter selon le rythme de l'apprenant).
 
 ## Prérequis
 
@@ -527,10 +526,6 @@ sleep 5
 # rc=0
 ```
 
-```text
-# rc=0
-```
-
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
@@ -545,7 +540,7 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 - `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion pour rejoindre le cluster.
 - `--user=mysql` : exécute le processus sous l'utilisateur `mysql` (pratique de moindre privilège sur le serveur, liée à NDB-31).
 - `--daemonize` : lance `mysqld` en arrière-plan.
-- `> /tmp/mysqld-4.log 2>&1 &` : redirige les journaux vers un fichier et détache le processus.
+- `> /tmp/mysqld-4.log &` : redirige le journal vers un fichier et détache le processus en arrière-plan.
 - **Piège** : si le datadir MySQL n'est pas initialisé, le démarrage échoue. Ne pas démarrer les nœuds SQL avant les nœuds de stockage.
 
 **Résultat attendu**
@@ -728,17 +723,6 @@ mysql -u root -e "SELECT User, Host FROM mysql.user;"
 | backup_user  | 192.168.56.% |
 +--------------+-------------+
 # rc=0
-```
----comptes---
-+--------------+-------------+
-| User         | Host        |
-+--------------+-------------+
-| root         | localhost   |
-| app_user     | 192.168.56.% |
-| backup_user  | 192.168.56.% |
-+--------------+-------------+
-# rc=0
-```
 
 #### Étape 6 — Déclencher et vérifier une sauvegarde protégée (START BACKUP)
 
@@ -802,17 +786,6 @@ sleep 5
 # rc=0
 ```
 
-```text
-Connected to Management Server at: localhost:1186
-Waiting for completed, this may take several minutes
-Node 3: Backup 1 started from node 1
-Node 3: Backup 1 started from node 1 completed
- StartGCP: 173 StopGCP: 176
- #Records: 9 #LogRecords: 0
- Data: 2112 bytes Log: 0 bytes
-# rc=0
-```
-
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
 **Exemple de commande**
@@ -856,21 +829,6 @@ ls -la ndb_2/BACKUP/BACKUP-1/ ndb_3/BACKUP/BACKUP-1/
 
 ```text
 ndb_2/BACKUP/BACKUP-1:
-total 16
-drwx------ 2 root root 4096 … .
-drwxr-xr-x 3 root root 4096 … ..
--rw------- 1 root root … BACKUP-1.0.2.Data
--rw------- 1 root root … BACKUP-1.0.2.log
--rw------- 1 root root … BACKUP-1.0.2.ctl
-ndb_3/BACKUP/BACKUP-1:
-total 16
-drwx------ 2 root root 4096 … .
-drwxr-xr-x 3 root root 4096 … ..
--rw------- 1 root root … BACKUP-1.0.3.Data
--rw------- 1 root root … BACKUP-1.0.3.log
--rw------- 1 root root … BACKUP-1.0.3.ctl
-# rc=0
-```
 total 16
 drwx------ 2 root root 4096 … .
 drwxr-xr-x 3 root root 4096 … ..
@@ -942,8 +900,6 @@ ip -br addr show enp0s8
 enp0s8           UP             192.168.56.10/24 fe80::a00:27ff:fef7:44ec/64
 # rc=0
 ```
-# rc=0
-```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
@@ -988,10 +944,7 @@ ip -br addr show enp0s8
 **Résultat attendu**
 
 ```text
-aucune route par défaut
 enp0s8           UP             192.168.56.11/24 fe80::a00:27ff:fe62:5198/64
-# rc=0
-```
 # rc=0
 ```
 
@@ -1047,10 +1000,6 @@ pgrep -a mysqld
 **Résultat attendu**
 
 ```text
-5678 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
-# rc=0
-```
-1234 ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
 5678 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
 # rc=0
 ```

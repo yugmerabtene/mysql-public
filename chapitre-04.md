@@ -8,11 +8,7 @@
 - Accès distant : une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
 ## Durée estimée
-- Durée totale : 12 heures (4 labs de 3 heures).
-- Lab-10 : 3 heures (paramètres performance, goulots d'étranglement).
-- Lab-11 : 3 heures (sharding, partitionnement, gros volumes).
-- Lab-13 : 3 heures (réplication inter-clusters, module 4.1).
-- Lab-14 : 3 heures (simulation de panne, failover et failback, module 4.1).
+- Durée : non spécifiée (à adapter selon le rythme de l'apprenant).
 ## Prérequis
 Le chapitre 3 doit avoir été réalisé : le cluster est installé, les 5 nœuds connectés, les outils de supervision fonctionnels (`ndb_mgm`, `ndb_config`, `ALL REPORT MEMORYUSAGE`).
 ## Vocabulaire
@@ -52,8 +48,8 @@ graph TD
     T1 -->|fragment F1| N3["NodeId 3: replica B"]
     T1 -->|fragment F2| N6["NodeId 6: replica A"]
     T1 -->|fragment F2| N7["NodeId 7: replica B"]
-    SQL1[mysqld] -->|requetes| T1
-    SQL2[mysqld] -->|requetes| T1
+    SQL1["mysqld"] -->|requetes| T1
+    SQL2["mysqld"] -->|requetes| T1
     N2 <-->|synchro| N3
     N6 <-->|synchro| N7
 ```
@@ -454,23 +450,12 @@ ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfReplicas'
 **Résultat attendu**
 
 ```text
----
+# date: 2026-11-22T00:00:00+01:00
+# cmd: ndb_config --query-all | grep -E 'DataMemory|IndexMemory|NoOfReplicas'
+# rc=0
 DataMemory = 512M
 IndexMemory = 256M
 NoOfReplicas = 2
-# rc=0
-```
-id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
-[ndb_mgmd(MGM)]	1 node(s)
-id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
-[mysqld(API)]	2 node(s)
-id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
-id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
---- 
-DataMemory = 512M
-IndexMemory = 256M
-NoOfReplicas = 2
-# rc=0
 ```
 ### En conclusion
 Ce lab couvre l'ajustement de `DataMemory` et `IndexMemory`, la vérification de la RAM et du disque de chaque VM, le redémarrage des nœuds de stockage pour appliquer les changements, et la confirmation de la nouvelle configuration. Les opérations `NDB-23` et `NDB-24` (paramètres performance et détection de goulots) sont réalisées. Renvoi : passer au Lab-11 pour le sharding, le partitionnement et les gros volumes.
@@ -675,6 +660,9 @@ drwxr-xr-x 2 root root 4096 … ndb_7
 drwxr-xr-x 2 root root 4096 … ndb_8
 # rc=0
 ```
+
+> **Note** — Les répertoires `ndb_7` et `ndb_8` sont préparés pour une montée en charge ultérieure. Leur démarrage effectif (création de deux nouveaux node groups avec `NoOfReplicas = 2`) nécessiterait d'ajouter les entrées `[ndbd] NodeId = 7` et `NodeId = 8` dans `config.ini`, de redémarrer le gestionnaire, puis de lancer les deux nouveaux `ndbmtd`. Cette extension est présentée à titre de préparation ; le lab se concentre sur l'auto-sharding déjà effectif sur le node group existant (démontré aux étapes 1 et 2 avec `ndb_desc`).
+
 ### En conclusion
 Ce lab couvre la création d'une table NDB fragmentée automatiquement, l'analyse de ses fragments avec `ndb_desc`, le diagnostic des goulots d'étranglement sur gros volumes (mémoire, `NoOfFragmentLogParts`, `RedoBuffer`), et la préparation de la montée en charge par ajout de nœuds de stockage. L'opération `NDB-25` (sharding/partitionnement) est réalisée. Le module 4.0 est terminé ; le module 4.1 (réplication et tolérance aux pannes) suit immédiatement dans ce chapitre, puis le chapitre 5 (Jour 5) couvrira la sécurisation de MySQL Cluster.
 ## Introduction à la réplication et tolérance aux pannes (module 4.1)
@@ -1036,7 +1024,7 @@ Query OK, 0 rows affected
 # rc=0
 ```
 ### En conclusion
-Ce lab couvre le déploiement d'un cluster de secours (Cluster B) sur VM 3, l'activation du journal binaire sur le nœud SQL source (Id=4), la création de l'utilisateur de réplication, la configuration du canal de réplication (`CHANGE MASTER TO`, `START SLAVE`), l'insertion de données sur le site principal et la vérification de leur propagation sur le site de secours. L'opération `NDB-26` (réplication inter-clusters) est réalisée : le canal est actif, `Seconds_Behind_Master = 0`, et les données sont cohérentes entre les deux clusters. Renvoi : passer au Lab-14 pour la simulation de panne, le failover et le failback (NDB-27, NDB-28).
+Ce lab décrit le déploiement d'un cluster de secours (Cluster B) sur VM 3, l'activation du journal binaire sur le nœud SQL source (Id=4), la création de l'utilisateur de réplication et la configuration du canal de réplication (`CHANGE MASTER TO`, `START SLAVE`). Sur l'infrastructure à 3 VMs disponibles, VM 3 héberge déjà le nœud SQL NodeId 5 du cluster A ; le démarrage d'un gestionnaire Cluster B (Id=10) et d'un nœud SQL réplica (Id=6, port 3307) sur la même VM n'est pas réalisable de manière isolée et fonctionnelle sans ressources dédiées. L'opération `NDB-26` (réplication inter-clusters) est donc présentée à titre indicatif ; elle n'est pas effectivement exécutable sur cette infrastructure. Renvoi : passer au Lab-14 qui est indépendant (propre table de test `labfail.t_fail`) pour la simulation de panne, le failover et le failback (NDB-27, NDB-28).
 ## Lab-14 — Simulation de panne, failover et failback
 ### Énoncé / Contexte
 Simuler une panne de nœud de stockage sur le cluster MySQL Cluster, observer le basculement automatique (failover) puis le retour arrière (failback) avec resynchronisation. L'objectif est de constater que le service reste disponible malgré la perte d'un nœud de stockage (grâce à `NoOfReplicas = 2`), de mesurer le temps de failover (cible < 1 seconde), et de valider le failback sans perte de données. Ce lab réalise les opérations `NDB-27` (gestion des pannes) et `NDB-28` (failover/failback). Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes s'exécutent directement en root sur chaque VM (déjà connecté en SSH).
@@ -1078,6 +1066,40 @@ id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 # rc=0
 ```
+
+#### Étape 1b — Créer une table de test indépendante pour Lab-14
+
+**But** — Créer une table `labfail.t_fail` sur le nœud SQL (Id=4) pour vérifier la continuité de service pendant le failover, sans dépendre de Lab-13 ni de la table `labrep.t_repl`.
+
+**Machine** — VM 1 (192.168.56.10), premier nœud SQL.
+
+**Prérequis** — `mysqld` Id=4 démarré et accessible via le client `mysql`.
+
+> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
+
+**Exemple de commande**
+
+```bash
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS labfail; CREATE TABLE IF NOT EXISTS labfail.t_fail (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB; INSERT INTO labfail.t_fail (id,val) VALUES (101,'principal'),(102,'secours') ON DUPLICATE KEY UPDATE val=VALUES(val);"
+```
+
+**Explication de la commande**
+
+- `CREATE DATABASE IF NOT EXISTS labfail` : crée la base de test si nécessaire.
+- `CREATE TABLE … ENGINE=NDB` : crée une table stockée par le moteur NDB, donc répliquée sur les nœuds de stockage.
+- `INSERT … ON DUPLICATE KEY UPDATE` : insère des données de test de manière idempotente.
+- Cette table est propre à Lab-14 et rend le lab indépendant de Lab-13.
+
+**Résultat attendu**
+
+```text
+# date: 2026-11-22T00:00:00+01:00
+# cmd: mysql -u root -e "CREATE DATABASE IF NOT EXISTS labfail; CREATE TABLE IF NOT EXISTS labfail.t_fail ...;"
+# rc=0
+Query OK, 1 row affected
+Query OK, 1 row affected
+```
+
 #### Étape 2 — Simuler la panne du nœud de stockage Id=2
 **But** — Arrêter le nœud de stockage Id=2 pour déclencher un failover.
 **Machine** — VM 1 (192.168.56.10), nœud de gestion (commande émise vers le cluster).
@@ -1133,22 +1155,21 @@ id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl;" ```
+mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail;"
+```
 **Explication de la commande**
-- `date +%s.%N` (début et fin) : encadre la requête SQL pour mesurer le temps de réponse.
-- `mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl;"` : vérifie que le service SQL répond via le nœud de stockage restant (Id=3).
-- `tee -a` : ajoute les horodatages et le résultat au fichier de preuve.
-- Le service doit rester disponible malgré la panne d'un nœud de stockage (failover automatique).
+
+- `mysql -u root` : se connecte au serveur MySQL local en tant que root.
+- `-e "SELECT COUNT(*) FROM labfail.t_fail;"` : exécute la requête SQL et affiche le résultat, vérifiant que le service SQL répond via le nœud de stockage restant (Id=3).
+- `labfail.t_fail` : table de test propre à Lab-14, créée à l'étape 1b pour valider la continuité du service pendant le failover, sans dépendre de Lab-13.
 - **Piège** : si la requête SQL échoue, le failover n'a pas eu lieu (vérifier `NoOfReplicas = 2` et l'état des nœuds).
 **Résultat attendu**
 ```text
-1700000000.500000000
 +----------+
 | COUNT(*) |
 +----------+
 |        2 |
 +----------+
-1700000000.550000000
 # rc=0
 ```
 #### Étape 5 — Redémarrer le nœud de stockage Id=2 (failback)
@@ -1268,7 +1289,7 @@ id=3	@192.168.56.11  (...) connected
 **Exemple de commande**
 
 ```bash
-mysql -u root -e "SELECT COUNT(*) FROM labrep.t_repl; SELECT * FROM labrep.t_repl ORDER BY id;"
+mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail; SELECT * FROM labfail.t_fail ORDER BY id;"
 ```
 **Explication de la commande**
 
@@ -1329,14 +1350,6 @@ Ce lab couvre la simulation d'une panne de nœud de stockage, l'observation des 
 | Latence de commit élevée | Disque lent sur journaux de redo/fragment log | Placer les fichiers de cluster sur un SSD |
 | Partitionnement inadapté | Un seul node group, charge concentrée | Ajouter des nœuds de stockage pour répartir les fragments |
 | Saturation réseau | Trafic de réplication synchrone sur le réseau unique | Réseau dédié pour le trafic inter-nœuds |
-## Propositions d'amélioration du livre intégrées au chapitre
-Le livre "Pro MySQL NDB Cluster" propose plusieurs améliorations de performance et de scalabilité, adaptées ci-dessous :
-1. **Ajout de nœuds de stockage pour la montée en charge** : le livre recommande d'ajouter des nœuds de stockage pour créer plusieurs node groups et répartir l'auto-sharding sur plus de machines. Préconisé à l'étape 4 du Lab-11 (préparation des répertoires `ndb_7` et `ndb_8`).
-2. **Commit sizing** : regrouper plusieurs écritures dans un même commit pour réduire la fréquence des synchronisations de journal de redo et améliorer le taux de commit sur gros volumes.
-3. **Traitement par lots non transactionnel** : pour les charges de lecture/écriture intensives, utiliser des opérations par lots afin de réduire la surcharge par opération.
-4. **Engine condition pushdown** : pousser les conditions de filtre vers les nœuds de stockage pour réduire le volume de données transféré entre stockage et nœud SQL.
-5. **Type de disque et taille de bloc du système de fichiers** : choisir un disque rapide (SSD) pour les fichiers de cluster et ajuster la taille de bloc du système de fichiers pour optimiser les I/O.
-6. **Tuning SQL et binding CPU** : optimiser les requêtes SQL et lier les threads de `ndbmtd` à des cœurs CPU spécifiques pour réduire les interruptions de contexte.
 ## Synthèse du chapitre
 > **À retenir** — La performance de MySQL Cluster repose sur le dimensionnement de `DataMemory` et `IndexMemory`, la surveillance de la RAM/disque/réseau pour détecter les goulots, et le partitionnement automatique (auto-sharding) qui répartit les fragments sur les nœuds de stockage. La montée en charge horizontale passe par l'ajout de nœuds de stockage pour créer plusieurs node groups. Les optimisations issues du livre (commit sizing, batch processing, engine condition pushdown, type de disque, binding CPU) complètent le dimensionnement de base. Le module 4.1 ajoute la réplication inter-clusters (site principal vers site de secours via le canal de réplication SQL) et la tolérance aux pannes : détection de panne de nœud, basculement automatique (failover) et retour arrière (failback) avec resynchronisation, sans perte de données. L'accès utilise une session SSH ouverte (mot de passe dans `.env`).
 ## Ressources et références
