@@ -6,7 +6,7 @@
 
 ## Avertissement et périmètre
 
-- Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet pendant les labs (adaptateur NAT temporaire uniquement pendant l'installation des paquets).
+- Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
 - Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
 - Accès distant : une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
@@ -534,7 +534,7 @@ dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster-manager|mcm' || echo 'paquet mcm
 
 - `dpkg -l | grep -i -E 'mysql-cluster-manager|mcm'` : vérifie la présence des paquets MCM.
 - `which mcm mcmd` : vérifie la présence des binaires client et agent.
-- Si absent, installer depuis le dépôt MySQL (nécessite l'adaptateur NAT temporaire).
+- Si absent, installer depuis le dépôt MySQL configuré sur le nœud.
 - **Piège** : MCM nécessite une base de données de référentiel (repository) et des agents sur chaque nœud ; prévoir l'installation sur les 3 VM pour une gestion complète.
 
 **Résultat attendu**

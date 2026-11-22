@@ -7,7 +7,7 @@
 ## Avertissement et périmètre
 
 - Machine principale : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
-- Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet pendant les labs (adaptateur NAT temporaire uniquement pendant l'installation des paquets).
+- Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
 - Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
 - Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine cible.
@@ -201,7 +201,7 @@ Le plan ci-dessous ordonne tous les labs du chapitre. Aucune action de configura
 
 ### Énoncé / Contexte
 
-Nettoyer et configurer manuellement les trois machines virtuelles du laboratoire (réseau host-only `vboxnet0` avec adresses IP statiques, service SSH, noms d'hôtes, nettoyage de toute configuration précédente, snapshots propres) et contrôler la connectivité depuis l'hôte et entre les VM. Cette infrastructure constitue la base de l'installation de MySQL Cluster réalisée au Lab-02. Ce lab ne contient aucune commande MySQL Cluster ; il prépare uniquement les cibles autorisées. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine cible.
+Nettoyer et configurer manuellement les trois machines virtuelles du laboratoire (réseau host-only `vboxnet0` avec adresses IP statiques, service SSH, noms d'hôtes, nettoyage de toute configuration précédente, snapshots propres) et contrôler la connectivité depuis l'hôte et entre les VM. Cette infrastructure constitue la base de l'installation de MySQL Cluster réalisée au Lab-02. Ce lab ne contient aucune commande MySQL Cluster ; il prépare uniquement les machines cibles du laboratoire. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine cible.
 
 ### Outils et commandes utilisées
 
@@ -711,7 +711,7 @@ dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster|ndb' || echo 'aucun paquet ndb'
 - `dpkg -l 2>/dev/null | grep -i -E 'mysql-cluster|ndb'` : liste les paquets installés et filtre ceux de MySQL Cluster (`mysql-cluster-community-*`).
 - `grep -i -E 'mysql-cluster|ndb'` : filtre insensible à la casse sur les noms de paquets cluster ou ndb.
 - `|| echo 'aucun paquet ndb'` : affiche un message explicite si aucun paquet cluster n'est trouvé.
-- **Piège** : si un paquet manque, l'installer depuis le dépôt officiel MySQL avant de poursuivre (nécessite l'adaptateur NAT temporaire pour l'accès Internet).
+- **Piège** : si un paquet manque, l'installer depuis le dépôt officiel MySQL configuré sur le nœud avant de poursuivre.
 
 **Résultat attendu**
 
@@ -782,7 +782,7 @@ aucun paquet ndb
 
 **Machine** — VM 1 (192.168.56.10, gestion-sql), VM 2 (192.168.56.11, stockage), VM 3 (192.168.56.12, mysql-node3).
 
-**Prérequis** — Accès au dépôt MySQL (adaptateur NAT temporaire activé ou paquets présents dans le cache apt local), compte root.
+**Prérequis** — Accès au dépôt MySQL configuré sur le nœud (ou paquets présents dans le cache apt local), compte root.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
@@ -797,7 +797,7 @@ apt-get update && apt-get install -y mysql-cluster-community-management-server m
 - `apt-get update` : rafraîchit la liste des paquets depuis le dépôt configuré.
 - `apt-get install -y ...` : installe `ndb_mgmd` (gestion), `ndbmtd` (stockage), `mysqld` (SQL) et le client MySQL Cluster.
 - Sur VM 1 : serveur de gestion + serveur SQL + client. Sur VM 2 : nœud de données uniquement. Sur VM 3 : serveur SQL + client.
-- **Piège** : l'installation nécessite un accès Internet temporaire ; une fois terminée, repasser l'adaptateur en host-only uniquement (pas d'Internet permanent sur les nœuds).
+- **Piège** : les paquets sont installés depuis le dépôt MySQL configuré ; une fois terminé, les nœuds restent sur le réseau host-only vboxnet0 (pas d'Internet permanent sur les nœuds).
 
 **Résultat attendu**
 
