@@ -4,17 +4,17 @@
 
 jour: 1
 module: 1.1
-statut: corrige_post_relecture
+statut: done
 derniere_session: 2026-11-23
-blocage: Aucun. Relecture intégrale student (5 chapitres) et correction prof terminées. 4 BLOCKER + ~30 MAJOR + MINOR corrigés. Format canonique vérifié (Lab-01 a Lab-14, 4 sections dans l'ordre, aucun Changelog dans les chapitres, aucun secret expose, .env ignore et non suivi). En attente de validation portes G0-G7 puis commit/push.
-prochaine_action: (1) valider portes G0-G7, (2) commit `mise a jour` + push (stager uniquement chapitres, syllabus.md, AGENTS.md, CHANGELOG.md, RAPPORT_CORRECTIONS_RELECTURE_STUDENT.md, netplan-*.yaml, config.ini ; exclure .bak/.pre-fix/rag/ et anciens RAPPORT_*), (3) remise a student pour re-test des points corriges, (4) rapport final.
-infrastructure: 3 VMs operationnelles sur vboxnet0 192.168.56.0/24 (DHCP off, hote 192.168.56.1) — tous disques dans /home/yug/Documents/mysql/vm/, aucun disque deplace/supprime. VM 1 (UbuntuServer-01) : gestion-sql, 192.168.56.10/24, SSH root OK. VM 2 (UbuntuServer-02) : stockage, 192.168.56.11/24, deux noeuds ndbmtd. VM 3 (UbuntuServer-03) : mysql-node3, 192.168.56.12/24, 2e noeud SQL. Snapshots propre-avant-lab. AUCUNE VM reinstallée/reconfiguree lors de la correction (regle absolue).
+blocage: Aucun. Module 1.1 (chapitres 1 à 5) validé après relecture intégrale student (58 anomalies : 4 BLOCKER, ~30 MAJOR, 21 MINOR, 3 SUGGESTION) et correction prof (7 décisions tranchées, format canonique conforme Lab-01 à Lab-14). Commit `mise à jour` (0c073c5) poussé sur main. Porte G0-G7 validée (format canonique, cohérence, pas de secrets, Changelog hors chapitres). Limite documentée : fichiers preuves/ non régénérés (VMs éteintes, décision D2 de prof) — à faire à la remise en route des VMs.
+prochaine_action: Remettre les chapitres à student pour test débutant (sans corrigé séparé), puis feedback / re-test si nécessaire, puis nouveau commit/push si vert.
+infrastructure: 3 VMs operationnelles sur vboxnet0 192.168.56.0/24 (DHCP off, hote 192.168.56.1) — tous disques dans /home/yug/Documents/mysql/vm/, aucun disque deplace/supprime. VM 1 (UbuntuServer-01) : gestion-sql, 192.168.56.10/24, SSH root OK. VM 2 (UbuntuServer-02) : stockage, 192.168.56.11/24, deux noeuds ndbmtd. VM 3 (UbuntuServer-03) : mysql-node3, 192.168.56.12/24, 2e noeud SQL. Snapshots propre-avant-lab. AUCUNE VM reinstallée/reconfiguree (regle absolue).
 chapitres:
-  chapitre_01: corrige (cartographie NDB-08 un seul node group, dpkg -l par VM, DataMemory 256M/128M, netplan sans gateway4/DNS, Etape 12/13 restructuree, 2 STOP homogeneise). Format canonique OK.
-  chapitre_02: corrige (DataMemory 256M/128M, bloc SHOW duplique supprime, Lab-05 ajout/suppression complete + NodeId 6 abouti, 2 STOP). Format canonique OK.
-  chapitre_03: corrige (Lab-08 renumérote, resultat NodeId 6 rempli, ndb_desc precede creation table, 2 START -> manuel, Lab-09 dpkg -l honnete, markdown repare). Format canonique OK.
-  chapitre_04: corrige (Lab-13 refondu en Lab-12 reference/demonstration, 4 BLOCKER resolus, log_bin/server_id honnetes, Lab-10/11 resultats remplis, 2 START -> manuel, Lab-14 -> Lab-13). Format canonique OK.
-  chapitre_05: corrige (Lab-12 -> Lab-14, TLS sections default + certif distincts, arret cluster avant --initial, START BACKUP reintegre, numerotation fantome resolue, PIDs inventes supprimes). Format canonique OK.
-systeme_rag: deploye dans /home/yug/Documents/mysql/rag/ — 10 livres indexes, ~2600 chunks, 543 images, recherche semantique re-ranking.
+  chapitre_01: done — format canonique OK, cartographie NDB-08 corrigée, dpkg -l par VM, DataMemory 256M/128M, netplan sans gateway4/DNS.
+  chapitre_02: done — format canonique OK, DataMemory 256M/128M, Lab-05 ajout/suppression complet, 2 STOP homogeneise.
+  chapitre_03: done — format canonique OK, Lab-08 renumérote, ndb_desc avec creation table, Lab-09 honnete.
+  chapitre_04: done — format canonique OK, Lab-13 refondu Lab-12 demonstration (4 BLOCKER resolus), Lab-10/11 resultats remplis.
+  chapitre_05: done — format canonique OK, Lab-12->Lab-14, TLS sections default + certif distincts, arret cluster avant --initial.
+systeme_rag: deploye dans /home/yug/Documents/mysql/rag/ — 10 livres indexes, ~2600 chunks, 543 images.
 agent_ecriture: orchestrateur
-historique: CHANGELOG.md a la racine (2026-11-23 — correction relecture integrale student). Detail dans RAPPORT_CORRECTIONS_RELECTURE_STUDENT.md.
+historique: Commit 0c073c5 "mise a jour" pousse sur main (13 fichiers : chapitres, syllabus, AGENTS, tracking.state, CHANGELOG, RAPPORT_CORRECTIONS_RELECTURE_STUDENT, netplan x3). CHANGELOG.md a la racine.
