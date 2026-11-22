@@ -517,7 +517,7 @@ config VM 3 terminé
 
 **Machine** — Hôte (192.168.56.1), snapshot des VM 1 (`UbuntuServer-01`), VM 2 (`UbuntuServer-02`) et VM 3 (`UbuntuServer-03`).
 
-**Prérequis** — VirtualBox sur l'hôte, les VM existent, les snapshots pris par `sysadmin` avant le module.
+**Prérequis** — VirtualBox sur l'hôte, les VM existent, les snapshots pris avant le module.
 
 > **Machine** : 192.168.56.1 | **Terminal** : terminal hôte | **Utilisateur** : yug | **Répertoire** : /home/yug/Documents/mysql
 
