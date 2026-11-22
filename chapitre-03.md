@@ -940,27 +940,27 @@ Ce lab couvre la sauvegarde consistante (`START BACKUP`), la vérification des f
 
 ### Énoncé / Contexte
 
-Installer et utiliser MySQL Cluster Manager (MCM) pour administrer le cluster de manière centralisée : création d'agents, création d'un cluster, import de configuration, et opérations de maintenance via le client `mcm`. Ce lab réalise les opérations `NDB-20`, `NDB-21` et `NDB-22`. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
+MySQL Cluster Manager (MCM) est un outil d'administration centralisée (produit commercial Oracle) qui automatise le déploiement, la configuration et la maintenance des clusters NDB. Sur l'infrastructure actuelle du lab (3 VM isolées sur vboxnet0 192.168.56.0/24, sans accès Internet), les binaires `mcm` (client) et `mcmd` (agent) ne sont pas installés. Leur installation nécessiterait une licence Oracle et un accès au dépôt MySQL/Oracle, ce qui est impossible hors la phase d'installation des paquets.
+
+Ce lab est donc **non réalisable en pratique** sur l'infrastructure actuelle. Les opérations `NDB-20` (installation des agents MCM), `NDB-21` (création de clusters) et `NDB-22` (gestion des clusters) sont présentées à titre **théorique uniquement** (démonstration commentée, sans exécution réelle). Aucun bloc de commande `mcm` ni `mcmd` n'est exécuté sur les VM.
+
+L'accès aux VM se fait en SSH (mot de passe dans `.env`, non affiché en clair).
 
 ### Outils et commandes utilisées
 
 | Outil | Commande | Rôle |
 |---|---|---|
-| mcm | `mcm -u admin -p <pass>` | Client MySQL Cluster Manager |
-| mcmd | `mcmd --cluster ...` | Agent de gestion MCM sur chaque nœud |
-| mcm | `mcm -e "create cluster ..."` | Crée un cluster géré par MCM |
-| mcm | `mcm -e "get ..."` | Récupère la configuration d'un cluster |
-| mcm | `mcm -e "set ..."` | Modifie un paramètre de cluster |
+| MCM (indisponible) | — | MySQL Cluster Manager n'est pas installé sur les VM et n'est pas disponible sans licence Oracle. Aucune commande `mcm` ni `mcmd` n'est exécutable sur cette infrastructure. |
 
 ### Commande et laboratoire étape par étape
 
-#### Étape 1 — Installer MySQL Cluster Manager sur VM 1
+#### Étape 1 — Constat d'absence du paquet MySQL Cluster Manager sur VM 1
 
-**But** — Installer le serveur et le client MySQL Cluster Manager sur VM 1 (nœud de gestion).
+**But** — Confirmer que le paquet MySQL Cluster Manager n'est pas présent sur VM 1 (nœud de gestion + nœud SQL).
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 
-**Prérequis** — Paquet MySQL Cluster Manager disponible (dépôt MySQL ou cache apt), `mysql.list` configuré.
+**Prérequis** — Aucun paquet MCM attendu sur les VM.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
@@ -972,71 +972,25 @@ dpkg -l | grep -i -E 'mysql-cluster-manager|mcm' || echo 'paquet mcm non install
 
 **Explication de la commande**
 
-- `dpkg -l | grep -i -E 'mysql-cluster-manager|mcm'` : vérifie la présence des paquets MCM.
-- Si absent, installer depuis le dépôt MySQL configuré sur le nœud.
-- **Piège** : MCM nécessite une base de données de référentiel (repository) et des agents sur chaque nœud ; prévoir l'installation sur les 3 VM pour une gestion complète.
-
-**Résultat attendu**
-
-```text
-paquet mcm non installé
-```
-
-#### Étape 1b — Vérifier les binaires MCM
-
-**But** — Vérifier la présence des binaires client et agent MySQL Cluster Manager.
-
-**Machine** — VM 1 (192.168.56.10), nœud de gestion.
-
-**Prérequis** — Paquet MySQL Cluster Manager disponible (dépôt MySQL ou cache apt), `mysql.list` configuré.
-
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
-
-```bash
-which mcm mcmd || echo 'binaires mcm absents'
-```
-
-**Explication de la commande**
-
-- `which mcm mcmd` : vérifie la présence des binaires client et agent.
-- **Piège** : sans les binaires, MCM ne peut pas être utilisé ; installer depuis le dépôt MySQL configuré sur le nœud.
-
-**Résultat attendu**
-
-```text
-binaires mcm absents
-```
-
-
-#### Étape 2 — Constat d'absence des binaires MCM (démonstration théorique)
-
-**But** — Confirmer que MySQL Cluster Manager (MCM) n'est pas installé sur l'infrastructure actuelle, et documenter ce que ferait une installation MCM sans tenter d'exécution (binaires `mcm`/`mcmd` absents).
-
-**Machine** — VM 1 (192.168.56.10), nœud de gestion.
-
-**Prérequis** — Aucun binaire MCM attendu sur les VM.
-
-> **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-
-**Exemple de commande**
-
-```bash
-dpkg -l | grep -i -E 'mysql-cluster-manager|mcm' || echo 'paquet mcm non installé'
-```
-
-**Explication de la commande**
-
-- `dpkg -l | grep -i -E 'mysql-cluster-manager|mcm'` : vérifie la présence des paquets MCM.
+- `dpkg -l | grep -i -E 'mysql-cluster-manager|mcm'` : liste les paquets installés et filtre sur MCM.
 - `|| echo 'paquet mcm non installé'` : affiche un message explicite si aucun paquet MCM n'est trouvé.
-- **Piège** : ce constat est réel sur l'infrastructure actuelle ; il justifie le passage en démonstration théorique pour la suite de ce lab.
+- **Piège** : l'absence de paquet confirme que la commande `mcm` est introuvable ; MCM est un produit commercial Oracle hors périmètre du lab.
 
 **Résultat attendu**
 
 ```text
 paquet mcm non installé
 ```
+
+> **Note** : ce résultat confirme l'indisponibilité de MCM ; `mcm` est introuvable sur cette VM.
+
+#### Étape 2 — Constat d'absence des binaires `mcm` et `mcmd`
+
+**But** — Confirmer que les binaires client `mcm` et agent `mcmd` de MySQL Cluster Manager sont absents du PATH.
+
+**Machine** — VM 1 (192.168.56.10), nœud de gestion.
+
+**Prérequis** — Constat de l'étape 1.
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
@@ -1048,44 +1002,46 @@ which mcm mcmd || echo 'binaires mcm absents'
 
 **Explication de la commande**
 
-- `which mcm mcmd` : vérifie la présence des binaires client (`mcm`) et agent (`mcmd`) dans le PATH.
-- `|| echo 'binaires mcm absents'` : confirme l'absence des binaires.
-- **Piège** : sans les binaires, aucune commande MCM ne peut être exécutée ; les étapes suivantes sont donc présentées comme démonstration théorique commentée, sans exécution réelle.
+- `which mcm mcmd` : recherche les binaires `mcm` et `mcmd` dans le PATH.
+- `|| echo 'binaires mcm absents'` : confirme l'absence des binaires si aucun n'est trouvé.
+- **Piège** : sans binaires, aucune opération MCM (création de cluster, modification de configuration) ne peut être exécutée.
 
 **Résultat attendu**
 
 ```text
 binaires mcm absents
 ```
+
+> **Note** : `mcm` et `mcmd` sont introuvables ; ces commandes ne peuvent pas être exécutées sur l'infrastructure actuelle.
+
 
 #### Étape 3 — Démonstration théorique : ce que ferait MCM (non exécutable)
 
-**But** — Décrire, sans exécution réelle, les opérations que MySQL Cluster Manager permettrait d'automatiser : démarrage des agents, création d'un cluster, modification de configuration. Ce lab est non réalisable sur l'infrastructure actuelle car les binaires `mcm`/`mcmd` sont absents et leur installation nécessite un dépôt MySQL avec accès Internet (interdit hors phase d'installation des paquets).
+**But** — Décrire, sans exécution réelle, les opérations que MySQL Cluster Manager permettrait d'automatiser : démarrage des agents, création d'un cluster, modification de configuration. Ce lab est non réalisable sur l'infrastructure actuelle car les binaires `mcm`/`mcmd` sont absents et leur installation nécessite un dépôt MySQL/Oracle avec accès Internet (interdit hors phase d'installation des paquets).
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion (exposé théorique uniquement).
 
-**Prérequis** — Constat d'absence des binaires MCM (étapes 1 et 1b).
+**Prérequis** — Constat d'absence des binaires MCM (étapes 1 et 2).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
 **Explication de la démonstration théorique**
 
-- **Installation MCM** : il faudrait installer le paquet `mysql-cluster-manager` sur chaque VM depuis le dépôt MySQL (nécessite un accès réseau vers le dépôt, donc l'adaptateur NAT temporaire uniquement pendant l'installation des paquets).
-- **Démarrage des agents** : sur chaque VM, lancer `mcmd --nodeid=<n> --manager-server=192.168.56.10` en arrière-plan. Un agent par VM permet à MCM de piloter tous les nœuds.
-- **Création d'un cluster** : via le client `mcm -u admin -p <pass>`, exécuter `create cluster <nom>; add process ndb_mgmd 192.168.56.10; add process ndbmtd 192.168.56.11; add process mysqld 192.168.56.10; add process mysqld 192.168.56.12; start cluster <nom>;`.
-- **Interrogation/modification** : `get NoOfReplicas cluster <nom>`, `set NoOfReplicas=2 cluster <nom>`, `show status cluster <nom>`.
+- **Installation MCM** : il faudrait installer le paquet `mysql-cluster-manager` sur chaque VM depuis le dépôt MySQL/Oracle (nécessite un accès réseau vers le dépôt, donc l'adaptateur NAT temporaire uniquement pendant l'installation des paquets, et une licence Oracle).
+- **Démarrage des agents** : sur chaque VM, lancer `mcmd --nodeid=<n> --manager-server=192.168.56.10` en arrière-plan. Un agent par VM permet à MCM de piloter tous les nœuds. *Non exécuté : binaire `mcmd` introuvable.*
+- **Création d'un cluster** : via le client `mcm -u admin -p <pass>`, exécuter `create cluster <nom>; add process ndb_mgmd 192.168.56.10; add process ndbmtd 192.168.56.11; add process mysqld 192.168.56.10; add process mysqld 192.168.56.12; start cluster <nom>;`. *Non exécuté : commande `mcm` introuvable.*
+- **Interrogation/modification** : `get NoOfReplicas cluster <nom>`, `set NoOfReplicas=2 cluster <nom>`, `show status cluster <nom>`. *Non exécutés : commande `mcm` introuvable.*
 - **Limite du lab** : comme les binaires sont absents et que l'installation de MCM sort du périmètre « sans accès Internet permanent », les opérations `NDB-20`, `NDB-21` et `NDB-22` ne peuvent pas être réalisées en pratique sur cette infrastructure. Elles sont présentées à titre indicatif.
 
 **Résultat attendu**
 
 ```text
-
+Démonstration théorique uniquement : aucune commande mcm/mcmd exécutée (binaires introuvables, produit commercial Oracle non installé, pas d'accès Internet sur les VM).
 ```
-
 
 ### En conclusion
 
-Ce lab couvre les outils de supervision (`SHOW`, `ndb_config`, `ALL REPORT MEMORYUSAGE`, `ndb_desc`) et la détection d'alerte lorsqu'un nœud passe en `not connected`, ainsi que la sauvegarde consistante (`START BACKUP`), la restauration du schéma (`--restore_meta`) puis des données (`-r`) sur chaque nœud de stockage en parallèle, et le remplacement d'un nœud de stockage sans interruption de service. Les opérations `NDB-16`, `NDB-17`, `NDB-18` et `NDB-19` sont réalisées. L'opération `NDB-20` à `NDB-22` (MySQL Cluster Manager) est présentée en démonstration théorique uniquement, les binaires `mcm`/`mcmd` étant absents de l'infrastructure actuelle. Le chapitre 3 est terminé ; le prochain chapitre (Jour 4) couvrira l'optimisation, les performances et la scalabilité.
+Ce lab est consacré à MySQL Cluster Manager (MCM). Les opérations `NDB-20` (installation des agents MCM), `NDB-21` (création de clusters) et `NDB-22` (gestion des clusters) sont présentées en démonstration théorique uniquement : les binaires `mcm`/`mcmd` sont absents de l'infrastructure actuelle et indisponibles sans licence Oracle, aucune commande `mcm` ni `mcmd` n'a pu être exécutée. Le chapitre 3 est terminé ; le prochain chapitre (Jour 4) couvrira l'optimisation, les performances et la scalabilité.
 
 ## Erreurs fréquentes et corrections détaillées (Partie D)
 
