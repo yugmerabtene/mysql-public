@@ -165,15 +165,17 @@ graph TD
 
 **Fig 1.2** — Résilience du clustering NDB : node group unique, réplication synchrone, arbitrage par le nœud de gestion, failover automatique sur la réplica restante.
 
-## Recherches industrielles — Haute disponibilité des systèmes critiques
+## Haute disponibilité des systèmes critiques
 
-Les enseignements des recherches sur l'industrie et les grands systèmes confirment que les architectures de type partagé-nothing avec réplication synchrone sont le fondement des systèmes critiques à haut volume. Dans les réseaux de télécommunications, les plateformes de transaction financière et les infrastructures logistiques distribuées, l'objectif de disponibilité de 99,999 % (moins de cinq minutes d'indisponibilité par an) impose trois conditions :
+Les architectures de type partagé-nothing (shared-nothing) avec réplication synchrone sont le fondement des systèmes critiques à haut volume. Dans les réseaux de télécommunications, les plateformes de transaction financière et les infrastructures logistiques distribuées, l'objectif de disponibilité de 99,999 % (moins de cinq minutes d'indisponibilité par an) impose trois conditions :
 
 1. **Détection rapide des pannes** : un nœud qui ne répond plus doit être identifié en quelques secondes par le nœud de gestion, sans attendre un timeout long.
 2. **Basculement sans intervention humaine** : le failover automatique sur la réplica restante doit se produire sans opérateur, pour maintenir les opérations temps réel.
 3. **Résynchronisation à chaud** : un nœud revenu après panne doit réintégrer le cluster et rattraper son retard de données sans arrêter le service.
 
-Ces enseignements justifient le choix de `NoOfReplicas = 2`, l'ordre de démarrage strict (gestion → stockage → SQL), et l'arbitrage par le nœud de gestion pour prévenir le split-brain. Ils s'appliquent directement aux systèmes critiques à haut volume où l'indisponibilité a un impact métier immédiat.
+Ces principes justifient le choix de `NoOfReplicas = 2`, l'ordre de démarrage strict (gestion → stockage → SQL), et l'arbitrage par le nœud de gestion pour prévenir le split-brain. Ils s'appliquent directement aux systèmes critiques à haut volume où l'indisponibilité a un impact métier immédiat.
+
+> **Partagé-nothing (shared-nothing) :** ce n'est pas une erreur, c'est le terme technique de l'architecture NDB Cluster. Cela signifie que chaque nœud possède sa propre mémoire vive et ses propres disques, sans rien partager avec les autres nœuds. Les données sont fragmentées et répliquées sur plusieurs nœuds de stockage indépendants, ce qui élimine tout point de défaillance unique (single point of failure).
 
 ## Cartographie de référence des opérations (NDB-nn)
 
@@ -182,7 +184,7 @@ Le tableau ci-dessous classe les opérations de ce chapitre selon le référenti
 | Opération | ID | Composant | Source de données | Règle de détection | Mitigation |
 |---|---|---|---|---|---|
 | Présentation des composants | NDB-01 | Architecture | Schéma Fig 1.1, `ndb_mgm SHOW` | Vérifier la présence des trois types de nœuds | Documenter l'architecture avant toute installation |
-| Études de cas | NDB-02 | Usage critique | Recherche industrielle (systèmes critiques, 99,999 %) | Identifier les charges à haute disponibilité | Réserver MySQL Cluster aux cas critiques |
+| Études de cas | NDB-02 | Usage critique | Systèmes critiques (téléphonie, finance, logistique, 99,999 %) | Identifier les charges à haute disponibilité | Réserver MySQL Cluster aux cas critiques |
 | Installation des composants | NDB-03 | Tous les nœuds | Sortie `dpkg -l`, commande `which` | Vérifier la présence de `ndb_mgmd`, `ndbmtd`, `mysqld` | Installer depuis le dépôt officiel MySQL |
 | Configuration initiale | NDB-04 | Nœud de gestion | Fichier `config.ini` | Vérifier que `ndb_mgmd` démarre sans erreur | Sauvegarder `config.ini` avant toute modification |
 | Dimensionnement résilience | NDB-08 | Stockage | `config.ini`, `ndb_mgm SHOW` | Vérifier `NoOfReplicas = 2` et deux node-group | Définir `NoOfReplicas = 2` avant le premier démarrage |
