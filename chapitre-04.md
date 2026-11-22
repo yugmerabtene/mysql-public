@@ -3,9 +3,9 @@
 À la fin de ce chapitre, l'apprenant sait optimiser les paramètres de performance du moteur NDB (`DataMemory`, `IndexMemory`, `ThreadConfig`, `NoOfReplicas`), diagnostiquer et résoudre les goulots d'étranglement (réseau, disque, RAM), mettre en œuvre le sharding et le partitionnement pour répartir la charge sur plusieurs nœuds de stockage, analyser les erreurs récurrentes sur gros volumes avec leurs corrections, configurer la réplication inter-clusters (site principal vers site de secours) et gérer la tolérance aux pannes : détection de panne de nœud, basculement automatique (failover) et retour arrière (failback) avec resynchronisation.
 ## Avertissement et périmètre
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
-- Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
+- Données : fictives, marquées `LAB-ONLY` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
-- Accès distant : une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
+- Accès distant : une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
 ## Durée estimée
 - Durée totale : 12 heures (4 labs de 3 heures).
@@ -71,7 +71,7 @@ La charge ou une défaillance cherche à saturer une ressource (RAM, disque, ré
 | Failover / failback | NDB-28 | Nœud de stockage | `ndb_mgm -e "SHOW"`, chronométrage | Mesurer le temps de basculement et de resynchronisation | Redémarrer le nœud et valider la resynchronisation sans perte de données |
 ## Lab-10 — Paramètres performance et goulots d'étranglement
 ### Énoncé / Contexte
-Optimiser les paramètres de performance du moteur NDB (`DataMemory`, `IndexMemory`, `NoOfFragmentLogParts`, `RedoBuffer`) et diagnostiquer les goulots d'étranglement (RAM, disque, réseau). Ce lab réalise les opérations `NDB-23` et `NDB-24`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Optimiser les paramètres de performance du moteur NDB (`DataMemory`, `IndexMemory`, `NoOfFragmentLogParts`, `RedoBuffer`) et diagnostiquer les goulots d'étranglement (RAM, disque, réseau). Ce lab réalise les opérations `NDB-23` et `NDB-24`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 ### Outils et commandes utilisées
 | Outil | Commande | Rôle |
 |---|---|---|
@@ -160,7 +160,7 @@ pkill -x ndbmtd; sleep 2; (cd /var/lib/mysql-cluster/ndb_2 && nohup ndbmtd --ndb
 - `nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &` : relance chaque node avec réinitialisation de son stockage (après modification de config).
 - `sleep 5` : laisse le temps aux nodes de se déclarer et de charger la nouvelle config.
 - `pgrep -a ndbmtd` : confirme le retour des processus.
-- **Piège** : `--initial` réinitialise le stockage de chaque node ; ne pas l'utiliser sur un cluster en production avec des données à conserver.
+- **Piège** : `--initial` réinitialise le stockage de chaque node ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver.
 **Résultat attendu**
 ```text
 7714 ndbmtd --ndb-connectstring=192.168.56.10
@@ -205,7 +205,7 @@ NoOfReplicas = 2
 Ce lab couvre l'ajustement de `DataMemory` et `IndexMemory`, la vérification de la RAM et du disque de chaque VM, le redémarrage des nœuds de stockage pour appliquer les changements, et la confirmation de la nouvelle configuration. Les opérations `NDB-23` et `NDB-24` (paramètres performance et détection de goulots) sont réalisées. Renvoi : passer au Lab-11 pour le sharding, le partitionnement et les gros volumes.
 ## Lab-11 — Sharding, partitionnement et gros volumes
 ### Énoncé / Contexte
-Mettre en œuvre le sharding et le partitionnement pour répartir la charge sur plusieurs nœuds de stockage, et analyser le comportement du cluster sur gros volumes (saturation RAM, disque, réseau, partitionnement inadapté). Ce lab réalise l'opération `NDB-25`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Mettre en œuvre le sharding et le partitionnement pour répartir la charge sur plusieurs nœuds de stockage, et analyser le comportement du cluster sur gros volumes (saturation RAM, disque, réseau, partitionnement inadapté). Ce lab réalise l'opération `NDB-25`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 ### Outils et commandes utilisées
 | Outil | Commande | Rôle |
 |---|---|---|
@@ -393,7 +393,7 @@ La panne ou l'incident cherche à rendre indisponible un site entier ou à provo
 | Failover / failback | NDB-28 | Nœud de stockage | `ndb_mgm -e "SHOW"`, chronométrage | Mesurer le temps de basculement et de resynchronisation | Redémarrer le nœud et valider la resynchronisation sans perte de données |
 ## Lab-13 — Réplication entre clusters
 ### Énoncé / Contexte
-Configurer la réplication entre deux clusters MySQL Cluster : le site principal (Cluster A, déjà déployé sur VM 1 et VM 2) et le site de secours (Cluster B, déployé sur VM 3). L'objectif est de mettre en place le canal de réplication entre le nœud SQL source (Id=4 sur VM 1) et le nœud SQL replica (Id=6 sur VM 3), puis de vérifier la propagation des données d'un cluster à l'autre. Ce lab réalise l'opération `NDB-26` (réplication inter-clusters). Le cluster principal doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair). Toutes les commandes s'exécutent directement en root sur chaque VM (déjà connecté en SSH).
+Configurer la réplication entre deux clusters MySQL Cluster : le site principal (Cluster A, déjà déployé sur VM 1 et VM 2) et le site de secours (Cluster B, déployé sur VM 3). L'objectif est de mettre en place le canal de réplication entre le nœud SQL source (Id=4 sur VM 1) et le nœud SQL replica (Id=6 sur VM 3), puis de vérifier la propagation des données d'un cluster à l'autre. Ce lab réalise l'opération `NDB-26` (réplication inter-clusters). Le cluster principal doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes s'exécutent directement en root sur chaque VM (déjà connecté en SSH).
 ### Outils et commandes utilisées
 | Outil | Commande | Rôle |
 |---|---|---|
@@ -580,7 +580,7 @@ Query OK, 0 rows affected
 Ce lab couvre le déploiement d'un cluster de secours (Cluster B) sur VM 3, l'activation du journal binaire sur le nœud SQL source (Id=4), la création de l'utilisateur de réplication, la configuration du canal de réplication (`CHANGE MASTER TO`, `START SLAVE`), l'insertion de données sur le site principal et la vérification de leur propagation sur le site de secours. L'opération `NDB-26` (réplication inter-clusters) est réalisée : le canal est actif, `Seconds_Behind_Master = 0`, et les données sont cohérentes entre les deux clusters. Renvoi : passer au Lab-14 pour la simulation de panne, le failover et le failback (NDB-27, NDB-28).
 ## Lab-14 — Simulation de panne, failover et failback
 ### Énoncé / Contexte
-Simuler une panne de nœud de stockage sur le cluster MySQL Cluster, observer le basculement automatique (failover) puis le retour arrière (failback) avec resynchronisation. L'objectif est de constater que le service reste disponible malgré la perte d'un nœud de stockage (grâce à `NoOfReplicas = 2`), de mesurer le temps de failover (cible < 1 seconde), et de valider le failback sans perte de données. Ce lab réalise les opérations `NDB-27` (gestion des pannes) et `NDB-28` (failover/failback). Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair). Toutes les commandes s'exécutent directement en root sur chaque VM (déjà connecté en SSH).
+Simuler une panne de nœud de stockage sur le cluster MySQL Cluster, observer le basculement automatique (failover) puis le retour arrière (failback) avec resynchronisation. L'objectif est de constater que le service reste disponible malgré la perte d'un nœud de stockage (grâce à `NoOfReplicas = 2`), de mesurer le temps de failover (cible < 1 seconde), et de valider le failback sans perte de données. Ce lab réalise les opérations `NDB-27` (gestion des pannes) et `NDB-28` (failover/failback). Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes s'exécutent directement en root sur chaque VM (déjà connecté en SSH).
 ### Outils et commandes utilisées
 | Outil | Commande | Rôle |
 |---|---|---|
@@ -762,7 +762,7 @@ Ce lab couvre la simulation d'une panne de nœud de stockage, l'observation des 
 | Symptôme | Cause probable | Correction |
 |---|---|---|
 | Tous les fragments sur un seul node group | Pas de montée en charge du stockage | Ajouter des nœuds de stockage pour créer plusieurs node groups |
-| Pas de réseau dédié pour la réplication | Saturation du réseau unique par le trafic de cluster | Segreger le trafic de cluster sur un réseau dédié en production |
+| Pas de réseau dédié pour la réplication | Saturation du réseau unique par le trafic de cluster | Segreger le trafic de cluster sur un réseau dédié |
 ### Erreurs de configuration
 | Symptôme | Cause probable | Correction |
 |---|---|---|

@@ -7,9 +7,9 @@
 ## Avertissement et périmètre
 
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
-- Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
+- Données : fictives, marquées `LAB-ONLY` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
-- Accès distant : une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
+- Accès distant : une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
 
 ## Durée estimée
@@ -92,7 +92,7 @@ La panne ou la défaillance cherche à rendre les données indisponibles ou à c
 
 ### Énoncé / Contexte
 
-Utiliser les outils de supervision du cluster : lister les nœuds, interroger la configuration, consulter l'usage mémoire, et détecter le passage d'un nœud en état `not connected` (alerte). Ce lab réalise les opérations `NDB-16` et `NDB-17`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Utiliser les outils de supervision du cluster : lister les nœuds, interroger la configuration, consulter l'usage mémoire, et détecter le passage d'un nœud en état `not connected` (alerte). Ce lab réalise les opérations `NDB-16` et `NDB-17`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 
 ### Outils et commandes utilisées
 
@@ -242,7 +242,7 @@ Ce lab couvre l'utilisation des outils de supervision (`SHOW`, `ndb_config`, `AL
 
 ### Énoncé / Contexte
 
-Réaliser une sauvegarde consistante du cluster avec `ndb_mgm -e "START BACKUP"`, restaurer des données avec `ndb_restore`, et remplacer un nœud de stockage défaillant sans interruption de service. Ce lab réalise les opérations `NDB-18` et `NDB-19`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Réaliser une sauvegarde consistante du cluster avec `ndb_mgm -e "START BACKUP"`, restaurer des données avec `ndb_restore`, et remplacer un nœud de stockage défaillant sans interruption de service. Ce lab réalise les opérations `NDB-18` et `NDB-19`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 
 ### Outils et commandes utilisées
 
@@ -500,7 +500,7 @@ Ce lab couvre la sauvegarde consistante (`START BACKUP`), la vérification des f
 
 ### Énoncé / Contexte
 
-Installer et utiliser MySQL Cluster Manager (MCM) pour administrer le cluster de manière centralisée : création d'agents, création d'un cluster, import de configuration, et opérations de maintenance via le client `mcm`. Ce lab réalise les opérations `NDB-20`, `NDB-21` et `NDB-22`. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Installer et utiliser MySQL Cluster Manager (MCM) pour administrer le cluster de manière centralisée : création d'agents, création d'un cluster, import de configuration, et opérations de maintenance via le client `mcm`. Ce lab réalise les opérations `NDB-20`, `NDB-21` et `NDB-22`. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 
 ### Outils et commandes utilisées
 
@@ -666,7 +666,7 @@ Ce lab couvre l'installation de MySQL Cluster Manager, le démarrage des agents 
 
 | Symptôme | Cause probable | Correction |
 |---|---|---|
-| Pas de nœud de gestion de secours | Single point of failure sur le gestionnaire | Prévoir un second nœud de gestion en production |
+| Pas de nœud de gestion de secours | Single point of failure sur le gestionnaire | Prévoir un second nœud de gestion |
 | Tous les nœuds sur une seule VM | Perte de l'hôte = perte du cluster | Distribuer les nœuds sur des hôtes distincts |
 | Sauvegardes sur le même disque que les données | Perte disque = perte données + sauvegardes | Séparer les disques de données et de sauvegarde |
 

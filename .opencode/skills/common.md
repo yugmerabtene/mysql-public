@@ -16,12 +16,12 @@ est défini à la section 16.
 ### Autorisé
 
 - Laboratoire virtualisé isolé
-- Cibles de lab prévues : nœuds MySQL Cluster (gestion, stockage, SQL)
+- Nœuds du lab prévus : nœuds MySQL Cluster (gestion, stockage, SQL)
 - Installation, configuration, optimisation, sauvegarde, restauration, sécurisation
 
 ### Interdit
 
-- Aucun système de production, aucune cible réelle, aucun réseau extérieur au lab
+- Aucun système de production, aucun réseau extérieur au lab
 
 ### Conditions d'arrêt
 
@@ -167,7 +167,7 @@ Règles :
 - Un titre commence par le jour et le module.
 - Les commandes sont dans des blocs de code.
 - Les preuves sont horodatées.
-- Les secrets factices sont explicitement marqués `LAB-ONLY`.
+- Les secrets factices sont explicitement marqués `LAB-ONLY` (uniquement pour le lab).
 - Aucune donnée réelle n'est stockée.
 
 ## 7. Format d'un brief
@@ -270,7 +270,7 @@ En cas de blocage : `student` alerte, `prof` corrige, `orchestrator` décide de 
 ## 13. Glossaire
 
 - **Lab** : environnement isolé et autorisé.
-- **Périmètre** : ensemble des cibles et actions autorisées.
+- **Périmètre** : ensemble des machines et actions autorisées.
 - **Preuve** : sortie, capture, journal ou fichier horodaté.
 - **IOC** : indicateur opérationnel de contrôle.
 - **Détection** : journal + événement + vérification.
@@ -435,7 +435,7 @@ refusé, même sans faute d'orthographe.
    `plutôt`/`plus tôt`, `quoique`/`quoi que`.
 4. **Participe passé et infinitif** : « J'ai dû relancer le service » (participe
 passé de *devoir*), pas « J'ai du relancer ». « Une opération ciblée » (participe)
-    s'oppose à « cibler une machine » (infinitif).
+    s'oppose à « désigner une machine » (infinitif).
 5. **Accord du participe passé** : avec `être`, accord avec le sujet ; avec `avoir`,
    accord avec le complément d'objet direct placé avant. Exemple : « les commandes
    que vous avez exécutées ».
@@ -635,7 +635,7 @@ Résultat mesurable attendu à la fin du chapitre.
 
 ## Avertissement et périmètre
 
-Cibles autorisées (VMs, IP), réseau isolé du laboratoire (sous-réseau défini dans
+Machines du lab (VMs, IP), réseau isolé du laboratoire (sous-réseau défini dans
 `AGENTS.md`), snapshots, données factices, actions interdites et condition d'arrêt.
 
 ## Durée estimée
@@ -665,7 +665,7 @@ tableau avant la première commande de configuration.
 
 ## Plan d'installation maître
 
-| Ordre | Lab | Objectif | Cible | Tactique | Opérations de référence | Preuve attendue |
+| Ordre | Lab | Objectif | Machine cible | Tactique | Opérations de référence | Preuve attendue |
 |---|---|---|---|---|---|---|
 | 1 | Lab-01 | ... | ... | ... | ... | ... |
 
@@ -718,12 +718,12 @@ recopiée dans le chapitre livré.
 | Section | Contenu attendu | Règle |
 |---|---|---|
 | Objectif du chapitre | Résultat mesurable | Une phrase, vérifiable en fin de chapitre |
-| Avertissement et périmètre | VMs, IP, réseau, snapshots, interdits | Aucune cible réelle, aucun réseau de production |
+| Avertissement et périmètre | VMs, IP, réseau, snapshots, interdits | Aucun réseau de production |
 | Durée estimée | Total et durée par lab | Mesurée pendant l'auto-test |
 | Prérequis | VM, outil, service, snapshot | Chaque ligne a une vérification exécutable |
 | Vocabulaire | Termes techniques du chapitre | Définition à la première occurrence |
 | Cartographie des opérations et contrôles | Tableau complet de la section 4.2 | Toute opération a un ID, une détection et une mitigation |
-| Plan d'installation maître | Tous les labs, cibles, opérations, preuves | Précède toute action de configuration |
+| Plan d'installation maître | Tous les labs, machines, opérations, preuves | Précède toute action de configuration |
 | Vérification préalable | Contrôles spécifiques au chapitre | Commandes développées au format lab, exécutées et prouvées avant le premier lab de configuration |
 | Labs | Blocs canoniques `Lab-XX` | Quatre sections, étapes explicites, preuve par commande |
 | Synthèse du chapitre | Résultat démontré et progression | Deux lignes factuelles, sans répéter le déroulé |
@@ -765,7 +765,7 @@ Règles :
   `script` capture une session complète ;
 - une preuve graphique est une capture horodatée avec le nom du lab et l'action ;
 - un fichier extrait est conservé avec son hash ;
-- un secret factice est marqué `LAB-ONLY` ; aucune donnée réelle n'est conservée ;
+- un secret factice est marqué `LAB-ONLY` (lab uniquement) ; aucune donnée réelle n'est conservée ;
 - une commande sans preuve rend le lab invalide.
 
 ### 15.6 Ordre d'exécution

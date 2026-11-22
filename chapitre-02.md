@@ -7,9 +7,9 @@
 ## Avertissement et périmètre
 
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
-- Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
+- Données : fictives, marquées `LAB-ONLY` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
-- Accès distant : une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
+- Accès distant : une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair). Toutes les commandes du lab s'exécutent directement en root sur chaque VM.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
 
 ## Durée estimée
@@ -136,7 +136,7 @@ Le tableau ci-dessous classe les opérations de ce chapitre selon le référenti
 
 ### Énoncé / Contexte
 
-Explorer concrètement l'architecture du moteur NDB sur le cluster déjà déployé au chapitre 1 : identifier les 3 types de nœuds, constater le partitionnement et la réplication des données, interroger la configuration effective et la mémoire utilisée. Ce lab réalise les opérations `NDB-06` et `NDB-07`. Le cluster doit être déjà démarré avec les 5 nœuds connectés. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Explorer concrètement l'architecture du moteur NDB sur le cluster déjà déployé au chapitre 1 : identifier les 3 types de nœuds, constater le partitionnement et la réplication des données, interroger la configuration effective et la mémoire utilisée. Ce lab réalise les opérations `NDB-06` et `NDB-07`. Le cluster doit être déjà démarré avec les 5 nœuds connectés. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 
 ### Outils et commandes utilisées
 
@@ -323,7 +323,7 @@ Ce lab confirme l'architecture NDB du cluster sur 3 VM : 1 nœud de gestion, 2 n
 
 ### Énoncé / Contexte
 
-Approfondir la résilience du cluster : comprendre le quorum, prévenir le split-brain, analyser les node groups et tester le failover automatique à la perte d'un nœud de stockage. Ce lab réalise les opérations `NDB-09` et `NDB-10`. Le cluster doit être démarré avec les 5 nœuds connectés. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Approfondir la résilience du cluster : comprendre le quorum, prévenir le split-brain, analyser les node groups et tester le failover automatique à la perte d'un nœud de stockage. Ce lab réalise les opérations `NDB-09` et `NDB-10`. Le cluster doit être démarré avec les 5 nœuds connectés. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 
 ### Outils et commandes utilisées
 
@@ -501,7 +501,7 @@ Ce lab démontre le failover automatique : l'arrêt du NodeId 2 ne rompt pas le 
 
 ### Énoncé / Contexte
 
-Configurer finement les nœuds du cluster (`config.ini`), ajouter et supprimer un nœud de manière contrôlée, et surveiller l'état du cluster avec les outils de gestion. Ce lab réalise les opérations `NDB-11`, `NDB-12` et `NDB-13`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Configurer finement les nœuds du cluster (`config.ini`), ajouter et supprimer un nœud de manière contrôlée, et surveiller l'état du cluster avec les outils de gestion. Ce lab réalise les opérations `NDB-11`, `NDB-12` et `NDB-13`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 
 ### Outils et commandes utilisées
 
@@ -658,7 +658,7 @@ Ce lab couvre la lecture et la sauvegarde de `config.ini`, la préparation de l'
 
 ### Énoncé / Contexte
 
-Tester la résilience opérationnelle : arrêt simulé d'un nœud de stockage avec mesure du temps de récupération, redémarrage rolling d'un nœud SQL sans interruption du cluster, et maintenance à chaud. Ce lab réalise les opérations `NDB-14` et `NDB-15`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM cible (mot de passe dans `.env`, non affiché en clair).
+Tester la résilience opérationnelle : arrêt simulé d'un nœud de stockage avec mesure du temps de récupération, redémarrage rolling d'un nœud SQL sans interruption du cluster, et maintenance à chaud. Ce lab réalise les opérations `NDB-14` et `NDB-15`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
 
 ### Outils et commandes utilisées
 
@@ -803,8 +803,8 @@ Ce lab démontre le failover immédiat à la perte d'un nœud de stockage, la me
 |---|---|---|
 | `NoOfReplicas = 1` | Pas de redondance ; perte d'un nœud de stockage = perte de données | Définir `NoOfReplicas = 2` avant le premier démarrage et ne pas modifier à chaud |
 | DataMemory / IndexMemory sous-dimensionnés | Cluster refuse les insertions (« table is full »), performances en chute | Dimensionner `DataMemory`/`IndexMemory` selon le jeu de données, laisser une marge anti-swap |
-| Node group unique sur une seule VM | Vulnérabilité à la perte d'une machine entière (tous les replicas collocés) | Déployer les nœuds de stockage sur des VM distinctes en production |
-| Un seul nœud de gestion | Single point of failure ; perte du gestionnaire = pas de nouvelle configuration | Prévoir un second nœud de gestion en production |
+| Node group unique sur une seule VM | Vulnérabilité à la perte d'une machine entière (tous les replicas collocés) | Déployer les nœuds de stockage sur des VM distinctes |
+| Un seul nœud de gestion | Single point of failure ; perte du gestionnaire = pas de nouvelle configuration | Prévoir un second nœud de gestion |
 
 ### Erreurs d'architecture
 
@@ -832,7 +832,7 @@ Ce lab démontre le failover immédiat à la perte d'un nœud de stockage, la me
 | `table is full` | `DataMemory` ou `IndexMemory` saturé | Augmenter `DataMemory`/`IndexMemory` dans `config.ini` et redémarrer les nœuds de stockage |
 | Swap prolongé | RAM insuffisante pour `DataMemory` + `IndexMemory` | Réduire `DataMemory`/`IndexMemory` ou ajouter de la RAM à la VM |
 | Latence de commit élevée | Goulot disque sur les journaux de redo | Placer les fichiers de cluster sur un disque rapide (SSD) |
-| Saturation du réseau | Trafic de réplication sur le réseau unique | Segreger le trafic de cluster sur un réseau dédié en production |
+| Saturation du réseau | Trafic de réplication sur le réseau unique | Segreger le trafic de cluster sur un réseau dédié |
 | Auto-sharding inadapté | Un seul node group, charge non répartie | Ajouter des nœuds de stockage pour créer plusieurs node groups et répartir les fragments |
 
 ## Synthèse du chapitre

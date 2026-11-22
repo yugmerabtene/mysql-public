@@ -8,9 +8,9 @@
 
 - Machine principale : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
 - Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs.
-- Données : factices uniquement, marquées `LAB-ONLY`. Aucune donnée de production, aucune cible réelle.
+- Données : fictives, marquées `LAB-ONLY` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM par `sysadmin` avant le module.
-- Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine cible.
+- Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
 - Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
 
 ## Durée estimée
@@ -44,7 +44,7 @@
 | Quorum | Règle de décision par majorité qui empêche deux partitions d'agir simultanément. |
 | Arbitrage | Mécanisme par lequel un nœud tranche en cas de perte de communication entre node groups. |
 | Connect-string | Adresse du nœud de gestion donnée à chaque node pour rejoindre le cluster (ex. `192.168.56.10`). |
-| LAB-ONLY | Mot de passe ou identifiant factice, valide uniquement dans le lab isolé. |
+| LAB-ONLY | Mot de passe factice (uniquement pour le laboratoire) |
 | Auto-sharding | Répartition automatique des fragments de données sur les nœuds de stockage par le moteur NDB. |
 
 ## Introduction à MySQL Cluster — Architecture et composants (module 1.0)
@@ -201,7 +201,7 @@ Le plan ci-dessous ordonne tous les labs du chapitre. Aucune action de configura
 
 ### Énoncé / Contexte
 
-Nettoyer et configurer manuellement les trois machines virtuelles du laboratoire (réseau host-only `vboxnet0` avec adresses IP statiques, service SSH, noms d'hôtes, nettoyage de toute configuration précédente, snapshots propres) et contrôler la connectivité depuis l'hôte et entre les VM. Cette infrastructure constitue la base de l'installation de MySQL Cluster réalisée au Lab-02. Ce lab ne contient aucune commande MySQL Cluster ; il prépare uniquement les machines cibles du laboratoire. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine cible.
+Nettoyer et configurer manuellement les trois machines virtuelles du laboratoire (réseau host-only `vboxnet0` avec adresses IP statiques, service SSH, noms d'hôtes, nettoyage de toute configuration précédente, snapshots propres) et contrôler la connectivité depuis l'hôte et entre les VM. Cette infrastructure constitue la base de l'installation de MySQL Cluster réalisée au Lab-02. Ce lab ne contient aucune commande MySQL Cluster ; il prépare uniquement les machines du laboratoire. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
 
 ### Outils et commandes utilisées
 
@@ -671,7 +671,7 @@ Les trois VM du laboratoire sont nettoyées et configurées : Ubuntu Server 24.0
 
 ### Énoncé / Contexte
 
-Installer les composants MySQL Cluster sur les trois VM configurées au Lab-01 : le nœud de gestion et le premier nœud SQL sur VM 1, les deux nœuds de stockage `ndbmtd` sur VM 2, et un second nœud SQL sur VM 3. Rédiger le fichier `config.ini` du nœud de gestion inspiré des exemples valides du livre "Pro MySQL NDB Cluster", démarrer les nœuds dans l'ordre critique (gestion, puis stockage, puis SQL) et vérifier l'intégrité du cluster avec `ndb_mgm -e "SHOW"`. Ce lab réalise les opérations `NDB-03` (installation), `NDB-04` (configuration initiale), `NDB-08` (dimensionnement résilience) et `NDB-05` (vérification d'intégrité) du parcours. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine cible.
+Installer les composants MySQL Cluster sur les trois VM configurées au Lab-01 : le nœud de gestion et le premier nœud SQL sur VM 1, les deux nœuds de stockage `ndbmtd` sur VM 2, et un second nœud SQL sur VM 3. Rédiger le fichier `config.ini` du nœud de gestion inspiré des exemples valides du livre "Pro MySQL NDB Cluster", démarrer les nœuds dans l'ordre critique (gestion, puis stockage, puis SQL) et vérifier l'intégrité du cluster avec `ndb_mgm -e "SHOW"`. Ce lab réalise les opérations `NDB-03` (installation), `NDB-04` (configuration initiale), `NDB-08` (dimensionnement résilience) et `NDB-05` (vérification d'intégrité) du parcours. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
 
 ### Outils et commandes utilisées
 
@@ -1018,7 +1018,7 @@ ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
 - `ndb_mgmd` : démon du nœud de gestion de MySQL Cluster (démarre en mode démon par défaut).
 - `--config-file=/var/lib/mysql-cluster/config.ini` : indique le fichier de topologie à charger au démarrage.
 - `--initial` : force l'initialisation propre du nœud de gestion ; à n'utiliser qu'au premier démarrage ou après un snapshot propre.
-- **Piège** : `--initial` supprime les fichiers de configuration précédents du gestionnaire ; ne pas l'utiliser sur un cluster déjà en production avec des données. Si l'interface de gestion est déjà utilisée, le démarrage échoue.
+- **Piège** : `--initial` supprime les fichiers de configuration précédents du gestionnaire ; ne pas l'utiliser sur un cluster hors lab avec des données. Si l'interface de gestion est déjà utilisée, le démarrage échoue.
 
 **Résultat attendu**
 
@@ -1052,7 +1052,7 @@ MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 - `--initial` : initialise le stockage du node ; à n'utiliser qu'au premier démarrage.
 - `&` : détache le processus pour qu'il tourne en arrière-plan.
 - La même commande est répétée pour `ndb_3` avec `--initial`.
-- **Piège** : `--initial` réinitialise le stockage ; ne pas l'utiliser sur un cluster en production avec des données à conserver. Les deux nodes sur VM 2 utilisent des répertoires distincts (`ndb_2`, `ndb_3`).
+- **Piège** : `--initial` réinitialise le stockage ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver. Les deux nodes sur VM 2 utilisent des répertoires distincts (`ndb_2`, `ndb_3`).
 
 **Résultat attendu**
 
@@ -1309,7 +1309,7 @@ Ce lab installe MySQL Cluster sur les 3 VM avec un `config.ini` inspiré des exe
 
 Le livre "Pro MySQL NDB Cluster" propose plusieurs améliorations de résilience et de robustesse, adaptées ci-dessous au contexte du lab :
 
-1. **Second nœud de gestion pour la haute disponibilité** : le livre déploie deux nœuds de gestion (NodeId 49 et 50) pour éviter le single point of failure. Dans ce lab à 3 VM, un seul nœud de gestion est utilisé (NodeId 1) ; en production, prévoir un second nœud de gestion sur une machine distincte.
+1. **Second nœud de gestion pour la haute disponibilité** : le livre déploie deux nœuds de gestion (NodeId 49 et 50) pour éviter le single point of failure. Dans ce lab à 3 VM, un seul nœud de gestion est utilisé (NodeId 1) ; hors lab, prévoir un second nœud de gestion sur une machine distincte.
 2. **NodeId et HostName explicites** : le livre recommande de toujours définir `NodeId` et `HostName` explicitement dans `config.ini` pour éviter l'attribution automatique d'identifiants qui peuvent changer d'un démarrage à l'autre. Cette recommandation est appliquée dans le `config.ini` du Lab-02.
 3. **Ordre de démarrage strict** : le livre préconise de démarrer les gestionnaires, puis les nœuds de données, puis les nœuds SQL. Cet ordre est respecté dans le Lab-02.
 4. **Répertoires de données distincts par node** : le livre montre que plusieurs nodes sur le même hôte doivent avoir des `DataDir` distincts. Appliqué pour `ndb_2` et `ndb_3` sur VM 2.

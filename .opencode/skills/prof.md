@@ -11,7 +11,7 @@ Ce skill sert à `prof` pour concevoir les briefings, démonstrations, labs, cor
 détection. Il est également lisible par `orchestrator` pour contrôler la qualité.
 
 Tout contenu doit rester **local, isolé, autorisé et pédagogique**. Les commandes sont des exemples à
-adapter au lab ; elles ne doivent jamais être pointées vers un système de production.
+adapter au lab ; elles ne doivent jamais être pointées vers un système hors lab.
 
 ## 1.1 Production du contenu
 
@@ -37,7 +37,7 @@ Règles :
 
 - définir chaque terme technique à sa première apparition ;
 - ne pas supposer de connaissance non enseignée ;
-- distinguer clairement le lab de la production ;
+- distinguer clairement le lab du reste ;
 - expliquer la détection et la mitigation dès le cours ;
 - rester concis : 10 à 15 minutes de lecture.
 
@@ -116,9 +116,9 @@ Progression :
 1. **Guidé** : reproduction pas à pas.
 2. **Semi-guidé** : objectif et indices, sans toutes les commandes.
 3. **Autonome** : objectif et critères de réussite seulement.
-4. **Variante** : changement de cible, de port, de service ou de protection.
+4. **Variante** : changement de machine, de port, de service ou de protection.
 
-Chaque exercice précise : objectif, entrée, sortie attendue, critère de réussite, durée cible.
+Chaque exercice précise : objectif, entrée, sortie attendue, critère de réussite, durée du lab.
 
 ### Solution intégrée
 
@@ -145,7 +145,7 @@ L'auto-test se fait dans un **environnement propre**, comme si tu découvrais le
 - [ ] Solution intégrée cohérente avec le lab.
 - [ ] Détection et mitigation vérifiables.
 - [ ] Aucune connaissance implicite.
-- [ ] Aucun contenu réutilisable contre un système de production.
+- [ ] Aucun contenu réutilisable hors lab.
 
 ### Rapport d'auto-test
 
@@ -220,7 +220,7 @@ Cadrage → Installation → Configuration → Administration → Supervision �
 À chaque étape :
 
 - quel est l'objectif ;
-- quelle est la cible autorisée ;
+- quelle est la machine autorisée ;
 - quelle est la preuve attendue ;
 - quel journal ou quelle alerte permet de détecter ;
 - quelle mesure empêche ou limite.
@@ -284,7 +284,7 @@ ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini
 ndb_mgm -e "SHOW"
 ```
 
-Ne jamais configurer un cluster de production sans validation.
+Ne jamais configurer un cluster hors lab sans validation.
 
 Détection : échec de démarrage, nœud non visible.
 
@@ -409,7 +409,7 @@ Mitigation : chiffrement TLS, authentification forte, moindre privilège.
 ```text
 Date / heure :
 Module :
-Cible :
+Machine :
 Outil :
 Commande :
 Résultat observé :

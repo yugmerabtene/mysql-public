@@ -363,7 +363,7 @@ Score minimal de validation : 3/5 sur chaque critère, avec au moins un artefact
 - Nommer les fichiers avec le jour, le module et le sujet.
 - Conserver la commande et sa sortie.
 - Anonymiser les données réelles.
-- Marquer les secrets factices `LAB-ONLY`.
+- Marquer les secrets factices `LAB-ONLY` (lab uniquement).
 - Stocker les preuves dans `labs/evidence/jour-N/`.
 
 ## 16. Règle d'or
