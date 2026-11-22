@@ -25,7 +25,7 @@ Structure recommandée :
 ## 1. Objectifs
 ## 2. Prérequis
 ## 3. Vocabulaire
-## 4. Modèle de menace
+## 4. Risques et contrôles
 ## 5. Notions essentielles
 ## 6. Démonstration contrôlée
 ## 7. Limites et risques
