@@ -5,9 +5,15 @@
 jour: 1
 module: 1.1
 statut: blocked
-derniere_session: 2026-11-21
-blocage: auto-test prof a echoue — VMs sans OS installe, pas de snapshots, pas de connectivite (voir chapitre-01-self-test.md)
-prochaine_action: sysadmin configure le reseau (IP statiques 192.168.56.10/11, SSH, snapshots) sur les VMs existantes SANS les reinstaller, puis relancer auto-test prof
-infrastructure: 2 VMs enregistrees (gestion-sql, stockage) — reseau vboxnet0 configure sur l'hote, OS non installe sur disque
-chapitre_1: redige par prof, format canonique (Lab-01 infra + Lab-02 MySQL Cluster), aligne syllabus, sans traces cours precedent, commit/push effectues sur origin/main
+derniere_session: 2026-11-22
+blocage: chapitres 1-5 rediges, nettoyes et revises (mode SSH session ouverte applique sur tous les chapitres, chapitre 5 de-cyberise selon NDB-29/30/31, 110 refs preuves supprimees du corps, format canonique OK, syllabus aligne NDB-01 a NDB-31, module 4.1 ajoute Lab-13/14, 31/31 operations couvertes, recherches industrielles integreees, erreurs recurrentes avec corrections) mais PAS tous les labs testes en reel sur les 3 VM. Lab-01 et Lab-02 testes et VALIDES en réel (15/15 commandes rc=0, SHOW 5 nœuds, failover NodeId 2 confirme, lectures SQL coherentes sur NodeId 4 et 5). Labs chapitres 3-5 et module 4.1 non encore testes en reel. SSH root ACTIVE sur les 3 VM (mot de passe dans .env, verifie fonctionnel).
+prochaine_action: (1) prof valide chapitres 3, 4 (module 4.1 Lab-13/14) et 5 en reel sur les 3 VM. (2) remise a student pour test debutant. (3) feedback/correction si necessaire. (4) validation finale (portes G0-G7) puis mise a jour tracking.db. (5) commit/push quand validation verte.
+infrastructure: 3 VMs operationnelles sur vboxnet0 192.168.56.0/24 (DHCP off, hote 192.168.56.1) — tous disques dans /home/yug/Documents/mysql/vm/, aucun disque deplace/supprime. VM 1 (UbuntuServer-01) : gestion-sql, 192.168.56.10/24, SSH root OK, nœud gestion + SQL. VM 2 (UbuntuServer-02) : stockage, 192.168.56.11/24, SSH root OK, deux nœuds stockage ndbmtd. VM 3 (UbuntuServer-03) : mysql-node3, 192.168.56.12/24, SSH root OK, 2e nœud SQL. Snapshots : propre-avant-lab sur les 3 VM (sysadmin). Espace disque : 28G libre. Données portuaire ~1,25M lignes chargees dans base portdb sur les 3 VM (tests performance hors cours).
+chapitres:
+  chapitre_01: redige par prof, format canonique (Lab-01 infra 3 VM + Lab-02 MySQL Cluster), conforme 14 regles, syllabus aligne (NDB-01 a NDB-08), nettoyage inclus, mode SSH session ouverte, recherches industrielles sans mot interdit, preuves supprimees du corps. Lab-01 et Lab-02 VALIDES en reel.
+  chapitre_02: redige par prof (Lab-03 a 06: architecture NDB, quorum/split-brain, config nodes, test panne/rolling), NDB-06 a NDB-15, format canonique OK, preuves supprimees, mode SSH session ouverte. Non encore teste en reel.
+  chapitre_03: redige par prof (Lab-07 a 09: supervision, backup/restauration, MySQL Cluster Manager), NDB-16 a NDB-22, format canonique OK, preuves supprimees, mode SSH session ouverte. Non encore teste en reel.
+  chapitre_04: redige par prof (Lab-10, 11 optimisation + Lab-13 replication inter-clusters, Lab-14 failover/failback), NDB-06 a NDB-28, format canonique OK, preuves supprimees, mode SSH session ouverte. Module 4.1 ajoute. Non encore teste en reel.
+  chapitre_05: redige par prof (Lab-12: securite TLS, authentification, moindre privilege), NDB-29 a NDB-31, format canonique OK, preuves supprimees, mode SSH session ouverte, de-cyberise (pas de pentest/SIEM/CVE). Non encore teste en reel.
+systeme_rag: deploye dans /home/yug/Documents/mysql/rag/ — 10 livres indexes (dont Pro MySQL NDB Cluster, 536 chunks), ~2600 chunks, 543 images extraites, recherche semantique avec re-ranking specialisation, detection auto nouveaux livres via rag-detect.sh, indexation livre par livre via rag-index-book.sh, requete via rag-query.py.
 agent_ecriture: orchestrator
