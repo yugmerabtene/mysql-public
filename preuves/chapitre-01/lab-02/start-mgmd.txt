@@ -1,0 +1,2 @@
+MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
+2026-11-23 19:07:53 [MgmtSrvr] WARNING  -- at line 7: [DB] IndexMemory is deprecated, will use Number bytes on each ndbd(DB) node allocated for storing indexes instead

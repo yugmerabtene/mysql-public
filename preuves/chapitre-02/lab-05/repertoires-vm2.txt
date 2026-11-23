@@ -1,0 +1,6 @@
+total 20
+drwxr-xr-x  5 root root 4096 nov.  23 19:10 .
+drwxr-xr-x 45 root root 4096 nov.  22 09:42 ..
+drwxr-xr-x  3 root root 4096 nov.  23 19:08 ndb_2
+drwxr-xr-x  3 root root 4096 nov.  23 19:08 ndb_3
+drwxr-xr-x  2 root root 4096 nov.  23 19:10 ndb_6

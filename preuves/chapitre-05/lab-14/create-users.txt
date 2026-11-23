@@ -1,0 +1,8 @@
+User	Host
+app_user	%
+app_user	192.168.56.%
+backup_user	192.168.56.%
+mysql.infoschema	localhost
+mysql.session	localhost
+mysql.sys	localhost
+root	localhost
