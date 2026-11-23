@@ -256,16 +256,16 @@ cp config.ini config.ini.bak.optim
 **Machine** — VM 1 (fichier `config.ini`).
 
 **Prérequis** — Sauvegarde de `config.ini` créée (étape 3a).
-
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 **Exemple de commande**
 
 ```bash
-sed -i 's/^DataMemory = .*/DataMemory = 512M/; s/^IndexMemory = .*/IndexMemory = 256M/' config.ini
+grep -E '^DataMemory = ' config.ini && sed -i 's/^DataMemory = .*/DataMemory = 512M/; s/^IndexMemory = .*/IndexMemory = 256M/' config.ini
 ```
 **Explication de la commande**
 
-- `sed -i` : modifie `DataMemory` (512M) et `IndexMemory` (256M) sur place dans `config.ini`.
+- `grep -E '^DataMemory = ' config.ini` : vérifie que le paramètre `DataMemory` existe avant toute modification.
+- `sed -i 's/^DataMemory = .*/DataMemory = 512M/; s/^IndexMemory = .*/IndexMemory = 256M/' config.ini` : modifie `DataMemory` (512M) et `IndexMemory` (256M) sur place dans `config.ini` uniquement si le paramètre est présent.
 
 **Résultat attendu**
 
@@ -943,10 +943,13 @@ mysql -u root -e "SHOW MASTER STATUS\G"
      Binlog_Do_DB: NULL
  Binlog_Ignore_DB: NULL
 ```
-#### Étape 4 — Déployer le cluster de secours (site de secours, Cluster B) sur VM 3
-**But** — Déployer le cluster de secours (Cluster B) sur VM 3 : gestionnaire Id=10 (port 1188), deux nœuds de stockage Id=20 et Id=21 (`NoOfReplicas = 2`), nœud SQL replica Id=6 (port SQL 3307).
-**Machine** — VM 3 (192.168.56.12), nœud SQL et nouveau site de secours.
-**Prérequis** — Espace disque et binaires MySQL Cluster installés sur VM 3 ; répertoire de données dédié pour Cluster B.
+#### Étape 4 — Déployer le cluster de secours (site de secours, Cluster B) sur VM 3 — THÉORIQUE UNIQUEMENT
+
+**But** — Décrire le déploiement du cluster de secours (Cluster B) sur VM 3 : gestionnaire Id=10 (port 1188), deux nœuds de stockage Id=20 et Id=21 (`NoOfReplicas = 2`), nœud SQL replica Id=6 (port SQL 3307). **Ce déploiement est purement théorique : VM 3 héberge déjà le nœud SQL NodeId 5 du Cluster A, il est donc impossible d'y installer un second cluster complet (gestionnaire + 2 nœuds de stockage + nœud SQL) sur la même VM sans conflit de ports et de ressources. Cette étape est présentée à titre de référence conceptuelle uniquement ; aucune commande n'est exécutable sur VM 3.**
+
+**Machine** — VM 3 (192.168.56.12), nœud SQL et nouveau site de secours (théorique uniquement).
+
+**Prérequis** — Espace disque et binaires MySQL Cluster installés sur VM 3 ; répertoire de données dédié pour Cluster B (non réalisable en pratique sur l'infrastructure actuelle).
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 **Exemple de commande**
 

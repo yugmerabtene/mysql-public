@@ -34,7 +34,7 @@ Le chapitre 1 doit avoir été réalisé : les 3 VM sont nettoyées et configur�
 | Arbitrage | Mécanisme par lequel le nœud de gestion tranche en cas de perte de communication entre node groups. |
 | Heartbeat | Battement de cœur périodique entre nœuds pour détecter une panne. |
 
-### Heartbeat et détection de panne### Heartbeat et détection de panne
+### Heartbeat et détection de panne
 
 Les nœuds échangent des heartbeats (battements de cœur) périodiques. Si un nœud de données manque plusieurs heartbeats, le gestionnaire le déclare mort, suivi d'une fermeture forcée avec l'erreur 2315 ("Node declared dead. See error log for details(Arbitration error)"). La détection rapide des pannes est une condition clé des systèmes critiques.
 

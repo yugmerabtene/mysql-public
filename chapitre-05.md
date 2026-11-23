@@ -502,6 +502,38 @@ ls -la ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem
 -rw------- 1 root root … mysqld-key.pem
 ```
 
+#### Étape 2g — Copier les certificats et clés TLS sur VM 2 et VM 3
+
+**But** — Distribuer les certificats et clés TLS générés sur VM 1 vers les nœuds de stockage (VM 2) et le second nœud SQL (VM 3), afin que tous les nœuds du cluster puissent activer TLS.
+
+**Machine** — 192.168.56.10 (gestion-sql) pour le `scp` source, 192.168.56.11 (stockage) et 192.168.56.12 (mysql-node3) pour les destinations.
+
+**Prérequis** — Certificats et clés générés sur VM 1 (étapes 2b à 2e), répertoire `/etc/mysql-cluster-tls` accessible sur toutes les VM.
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
+
+**Exemple de commande**
+
+```bash
+scp ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem ndbd-cert.pem ndbd-key.pem mysqld-cert.pem mysqld-key.pem root@192.168.56.11:/etc/mysql-cluster-tls/
+scp ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem ndbd-cert.pem ndbd-key.pem mysqld-cert.pem mysqld-key.pem root@192.168.56.12:/etc/mysql-cluster-tls/
+```
+
+**Explication de la commande**
+
+- `scp ... root@192.168.56.11:/etc/mysql-cluster-tls/` : copie tous les certificats et clés sur VM 2 (nœuds de stockage NodeId 2 et 3).
+- `scp ... root@192.168.56.12:/etc/mysql-cluster-tls/` : copie tous les certificats et clés sur VM 3 (second nœud SQL NodeId 5).
+- Chaque nœud a besoin de l'ensemble des certificats car `config.ini` référence `TLSCAFile`, `TLSCertificateFile` et `TLSKeyFile` pour chaque type de nœud.
+- **Piège** : sans cette étape, les nœuds de stockage et le second nœud SQL ne pourront pas démarrer avec TLS car ils ne disposent pas des certificats requis.
+
+**Résultat attendu**
+
+```text
+ca-cert.pem                                                                 100% 1234     12.1KB/s   00:00
+...
+mysqld-key.pem                                                              100% 3456      3.4KB/s   00:00
+```
+
 #### Étape 3 — Arrêter le cluster avant le redémarrage TLS
 
 **But** — Arrêter proprement les nœuds du cluster (SQL, stockage, gestion) avant de redémarrer avec la configuration TLS, dans l'ordre inverse du démarrage (SQL → stockage → gestion).
@@ -595,14 +627,14 @@ pkill -x ndb_mgmd
 **Exemple de commande**
 
 ```bash
-ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
+ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini
 ```
 
 **Explication de la commande**
 
 - `ndb_mgmd` : démarre le démon du nœud de gestion de MySQL Cluster.
 - `--config-file=/var/lib/mysql-cluster/config.ini` : indique le fichier de topologie contenant la configuration TLS (`TLS = 1`, chemins des certificats).
-- `--initial` : force l'initialisation propre du gestionnaire ; à n'utiliser qu'au premier démarrage ou après un snapshot propre.
+- **Piège** : le gestionnaire doit être démarré avant les nœuds de stockage et SQL (ordre gestion → stockage → SQL). Aucun `--initial` n'est nécessaire pour un redémarrage avec nouvelle configuration : il ne s'applique qu'au premier démarrage ou après un snapshot propre.
 - **Piège** : `--initial` supprime les fichiers de configuration précédents du gestionnaire ; ne pas l'utiliser sur un cluster hors lab avec des données à conserver. Le redémarrage des nœuds de stockage et SQL doit suivre dans l'ordre (gestion → stockage → SQL).
 
 **Résultat attendu** (sortie illustrative — non exécutée en lab)

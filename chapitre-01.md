@@ -528,7 +528,7 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -632,7 +632,7 @@ hostnamectl set-hostname gestion-sql
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -687,7 +687,7 @@ netplan apply
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
@@ -752,7 +752,7 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -856,7 +856,7 @@ hostnamectl set-hostname stockage
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -911,7 +911,7 @@ netplan apply
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
@@ -976,7 +976,7 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -1080,7 +1080,7 @@ hostnamectl set-hostname mysql-node3
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -1135,7 +1135,7 @@ netplan apply
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
@@ -1689,7 +1689,7 @@ cp /tmp/config.ini /var/lib/mysql-cluster/config.ini
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1767,7 +1767,7 @@ mkdir -p /var/lib/mysql-cluster/ndb_2 /var/lib/mysql-cluster/ndb_3
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1846,7 +1846,7 @@ cd /var/lib/mysql-cluster/ndb_2
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
@@ -1888,7 +1888,7 @@ cd /var/lib/mysql-cluster/ndb_3
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_3
@@ -1981,7 +1981,7 @@ sleep 5
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 10 — Vérifier l'intégrité du cluster avec ndb_mgm SHOW
@@ -2114,7 +2114,7 @@ sleep 5
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
@@ -2188,7 +2188,7 @@ cd /var/lib/mysql-cluster/ndb_2
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
@@ -2230,7 +2230,7 @@ sleep 8
 
 ```text
 
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
