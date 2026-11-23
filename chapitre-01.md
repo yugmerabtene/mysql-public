@@ -481,24 +481,69 @@ Le plan ci-dessous ordonne tous les labs du chapitre. Aucune action de configura
 | 2 | Lab-02 | Installer MySQL Cluster, rédiger `config.ini`, démarrer dans l'ordre, vérifier l'intégrité et la résilience | VM 1 + VM 2 + VM 3 | Dépôt MySQL, `config.ini`, démarrage MGM → stockage → SQL | NDB-03, NDB-04, NDB-08, NDB-05 |
 
 
-## 0. Préparation et nettoyage initial des 3 VM
+## Lab-01 — Installation et mise en place de l'infrastructure (vierge ou remise à zéro)
 
-Cette section couvre les deux cas de figure avant de commencer les labs :
+### Énoncé / Contexte
 
-- **Cas A** : les 3 VMs existent déjà → nettoyage avant de (re)commencer les labs.
-- **Cas B** : les 3 VMs n'existent pas encore → installation complète depuis zéro (ISO, VirtualBox, réseau, puis configuration interne).
+Installer ou remettre à zéro les trois machines virtuelles du laboratoire et préparer l'infrastructure de base avant l'installation de MySQL Cluster. Ce lab couvre deux cas de figure :
+
+- **Cas A — VMs déjà installées** : remise à zéro complète (nettoyage des configurations et paquets MySQL/Cluster précédents).
+- **Cas B — Installation vierge** : création des 3 VMs dans VirtualBox, téléchargement de l'ISO Ubuntu Server 24.04 LTS, configuration des réseaux (host-only `vboxnet0` + NAT), installation d'Ubuntu Server.
+
+Dans les deux cas, chaque VM doit recevoir son adresse IP statique, son hostname, le service SSH, et un snapshot propre `propre-avant-lab` doit être pris avant le Lab-02.
 
 Aucun accès Internet n'est désactivé : chaque VM conserve son adaptateur NAT pour pouvoir installer les paquets depuis les dépôts Ubuntu/MySQL pendant la phase d'installation.
 
+#### Schéma d'adressage des 3 VMs
+
+```
+Hôte 192.168.56.1
+└── vboxnet0 (192.168.56.0/24, DHCP désactivé)
+    ├── VM1 gestion-sql   192.168.56.10  (ndb_mgmd Id=1, mysqld Id=4)
+    ├── VM2 stockage      192.168.56.11  (ndbmtd Id=2, ndbmtd Id=3)
+    └── VM3 mysql-node3   192.168.56.12  (mysqld Id=5)
+    └── NAT (accès Internet pour l'installation des paquets)
+```
+
+**Adresses IP statiques (référence du parcours, utilisées dans tous les labs) :**
+
+| VM | Hostname | Adresse IP | Rôle |
+|----|----------|------------|------|
+| VM 1 | gestion-sql | 192.168.56.10/24 | Nœud de gestion + nœud SQL NodeId 4 |
+| VM 2 | stockage | 192.168.56.11/24 | Deux nœuds de stockage NodeId 2 et 3 |
+| VM 3 | mysql-node3 | 192.168.56.12/24 | Second nœud SQL NodeId 5 |
+
+**Hôte** : 192.168.56.1 — hyperviseur, machine d'administration et stockage des preuves uniquement.
+
 ---
 
-### 0.1 Cas A : les VMs existent déjà (nettoyage)
+### Outils et commandes utilisées
 
-**But** — Remettre les 3 VMs à l'état propre avant de (re)commencer les labs, en supprimant toute configuration MySQL/Cluster précédente.
+| Outil | Commande | Rôle |
+|-------|----------|------|
+| VirtualBox GUI | Fichier → Gestionnaire de réseaux → Réseaux privés d'hôte | Créer le réseau host-only `vboxnet0` |
+| VirtualBox GUI | Configuration VM → Réseau | Attacher adaptateur 1 = host-only `vboxnet0`, adaptateur 2 = NAT |
+| VirtualBox GUI | Configuration VM → Système | Ordre de boot : DVD avant disque dur |
+| `hostnamectl` | `hostnamectl set-hostname <nom>` | Définir le nom d'hôte de chaque VM |
+| `tee` + netplan | `tee /etc/netplan/01-netcfg.yaml` | Écrire la configuration IP statique |
+| `netplan` | `netplan apply` | Appliquer la configuration réseau |
+| `systemctl` | `systemctl enable --now ssh` | Activer et démarrer le service SSH |
+| `ip` | `ip -br addr show enp0s8` | Vérifier l'adresse IP statique |
+| `ping` | `ping -c 4 <ip>` | Test de connectivité ICMP depuis l'hôte |
+| `rm` / `apt-get` | `rm -rf`, `apt-get purge`, `apt-get autoremove` | Nettoyage des configurations précédentes (Cas A) |
+| `VBoxManage` | `VBoxManage snapshot <vm> list` | Vérifier les snapshots propres sur l'hôte |
+
+---
+
+### Commande et laboratoire étape par étape
+
+#### Étape 1 — Cas A : Nettoyer les VMs existantes (remise à zéro)
+
+**But** — Supprimer toute configuration MySQL/Cluster précédente sur les 3 VMs pour repartir d'un état propre.
 
 **Machine** — VM 1 (192.168.56.10), VM 2 (192.168.56.11), VM 3 (192.168.56.12).
 
-**Prérequis** — VMs démarrées, session SSH ouverte en root sur chaque VM, mot de passe dans `.env`.
+**Prérequis** — VMs démarrées, session SSH ouverte en root sur chaque VM.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
 
@@ -559,13 +604,13 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 ---
 
-#### Purge des paquets MySQL existants (toutes les VM)
+#### Étape 1b — Purger les paquets MySQL existants (toutes les VM, Cas A)
 
-**But** — Supprimer proprement les paquets MySQL et leurs fichiers de configuration pour éviter tout conflit lors de l'installation au Lab-02.
+**But** — Supprimer proprement les paquets MySQL et leurs fichiers de configuration pour éviter tout conflit.
 
 **Machine** — VM 1, VM 2, VM 3.
 
-**Prérequis** — Nettoyage des répertoires effectué (étape précédente).
+**Prérequis** — Nettoyage des répertoires effectué (Étape 1).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
 
@@ -577,7 +622,7 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 
 **Explication de la commande**
 
-- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration sur VM 1.
+- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration.
 - `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
 
 **Résultat attendu**
@@ -597,7 +642,7 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 
 **Explication de la commande**
 
-- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration sur VM 2.
+- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL sur VM 2.
 - `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
 
 **Résultat attendu**
@@ -617,7 +662,7 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 
 **Explication de la commande**
 
-- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration sur VM 3.
+- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL sur VM 3.
 - `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
 
 **Résultat attendu**
@@ -629,13 +674,13 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 ---
 
-#### Suppression des dépendances orphelines (toutes les VM)
+#### Étape 1c — Supprimer les dépendances orphelines (toutes les VM, Cas A)
 
 **But** — Supprimer les dépendances inutiles après la purge des paquets MySQL.
 
 **Machine** — VM 1, VM 2, VM 3.
 
-**Prérequis** — Purge des paquets effectuée (étape précédente).
+**Prérequis** — Purge des paquets effectuée (Étape 1b).
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
 
@@ -699,50 +744,41 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 ---
 
-### 0.2 Cas B : les VMs n'existent pas encore (installation complète)
+#### Étape 2 — Cas B : Créer le réseau host-only vboxnet0 (GUI hôte)
 
-**But** — Créer les 3 VMs depuis zéro et préparer l'infrastructure du laboratoire : ISO, VirtualBox, réseaux host-only et NAT, installation d'Ubuntu Server 24.04 LTS, puis accès SSH depuis l'hôte.
+**But** — Créer le réseau isolé `vboxnet0` (192.168.56.0/24) sur l'hôte, avec l'hôte en `192.168.56.1` et le DHCP désactivé.
 
----
+**Machine** — Hôte (192.168.56.1), interface graphique VirtualBox.
 
-#### 0.2.a — ISO et téléchargement
+**Prérequis** — VirtualBox installé.
 
-**But** — Télécharger l'image d'installation d'Ubuntu Server 24.04 LTS.
-
-**Machine** — Hôte (192.168.56.1), terminal hôte.
-
-**Prérequis** — Accès Internet sur l'hôte pour le téléchargement.
-
-**Exemple de commande**
-
-```bash
-# Télécharger l'ISO Ubuntu Server 24.04 LTS (64-bit)
-# Lien officiel : https://ubuntu.com/download/server
-# Vérifier le hash SHA256 après téléchargement
-```
+> **Machine** : 192.168.56.1 | **Terminal** : interface graphique VirtualBox | **Utilisateur** : yug | **Répertoire** : /home/yug/Documents/mysql
 
 **Explication de la commande**
 
-- L'ISO doit être Ubuntu Server 24.04 LTS (64-bit).
-- Le lien officiel de téléchargement est : https://ubuntu.com/download/server
-- Après téléchargement, vérifier l'intégrité du fichier avec son hash SHA256 publié sur le site d'Ubuntu.
+- Ouvrir VirtualBox → Fichier → Gestionnaire de réseaux → Réseaux privés d'hôte.
+- Créer un nouveau réseau host-only nommé `vboxnet0`.
+- Définir l'adresse IPv4 de l'hôte : `192.168.56.1`.
+- Définir le masque de réseau IPv4 : `255.255.255.0`.
+- **Désactiver le serveur DHCP** sur ce réseau (décocher "Enable Server") : les IP sont statiques, configurées manuellement sur chaque VM.
+- Valider et fermer.
 
 **Résultat attendu**
 
 ```text
 
-Fichier ISO ubuntu-24.04-live-server-amd64.iso téléchargé et vérifié.
+Réseau host-only vboxnet0 créé : 192.168.56.0/24, hôte 192.168.56.1, DHCP désactivé.
 ```
 
 ---
 
-#### 0.2.b — Création des VMs dans VirtualBox (GUI hôte)
+#### Étape 3 — Cas B : Créer les 3 VMs dans VirtualBox (GUI hôte)
 
 **But** — Créer les 3 machines virtuelles avec la configuration de référence du parcours.
 
 **Machine** — Hôte (192.168.56.1), interface graphique VirtualBox.
 
-**Prérequis** — VirtualBox installé, ISO Ubuntu Server 24.04 LTS disponible.
+**Prérequis** — Réseau `vboxnet0` créé (Étape 2), ISO Ubuntu Server 24.04 LTS disponible.
 
 | Paramètre | VM 1 | VM 2 | VM 3 |
 |-----------|------|------|------|
@@ -769,37 +805,43 @@ Fichier ISO ubuntu-24.04-live-server-amd64.iso téléchargé et vérifié.
 
 ---
 
-#### 0.2.c — Réseau (GUI hôte)
+#### Étape 4 — Cas B : Configurer les adaptateurs réseau de chaque VM (GUI hôte)
 
-**But** — Configurer les réseaux des VMs : host-only `vboxnet0` pour l'administration, NAT pour l'accès Internet durant l'installation.
+**But** — Attacher l'adaptateur 1 au réseau host-only `vboxnet0` et l'adaptateur 2 au NAT sur chaque VM.
 
 **Machine** — Hôte (192.168.56.1), interface graphique VirtualBox.
 
-**Prérequis** — Les 3 VMs créées (étape précédente).
+**Prérequis** — Les 3 VMs créées (Étape 3), réseau `vboxnet0` créé (Étape 2).
+
+> **Machine** : 192.168.56.1 | **Terminal** : interface graphique VirtualBox | **Utilisateur** : yug | **Répertoire** : /home/yug/Documents/mysql
 
 **Explication de la commande**
 
-- **Adaptateur 1 (host-only)** : attacher à `vboxnet0`, réseau `192.168.56.0/24`, hôte `192.168.56.1`, DHCP désactivé. Cet adaptateur sert à l'accès SSH depuis l'hôte et aux communications entre les VMs.
-- **Adaptateur 2 (NAT)** : activer l'adaptateur NAT pour chaque VM. **Aucun accès Internet n'est désactivé** : l'adaptateur NAT reste actif pour permettre l'installation des paquets depuis les dépôts Ubuntu/MySQL pendant la phase d'installation.
+Pour chaque VM (UbuntuServer-01, UbuntuServer-02, UbuntuServer-03) :
+
+- Sélectionner la VM → Configuration → Réseau.
+- **Adaptateur 1** : activer, attacher à "Réseau privé d'hôte", sélectionner `vboxnet0`. Cet adaptateur fournit l'IP statique (192.168.56.10/11/12) et l'accès SSH depuis l'hôte.
+- **Adaptateur 2** : activer, attacher à "NAT". **Aucun accès Internet n'est désactivé** : l'adaptateur NAT reste actif pour permettre l'installation des paquets depuis les dépôts Ubuntu/MySQL pendant la phase d'installation.
+- Valider pour chaque VM.
 
 **Résultat attendu**
 
 ```text
 
 Chaque VM dispose de 2 adaptateurs :
-  - Adaptateur 1 : host-only vboxnet0 (192.168.56.0/24, DHCP off)
-  - Adaptateur 2 : NAT (accès Internet pour l'installation des paquets)
+  - Adaptateur 1 : host-only vboxnet0 (192.168.56.0/24, DHCP off) — IP statique et SSH
+  - Adaptateur 2 : NAT — accès Internet pour l'installation des paquets
 ```
 
 ---
 
-#### 0.2.d — Installation d'Ubuntu Server sur chaque VM
+#### Étape 5 — Cas B : Installer Ubuntu Server sur chaque VM
 
 **But** — Installer Ubuntu Server 24.04 LTS sur les 3 VMs depuis l'ISO.
 
 **Machine** — VM 1, VM 2, VM 3.
 
-**Prérequis** — VMs créées, ISO attaché, réseaux configurés.
+**Prérequis** — VMs créées, ISO attaché, réseaux configurés (adaptateur 1 = vboxnet0, adaptateur 2 = NAT).
 
 **Exemple de commande**
 
@@ -807,7 +849,6 @@ Chaque VM dispose de 2 adaptateurs :
 # Aucune commande : installation via l'interface graphique d'installation d'Ubuntu Server
 # - Sélectionner la langue, le clavier, le type d'installation
 # - Configurer l'utilisateur root avec mot de passe (ou activer SSH root après installation)
-# - Configurer le réseau sur l'adaptateur host-only (vboxnet0) avec IP statique
 # - Terminer l'installation et redémarrer chaque VM
 ```
 
@@ -816,7 +857,8 @@ Chaque VM dispose de 2 adaptateurs :
 - Démarrer chaque VM depuis l'ISO.
 - Suivre l'assistant d'installation d'Ubuntu Server 24.04 LTS.
 - Configurer un utilisateur `root` avec mot de passe, ou activer l'accès SSH root après l'installation.
-- Le réseau peut être configuré lors de l'installation ou après dans Lab-01 (netplan).
+- Le réseau n'a pas besoin d'être configuré pendant l'installation : il le sera après dans l'Étape 6 (netplan).
+- Terminer l'installation et redémarrer chaque VM.
 
 **Résultat attendu**
 
@@ -827,33 +869,249 @@ Ubuntu Server 24.04 LTS installé sur VM 1, VM 2 et VM 3.
 
 ---
 
-#### 0.2.e — Séquence d'exécution globale
+#### Étape 6 — Configurer les IP statiques sur chaque VM (netplan)
 
-**But** — Résumer l'ordre des opérations depuis la création des VMs jusqu'au début des labs.
+**But** — Configurer l'adresse IP statique de chaque VM sur l'adaptateur host-only `vboxnet0` (enp0s8) et activer le service SSH.
 
-**Machine** — Hôte puis VMs.
+**Machine** — VM 1 (192.168.56.10), VM 2 (192.168.56.11), VM 3 (192.168.56.12).
+
+**Prérequis** — Ubuntu Server 24.04 LTS installé, accès root en console ou SSH, adaptateur host-only présent.
+
+---
+
+**VM 1 — IP 192.168.56.10, hostname gestion-sql**
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ou console sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+hostnamectl set-hostname gestion-sql
+
+tee /etc/netplan/01-netcfg.yaml << 'YEOF'
+network:
+  version: 2
+  ethernets:
+    enp0s8:
+      dhcp4: no
+      addresses: [192.168.56.10/24]
+      nameservers:
+        addresses: [192.168.56.1]
+YEOF
+
+netplan apply
+systemctl enable --now ssh
+```
 
 **Explication de la commande**
 
-L'ordre d'exécution recommandé est :
-
-1. **Hôte (GUI VirtualBox)** : créer le réseau host-only `vboxnet0` (192.168.56.0/24, DHCP off, hôte 192.168.56.1).
-2. **Hôte (GUI VirtualBox)** : créer les 3 VMs (UbuntuServer-01, -02, -03) avec 1 vCPU, 1 Go RAM, 15 Go disque.
-3. **Hôte (GUI VirtualBox)** : attacher l'ISO Ubuntu Server 24.04 LTS sur chaque VM, définir l'ordre de boot (DVD avant disque).
-4. **Hôte (GUI VirtualBox)** : ajouter un adaptateur NAT sur chaque VM (accès Internet pour l'installation des paquets).
-5. **Hôte (GUI VirtualBox)** : démarrer les 3 VMs et installer Ubuntu Server 24.04 LTS.
-6. **Hôte (terminal)** : se connecter en SSH sur chaque VM (`ssh root@192.168.56.10`, `ssh root@192.168.56.11`, `ssh root@192.168.56.12`).
-7. **VMs** : si les VMs existaient déjà, appliquer le nettoyage de la section 0.1 ; sinon passer directement à Lab-01.
-8. **Passer à Lab-01** (configuration hostname, IP statique, SSH, snapshots).
+- `hostnamectl set-hostname gestion-sql` : définit le nom d'hôte de VM 1.
+- `tee /etc/netplan/01-netcfg.yaml << 'YEOF'` : écrit la configuration netplan avec l'IP statique `192.168.56.10/24` sur l'interface `enp0s8` (adaptateur host-only), DHCP désactivé, passerelle DNS `192.168.56.1` (hôte).
+- `netplan apply` : applique la configuration réseau sans redémarrage.
+- `systemctl enable --now ssh` : active et démarre le service SSH pour l'administration à distance depuis l'hôte.
 
 **Résultat attendu**
 
 ```text
 
-Infrastructure prête : 3 VMs Ubuntu Server 24.04 LTS sur vboxnet0, SSH fonctionnel depuis l'hôte, accès Internet via NAT pour l'installation des paquets.
+gestion-sql
 ```
 
 ---
+
+**VM 2 — IP 192.168.56.11, hostname stockage**
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ou console sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+hostnamectl set-hostname stockage
+
+tee /etc/netplan/01-netcfg.yaml << 'YEOF'
+network:
+  version: 2
+  ethernets:
+    enp0s8:
+      dhcp4: no
+      addresses: [192.168.56.11/24]
+      nameservers:
+        addresses: [192.168.56.1]
+YEOF
+
+netplan apply
+systemctl enable --now ssh
+```
+
+**Explication de la commande**
+
+- `hostnamectl set-hostname stockage` : définit le nom d'hôte de VM 2.
+- `tee /etc/netplan/01-netcfg.yaml << 'YEOF'` : écrit la configuration netplan avec l'IP statique `192.168.56.11/24` sur l'interface `enp0s8` (adaptateur host-only), DHCP désactivé, passerelle DNS `192.168.56.1` (hôte).
+- `netplan apply` : applique la configuration réseau sans redémarrage.
+- `systemctl enable --now ssh` : active et démarre le service SSH pour l'administration à distance depuis l'hôte.
+
+**Résultat attendu**
+
+```text
+
+stockage
+```
+
+---
+
+**VM 3 — IP 192.168.56.12, hostname mysql-node3**
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ou console sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+hostnamectl set-hostname mysql-node3
+
+tee /etc/netplan/01-netcfg.yaml << 'YEOF'
+network:
+  version: 2
+  ethernets:
+    enp0s8:
+      dhcp4: no
+      addresses: [192.168.56.12/24]
+      nameservers:
+        addresses: [192.168.56.1]
+YEOF
+
+netplan apply
+systemctl enable --now ssh
+```
+
+**Explication de la commande**
+
+- `hostnamectl set-hostname mysql-node3` : définit le nom d'hôte de VM 3.
+- `tee /etc/netplan/01-netcfg.yaml << 'YEOF'` : écrit la configuration netplan avec l'IP statique `192.168.56.12/24` sur l'interface `enp0s8` (adaptateur host-only), DHCP désactivé, passerelle DNS `192.168.56.1` (hôte).
+- `netplan apply` : applique la configuration réseau sans redémarrage.
+- `systemctl enable --now ssh` : active et démarre le service SSH pour l'administration à distance depuis l'hôte.
+
+**Résultat attendu**
+
+```text
+
+mysql-node3
+```
+
+---
+
+#### Étape 7 — Vérifier les IP statiques et la connectivité
+
+**But** — Confirmer que chaque VM possède bien son IP statique et qu'elles sont joignables depuis l'hôte.
+
+**Machine** — Hôte (192.168.56.1), terminal hôte.
+
+**Prérequis** — Les 3 VMs ont leur IP statique configurée (Étape 6), SSH actif.
+
+> **Machine** : 192.168.56.1 | **Terminal** : terminal hôte | **Utilisateur** : yug | **Répertoire** : /home/yug/Documents/mysql
+
+**Exemple de commande**
+
+```bash
+ping -c 4 192.168.56.10
+ping -c 4 192.168.56.11
+ping -c 4 192.168.56.12
+```
+
+**Explication de la commande**
+
+- `ping -c 4 <ip>` : envoie 4 requêtes ICMP et s'arrête ; vérifie la joignabilité de chaque VM depuis l'hôte.
+- **Piège** : si `ping` échoue, vérifier les adresses IP, le démarrage des VM et l'adaptateur host-only `vboxnet0` avant de passer à l'étape suivante.
+
+**Résultat attendu**
+
+```text
+PING 192.168.56.10 (192.168.56.10) 56(84) bytes of data.
+64 bytes from 192.168.56.10: icmp_seq=1 ttl=64 time=0.250 ms
+64 bytes from 192.168.56.10: icmp_seq=2 ttl=64 time=0.214 ms
+64 bytes from 192.168.56.10: icmp_seq=3 ttl=64 time=0.187 ms
+64 bytes from 192.168.56.10: icmp_seq=4 ttl=64 time=0.240 ms
+
+--- 192.168.56.10 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3051ms
+rtt min/avg/max/mdev = 0.187/0.222/0.250/0.024 ms
+```
+
+Sur chaque VM (en SSH) :
+
+```bash
+hostname
+ip -br addr show enp0s8
+```
+
+**Résultat attendu**
+
+```text
+gestion-sql
+enp0s8           UP             192.168.56.10/24 fe80::.../64
+
+stockage
+enp0s8           UP             192.168.56.11/24 fe80::.../64
+
+mysql-node3
+enp0s8           UP             192.168.56.12/24 fe80::.../64
+```
+
+---
+
+#### Étape 8 — Prendre les snapshots propres `propre-avant-lab`
+
+**But** — Confirmer que les snapshots propres (`propre-avant-lab`) existent sur chaque VM pour permettre un retour à l'état initial en cas d'erreur pendant le Lab-02.
+
+**Machine** — Hôte (192.168.56.1), snapshot des VM 1 (`UbuntuServer-01`), VM 2 (`UbuntuServer-02`) et VM 3 (`UbuntuServer-03`).
+
+**Prérequis** — VirtualBox sur l'hôte, les VM existent.
+
+> **Machine** : 192.168.56.1 | **Terminal** : terminal hôte | **Utilisateur** : yug | **Répertoire** : /home/yug/Documents/mysql
+
+**Exemple de commande**
+
+```bash
+VBoxManage snapshot UbuntuServer-01 list
+VBoxManage snapshot UbuntuServer-02 list
+VBoxManage snapshot UbuntuServer-03 list
+```
+
+**Explication de la commande**
+
+- `VBoxManage snapshot <vm> list` : affiche la liste des snapshots de la VM nommée `<vm>`.
+- **Piège** : le nom de la VM dans VirtualBox (`UbuntuServer-01`, etc.) peut différer de son hostname interne (`gestion-sql`, etc.) ; utiliser le nom VirtualBox pour la commande snapshot.
+
+**Résultat attendu**
+
+```text
+   Name: propre-avant-lab (UUID: ...) *
+   Description: Etat propre avant debut des labs chapitre 1
+```
+
+---
+
+### En conclusion
+
+Ce lab a permis de préparer l'infrastructure de base du laboratoire sur 3 VMs :
+
+- **Cas A** : les VMs existantes ont été nettoyées (répertoires et paquets MySQL supprimés).
+- **Cas B** : les 3 VMs ont été créées dans VirtualBox, Ubuntu Server 24.04 LTS installé, réseaux configurés.
+
+Dans les deux cas, chaque VM dispose désormais de :
+- Une **adresse IP statique** sur `vboxnet0` : `192.168.56.10` (gestion-sql), `192.168.56.11` (stockage), `192.168.56.12` (mysql-node3)
+- Un **hostname** cohérent
+- Le **service SSH** actif et joignable depuis l'hôte
+- Un **adaptateur NAT** actif pour l'installation des paquets (Internet non désactivé)
+- Un **snapshot propre** `propre-avant-lab`
+
+**Critères de réussite** :
+- `ping 192.168.56.10/11/12` depuis l'hôte retourne 0% de perte
+- `ip -br addr show enp0s8` affiche la bonne IP statique sur chaque VM
+- `hostname` affiche le bon nom sur chaque VM
+- Les snapshots `propre-avant-lab` existent sur les 3 VMs
+
+**Renvoi** : passer au Lab-02 pour installer les composants MySQL Cluster et rédiger le fichier `config.ini`.
+
 
 ## Lab-01 — Mise en place manuelle des 3 VM
 
