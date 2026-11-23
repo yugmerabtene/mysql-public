@@ -1,0 +1,3 @@
+node_id	uptime	status	start_phase	config_generation
+2	272	STARTED	0	1
+3	269	STARTED	0	1

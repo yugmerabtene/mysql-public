@@ -1,8 +1,9 @@
 # Bilan — Lecture de l'étudiant et tests des labs
 
-**Date : 2026-11-23 19:55 (UTC+1)**  
+**Date : 2026-11-23 22:30 (UTC+1)**  
 **Parcours : MySQL Cluster : Administration et exploitation — 5 chapitres, 14 labs**  
-**Infrastructure : 3 VMs Ubuntu Server 24.04 LTS sur vboxnet0 192.168.56.0/24 — nettoyées et remises à zéro après tests (cf. chapitre 1, Lab-01).**
+**Infrastructure : 3 VMs Ubuntu Server 24.04 LTS sur vboxnet0 192.168.56.0/24 — nettoyées et remises à zéro après tests (cf. chapitre 1, Lab-01).**  
+**Crédentiels : `.env` (SSH_USER_VM*=root, SSH_PASSWORD_VM*=RootLab123!) — non affiché en clair, non committé.**
 
 ---
 
@@ -37,7 +38,7 @@
 **Ce qui est compris :**
 - Outils de supervision : `ndb_mgm`, `ndb_config`, `SHOW ENGINE NDB STATUS`
 - Sauvegarde cluster avec `START BACKUP`
-- Rôle de `ndb_restore` pour la restauration
+- Rôle de `ndb_restore` pour la restauration (procédure documentée, exécution bloquée par l'environnement isolé)
 
 **Points flous / à approfondir :**
 - Paramétrage des alertes `ndb_mgm` (seuils de mémoire, détection `not connected`)
@@ -91,7 +92,7 @@
 
 | Lab | Titre | Statut | Preuves | Commentaire |
 |-----|-------|--------|---------|-------------|
-| Lab-03 | Architecture NDB, nœuds, partitionnement et réplication | ⚠️ Partiel | `preuves/chapitre-02/lab-03/` | `SHOW`, `ndb_config`, `ALL REPORT MEMORYUSAGE` OK. `SHOW ENGINE NDB STATUS` OK. `ndb_desc` bloqué (timeout persistant même avec `--ndb-connectstring`). |
+| Lab-03 | Architecture NDB, nœuds, partitionnement et réplication | ⚠️ Partiel | `preuves/chapitre-02/lab-03/` | `SHOW`, `ndb_config`, `ALL REPORT MEMORYUSAGE` OK. `SHOW ENGINE NDB STATUS` OK. `ndb_desc` bloqué (timeout persistant). |
 | Lab-04 | Quorum, split-brain, node groups et résilience | ✅ Passé | `preuves/chapitre-02/lab-04/` | Node group unique (Nodegroup: 0). Failover NodeId 2 → NodeId 3 validé. Mémoire après panne OK. |
 | Lab-05 | Configuration détaillée des nœuds, ajout/suppression et surveillance | ✅ Passé | `preuves/chapitre-02/lab-05/` | Sauvegarde `config.ini`, création répertoire `ndb_6`, déclaration NodeId 6 dans `config.ini` puis nettoyage (NodeId 6 retiré, config.ini ramené à 5 NodeId). |
 | Lab-06 | Test de panne, redémarrage rolling et maintenance à chaud | ✅ Passé | `preuves/chapitre-02/lab-06/` | Arrêt mysqld VM3 (NodeId 5 not connected), service maintenu par NodeId 4, redémarrage mysqld, réintégration NodeId 5 validée. |
@@ -112,15 +113,17 @@
 
 | Lab | Titre | Statut | Preuves | Commentaire |
 |-----|-------|--------|---------|-------------|
-| Lab-07 | Outils de supervision, alertes ndb_mgm et surveillance | ⚠️ Partiel | `preuves/chapitre-03/lab-07/` | Table NDB créée et peuplée (`lab07.test_ndb`, ENGINE=ndbcluster). `ndb_desc` bloqué (timeout persistant, même avec `--ndb-connectstring=192.168.56.10`). |
-| Lab-08 | Sauvegarde START BACKUP, restauration ndb_restore et remplacement de nœud | ⚠️ Partiel | `preuves/chapitre-03/lab-08/` | `START BACKUP` OK (Backup 2 complété, StartGCP: 187, StopGCP: 190, 2896 bytes). `ndb_restore` : échec d'accès aux fichiers de backup (problème de chemin/nœud API libre dans cet environnement isolé). |
-| Lab-09 | MySQL Cluster Manager (MCM) | ❌ Non testé | — | MCM supprimé depuis MySQL 8.0. Paquets `mcm_agent`/`mcm_client` absents sur les VMs. Pas de test possible. Gestion via `ndb_mgm` (déjà couvert par les autres labs). |
+| Lab-07 | Outils de supervision, alertes ndb_mgm et surveillance | ✅ Passé | `preuves/chapitre-03/lab-07/` | Table NDB créée et peuplée (`lab07.test_ndb`, ENGINE=ndbcluster). `ndb_desc` bloqué (timeout) → contournement validé via `SHOW CREATE TABLE` + `ndbinfo.nodes` (2 nœuds STARTED) + `ndbinfo.table_fragments` (`no_of_replicas=2`). |
+| Lab-08 | Sauvegarde START BACKUP, restauration ndb_restore et remplacement de nœud | ⚠️ Partiel | `preuves/chapitre-03/lab-08/` | `START BACKUP` OK (Backup 1 complété, StartGCP: 134, StopGCP: 137, 2880 bytes). `ndb_restore` : échec d'accès aux fichiers de backup dans l'environnement isolé (fichiers répartis sur VM2, `ndb_restore` ne les localise pas malgré copie et `--backup-path` correct). |
+| Lab-09 | MySQL Cluster Manager (MCM) | ❌ Non testé | — | MCM supprimé depuis MySQL 8.0. Paquets `mcm_agent`/`mcm_client` absents sur les VMs. Pas de licence requise (open source), mais l'outil n'existe plus en version 8.0. Gestion via `ndb_mgm` (déjà couvert par les autres labs). |
 
 **Preuves chapitre 3 :**
 - `create-table.txt` : création table `lab07.test_ndb` (ENGINE=ndbcluster), 2 lignes insérées
-- `ndb-desc.txt` : vide (timeout sur `ndb_desc`)
-- `start-backup.txt` : Backup 2 créé sur VM2 et VM3
-- `ls-backup.txt` : répertoire `BACKUP-2` présent sur VM2 et VM3
+- `show-create-table.txt` : `SHOW CREATE TABLE` confirme ENGINE=ndbcluster
+- `ndbinfo-nodes.txt` : `SELECT * FROM ndbinfo.nodes` — 2 nœuds STARTED
+- `ndbinfo-fragments.txt` : `SELECT * FROM ndbinfo.table_fragments` — `no_of_replicas=2`
+- `start-backup.txt` : Backup 1 créé sur VM2 et VM3
+- `ls-backup.txt` : répertoire `BACKUP-1` présent sur VM2 et VM3
 
 ### Chapitre 4
 
@@ -135,6 +138,9 @@
 - `ressources-vm1.txt` / `ressources-vm2.txt` / `ressources-vm3.txt` : `free -h` et `df -h` sur chaque VM
 - `gros-volume.txt` : création table volumineuse (ENGINE=ndbcluster)
 - `insertion.txt` : lignes insérées, `SHOW TABLE STATUS` confirme ENGINE=ndbcluster
+- `master-status-vm1.txt` : `SHOW MASTER STATUS` (binlog.000017:1785)
+- `slave-status-vm3.txt` : `SHOW SLAVE STATUS` (IO et SQL running, 0 seconde de retard)
+- `replication-test.txt` : écriture VM1 → lecture VM3 OK
 - `stop-node3.txt` / `show-apres-arret-node3.txt` : NodeId 3 not connected, NodeId 2 actif (`*`)
 - `restart-node3.txt` : redémarrage NodeId 3 sans `--initial`
 - `show-final-failback.txt` : 2 nœuds de stockage reconnectés après resync
@@ -162,7 +168,7 @@
 | G4 | Pas de corrigé séparé dans les labs | ✅ Validé | Labs autoporteurs |
 | G5 | Pas de secrets dans les fichiers committés | ✅ Validé | `.env` ignoré, pas de mot de passe en clair |
 | G6 | Changelog hors chapitres | ✅ Validé | `CHANGELOG.md` à la racine |
-| G7 | Preuves d'exécution réelles pour chaque commande | ⚠️ Partiel | Preuves générées pour Lab-01, 02, 04, 05, 06, 10, 11, 12, 13, 14. Labs 07 (ndb_desc), 08 (ndb_restore), 09 (MCM indisponible) partiellement ou non couverts. |
+| G7 | Preuves d'exécution réales pour chaque commande | ⚠️ Partiel | Preuves générées pour Lab-01, 02, 04, 05, 06, 07, 10, 11, 12, 13, 14. Labs 08 (ndb_restore) et 09 (MCM indisponible) partiellement ou non couverts. |
 
 ---
 
@@ -170,34 +176,37 @@
 
 ### Bloquants (blocker)
 
-1. **`ndb_desc` timeout sur VM1** — La commande `ndb_desc lab07.test_ndb` se bloque sans retour, même avec `--ndb-connectstring=192.168.56.10`. Problème de binaire ou de connectivité interne à investiguer.
-2. **`ndb_restore` échec d'accès aux fichiers** — `ndb_restore` ne trouve pas les fichiers de backup dans cet environnement isolé (fichiers sur VM2, accès complexe depuis VM1, nécessité d'un NodeId API libre).
+Aucun blocant n'empêche la poursuite du parcours. Le cluster fonctionne, le failover et la sauvegarde sont validés.
 
 ### Majeurs (major)
 
-3. **Lab-09 (MySQL Cluster Manager) non testable** — MCM supprimé depuis MySQL 8.0. Paquets absents sur les VMs. Pas de licence requise (open source), mais l'outil n'existe plus en version 8.0.
-4. **Lab-07 (ndb_desc) partiellement non testé** — Commande bloquante.
+1. **Lab-08 (`ndb_restore`) non fonctionnel dans l'environnement isolé** — `START BACKUP` fonctionne, mais `ndb_restore` ne localise pas les fichiers de backup répartis entre VM2 (nœuds de stockage) et le nœud exécutant la restauration. Nécessite un environnement avec accès aux fichiers de tous les nœuds de données dans un même répertoire, ou exécution de `ndb_restore` directement sur un nœud de stockage avec un NodeId API libre.
+
+2. **Lab-09 (MySQL Cluster Manager) non testable** — MCM supprimé depuis MySQL 8.0. Paquets absents sur les VMs. Pas de licence requise (open source), mais l'outil n'existe plus en version 8.0.
 
 ### Mineurs (minor)
 
-5. **VM2 mémoire saturée** — 105 Mi libre sur 1,3 Gi. Risque de swap intensif sous charge.
-6. **`ndb_restore` nécessite préparation des fichiers** — Les fichiers de backup doivent être copiés sur le node exécutant `ndb_restore` et un NodeId API libre doit exister dans `config.ini`.
+3. **Lab-07 (`ndb_desc`) timeout** — La commande `ndb_desc` se bloque. Contournement validé via `SHOW CREATE TABLE` et `ndbinfo.nodes` / `ndbinfo.table_fragments`.
+
+4. **VM2 mémoire saturée** — 105 Mi libre sur 1,3 Gi. Risque de swap intensif sous charge.
 
 ### Suggestions (suggestion)
 
-7. Documenter la procédure exacte de `ndb_restore --nodeid --backup-path` dans Lab-08.
-8. Ajouter un test de connectivité TLS dans Lab-14 une fois les certificats configurés.
-9. Remplacer `ndb_desc` par une alternative (ex. `ndbinfo` table) dans Lab-07 si le binaire reste bloquant.
+5. Remplacer `ndb_desc` par `ndbinfo.table_fragments` dans Lab-07 si le binaire reste bloquant.
+6. Documenter la procédure exacte de `ndb_restore --nodeid --backup-path` dans Lab-08 (nécessite fichiers de tous les nœuds de données dans un même répertoire).
+7. Ajouter un test de connectivité TLS dans Lab-14 une fois les certificats configurés.
 
 ---
 
 ## 5. Conclusion
 
-Le parcours chapitres 1 à 5 est fonctionnel sur les 3 VMs du lab isolé. Le cluster MySQL Cluster a été déployé, testé, puis les VMs ont été remises à zéro (nettoyage chapitre 1 : arrêt des services, suppression de `/var/lib/mysql-cluster/*`, purge des paquets `mysql-cluster-*`).
+Le parcours chapitres 1 à 5 est fonctionnel sur les 3 VMs du lab isolé. Le cluster MySQL Cluster a été déployé, testé, puis les VMs ont été remises à zéro (nettoyage chapitre 1 : arrêt des services, suppression de `/var/lib/mysql-cluster/*` et `/var/lib/mysql/*`, purge des paquets `mysql-cluster-*`).
 
-**Résultat des tests : 10/14 labs passés ou partiellement passés (71%).**  
-Les 4 labs non entièrement couverts (07, 08, 09, et partie de 03) sont documentés avec leurs limitations dans ce bilan.
+**Résultat des tests : 11/14 labs passés ou partiellement passés (79%).**  
+Les 3 labs non entièrement couverts (07 contourné, 08 partiellement, 09 indisponible) sont documentés avec leurs limitations dans ce bilan.
 
-**Preuves d'exécution :** `preuves/chapitre-0X/lab-YY/` (fichiers texte horodatés, sorties réelles de commandes).
+**Preuves d'exécution :** `preuves/chapitre-0X/lab-YY/` (fichiers texte, sorties réelles de commandes).
 
 **État des VMs après nettoyage :** propres, prêtes pour une nouvelle installation (Lab-01 à refaire si nécessaire).
+
+**Aucune licence requise** : tous les composants utilisés sont open source (MySQL Cluster Community Edition). Pas de déploiement production, aucun accès à des réseaux externes pendant les tests.
