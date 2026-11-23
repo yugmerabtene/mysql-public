@@ -1,0 +1,7 @@
+=== Ecrire sur VM1 (lab12_repl.test_repl) ===
+id	msg
+1	replication test
+
+=== Lire sur VM3 (lab12_repl.test_repl) ===
+id	msg
+1	replication test

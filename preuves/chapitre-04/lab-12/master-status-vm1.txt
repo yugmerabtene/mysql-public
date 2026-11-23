@@ -1,0 +1,4 @@
+File	Position	Binlog_Do_DB	Binlog_Ignore_DB	Executed_Gtid_Set
+binlog.000017	1785
+
+
