@@ -481,6 +481,380 @@ Le plan ci-dessous ordonne tous les labs du chapitre. Aucune action de configura
 | 2 | Lab-02 | Installer MySQL Cluster, rédiger `config.ini`, démarrer dans l'ordre, vérifier l'intégrité et la résilience | VM 1 + VM 2 + VM 3 | Dépôt MySQL, `config.ini`, démarrage MGM → stockage → SQL | NDB-03, NDB-04, NDB-08, NDB-05 |
 
 
+## 0. Préparation et nettoyage initial des 3 VM
+
+Cette section couvre les deux cas de figure avant de commencer les labs :
+
+- **Cas A** : les 3 VMs existent déjà → nettoyage avant de (re)commencer les labs.
+- **Cas B** : les 3 VMs n'existent pas encore → installation complète depuis zéro (ISO, VirtualBox, réseau, puis configuration interne).
+
+Aucun accès Internet n'est désactivé : chaque VM conserve son adaptateur NAT pour pouvoir installer les paquets depuis les dépôts Ubuntu/MySQL pendant la phase d'installation.
+
+---
+
+### 0.1 Cas A : les VMs existent déjà (nettoyage)
+
+**But** — Remettre les 3 VMs à l'état propre avant de (re)commencer les labs, en supprimant toute configuration MySQL/Cluster précédente.
+
+**Machine** — VM 1 (192.168.56.10), VM 2 (192.168.56.11), VM 3 (192.168.56.12).
+
+**Prérequis** — VMs démarrées, session SSH ouverte en root sur chaque VM, mot de passe dans `.env`.
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
+```
+
+**Explication de la commande**
+
+- `rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql` : supprime les répertoires et fichiers de configuration MySQL/Cluster précédents sur VM 1.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
+```
+
+**Explication de la commande**
+
+- `rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql` : supprime les répertoires et fichiers de configuration MySQL/Cluster précédents sur VM 2.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
+```
+
+**Explication de la commande**
+
+- `rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql` : supprime les répertoires et fichiers de configuration MySQL/Cluster précédents sur VM 3.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+---
+
+#### Purge des paquets MySQL existants (toutes les VM)
+
+**But** — Supprimer proprement les paquets MySQL et leurs fichiers de configuration pour éviter tout conflit lors de l'installation au Lab-02.
+
+**Machine** — VM 1, VM 2, VM 3.
+
+**Prérequis** — Nettoyage des répertoires effectué (étape précédente).
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
+```
+
+**Explication de la commande**
+
+- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration sur VM 1.
+- `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
+```
+
+**Explication de la commande**
+
+- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration sur VM 2.
+- `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
+```
+
+**Explication de la commande**
+
+- `apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-*` : supprime proprement les paquets MySQL et leurs fichiers de configuration sur VM 3.
+- `|| true` : évite que l'échec d'une purge (paquet absent) n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+---
+
+#### Suppression des dépendances orphelines (toutes les VM)
+
+**But** — Supprimer les dépendances inutiles après la purge des paquets MySQL.
+
+**Machine** — VM 1, VM 2, VM 3.
+
+**Prérequis** — Purge des paquets effectuée (étape précédente).
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get autoremove -y || true
+```
+
+**Explication de la commande**
+
+- `apt-get autoremove -y` : supprime les dépendances inutiles après la purge sur VM 1.
+- `|| true` : évite qu'une absence de dépendances inutiles n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get autoremove -y || true
+```
+
+**Explication de la commande**
+
+- `apt-get autoremove -y` : supprime les dépendances inutiles après la purge sur VM 2.
+- `|| true` : évite qu'une absence de dépendances inutiles n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
+
+**Exemple de commande**
+
+```bash
+apt-get autoremove -y || true
+```
+
+**Explication de la commande**
+
+- `apt-get autoremove -y` : supprime les dépendances inutiles après la purge sur VM 3.
+- `|| true` : évite qu'une absence de dépendances inutiles n'arrête l'exécution.
+
+**Résultat attendu**
+
+```text
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
+```
+
+---
+
+### 0.2 Cas B : les VMs n'existent pas encore (installation complète)
+
+**But** — Créer les 3 VMs depuis zéro et préparer l'infrastructure du laboratoire : ISO, VirtualBox, réseaux host-only et NAT, installation d'Ubuntu Server 24.04 LTS, puis accès SSH depuis l'hôte.
+
+---
+
+#### 0.2.a — ISO et téléchargement
+
+**But** — Télécharger l'image d'installation d'Ubuntu Server 24.04 LTS.
+
+**Machine** — Hôte (192.168.56.1), terminal hôte.
+
+**Prérequis** — Accès Internet sur l'hôte pour le téléchargement.
+
+**Exemple de commande**
+
+```bash
+# Télécharger l'ISO Ubuntu Server 24.04 LTS (64-bit)
+# Lien officiel : https://ubuntu.com/download/server
+# Vérifier le hash SHA256 après téléchargement
+```
+
+**Explication de la commande**
+
+- L'ISO doit être Ubuntu Server 24.04 LTS (64-bit).
+- Le lien officiel de téléchargement est : https://ubuntu.com/download/server
+- Après téléchargement, vérifier l'intégrité du fichier avec son hash SHA256 publié sur le site d'Ubuntu.
+
+**Résultat attendu**
+
+```text
+
+Fichier ISO ubuntu-24.04-live-server-amd64.iso téléchargé et vérifié.
+```
+
+---
+
+#### 0.2.b — Création des VMs dans VirtualBox (GUI hôte)
+
+**But** — Créer les 3 machines virtuelles avec la configuration de référence du parcours.
+
+**Machine** — Hôte (192.168.56.1), interface graphique VirtualBox.
+
+**Prérequis** — VirtualBox installé, ISO Ubuntu Server 24.04 LTS disponible.
+
+| Paramètre | VM 1 | VM 2 | VM 3 |
+|-----------|------|------|------|
+| Nom | UbuntuServer-01 | UbuntuServer-02 | UbuntuServer-03 |
+| Type | Ubuntu (64-bit) | Ubuntu (64-bit) | Ubuntu (64-bit) |
+| RAM | 1 Go | 1 Go | 1 Go |
+| vCPU | 1 | 1 | 1 |
+| Disque | 15 Go | 15 Go | 15 Go |
+| ISO | Ubuntu 24.04 LTS | Ubuntu 24.04 LTS | Ubuntu 24.04 LTS |
+| Ordre de boot | DVD avant disque dur | DVD avant disque dur | DVD avant disque dur |
+
+**Explication de la commande**
+
+- Créer 3 VMs dans VirtualBox avec les paramètres ci-dessus.
+- Attacher l'ISO Ubuntu Server 24.04 LTS comme lecteur optique de chaque VM.
+- Définir l'ordre de boot : lecteur optique (DVD) avant le disque dur.
+
+**Résultat attendu**
+
+```text
+
+3 VMs créées : UbuntuServer-01, UbuntuServer-02, UbuntuServer-03.
+```
+
+---
+
+#### 0.2.c — Réseau (GUI hôte)
+
+**But** — Configurer les réseaux des VMs : host-only `vboxnet0` pour l'administration, NAT pour l'accès Internet durant l'installation.
+
+**Machine** — Hôte (192.168.56.1), interface graphique VirtualBox.
+
+**Prérequis** — Les 3 VMs créées (étape précédente).
+
+**Explication de la commande**
+
+- **Adaptateur 1 (host-only)** : attacher à `vboxnet0`, réseau `192.168.56.0/24`, hôte `192.168.56.1`, DHCP désactivé. Cet adaptateur sert à l'accès SSH depuis l'hôte et aux communications entre les VMs.
+- **Adaptateur 2 (NAT)** : activer l'adaptateur NAT pour chaque VM. **Aucun accès Internet n'est désactivé** : l'adaptateur NAT reste actif pour permettre l'installation des paquets depuis les dépôts Ubuntu/MySQL pendant la phase d'installation.
+
+**Résultat attendu**
+
+```text
+
+Chaque VM dispose de 2 adaptateurs :
+  - Adaptateur 1 : host-only vboxnet0 (192.168.56.0/24, DHCP off)
+  - Adaptateur 2 : NAT (accès Internet pour l'installation des paquets)
+```
+
+---
+
+#### 0.2.d — Installation d'Ubuntu Server sur chaque VM
+
+**But** — Installer Ubuntu Server 24.04 LTS sur les 3 VMs depuis l'ISO.
+
+**Machine** — VM 1, VM 2, VM 3.
+
+**Prérequis** — VMs créées, ISO attaché, réseaux configurés.
+
+**Exemple de commande**
+
+```bash
+# Aucune commande : installation via l'interface graphique d'installation d'Ubuntu Server
+# - Sélectionner la langue, le clavier, le type d'installation
+# - Configurer l'utilisateur root avec mot de passe (ou activer SSH root après installation)
+# - Configurer le réseau sur l'adaptateur host-only (vboxnet0) avec IP statique
+# - Terminer l'installation et redémarrer chaque VM
+```
+
+**Explication de la commande**
+
+- Démarrer chaque VM depuis l'ISO.
+- Suivre l'assistant d'installation d'Ubuntu Server 24.04 LTS.
+- Configurer un utilisateur `root` avec mot de passe, ou activer l'accès SSH root après l'installation.
+- Le réseau peut être configuré lors de l'installation ou après dans Lab-01 (netplan).
+
+**Résultat attendu**
+
+```text
+
+Ubuntu Server 24.04 LTS installé sur VM 1, VM 2 et VM 3.
+```
+
+---
+
+#### 0.2.e — Séquence d'exécution globale
+
+**But** — Résumer l'ordre des opérations depuis la création des VMs jusqu'au début des labs.
+
+**Machine** — Hôte puis VMs.
+
+**Explication de la commande**
+
+L'ordre d'exécution recommandé est :
+
+1. **Hôte (GUI VirtualBox)** : créer le réseau host-only `vboxnet0` (192.168.56.0/24, DHCP off, hôte 192.168.56.1).
+2. **Hôte (GUI VirtualBox)** : créer les 3 VMs (UbuntuServer-01, -02, -03) avec 1 vCPU, 1 Go RAM, 15 Go disque.
+3. **Hôte (GUI VirtualBox)** : attacher l'ISO Ubuntu Server 24.04 LTS sur chaque VM, définir l'ordre de boot (DVD avant disque).
+4. **Hôte (GUI VirtualBox)** : ajouter un adaptateur NAT sur chaque VM (accès Internet pour l'installation des paquets).
+5. **Hôte (GUI VirtualBox)** : démarrer les 3 VMs et installer Ubuntu Server 24.04 LTS.
+6. **Hôte (terminal)** : se connecter en SSH sur chaque VM (`ssh root@192.168.56.10`, `ssh root@192.168.56.11`, `ssh root@192.168.56.12`).
+7. **VMs** : si les VMs existaient déjà, appliquer le nettoyage de la section 0.1 ; sinon passer directement à Lab-01.
+8. **Passer à Lab-01** (configuration hostname, IP statique, SSH, snapshots).
+
+**Résultat attendu**
+
+```text
+
+Infrastructure prête : 3 VMs Ubuntu Server 24.04 LTS sur vboxnet0, SSH fonctionnel depuis l'hôte, accès Internet via NAT pour l'installation des paquets.
+```
+
+---
+
 ## Lab-01 — Mise en place manuelle des 3 VM
 
 ### Énoncé / Contexte
