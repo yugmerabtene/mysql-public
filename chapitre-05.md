@@ -79,19 +79,15 @@ graph TD
 
 Les risques à surveiller sont l'interception des communications inter-nœuds en clair, l'utilisation d'un compte SQL sur-privilégié, ou l'accès aux données de sauvegarde non protégées. L'administrateur MySQL Cluster vérifie : l'absence de `TLS = 1` dans `config.ini`, les comptes SQL avec des droits excessifs (`SHOW GRANTS`), et l'existence de comptes anonymes ou sans mot de passe (`mysql.user`). Les contrôles principaux sont l'activation de TLS inter-nœuds, l'application du moindre privilège, et l'isolement réseau des nœuds.
 
-## Cartographie de référence des opérations (NDB-nn)
-
-| Opération | ID | Composant | Source de données | Règle de détection | Mitigation |
-|---|---|---|---|---|---|
-| Sécurité connexions | NDB-29 | Réseau inter-nœuds | `config.ini` (`TLS = 1`), fichiers certificat/clé | Vérifier que `TLS = 1` est présent dans `config.ini` et que les processus démarrent avec TLS | Activer TLS entre nœuds de gestion, stockage et SQL |
-| Sécurité données | NDB-30 | Comptes SQL | `SHOW GRANTS`, `mysql.user` | Détecter les comptes sur-privilégiés ou sans mot de passe | Appliquer le moindre privilège, comptes dédiés, pas de root pour les applications |
-| Sécurité nœuds | NDB-31 | Serveurs VM | Accès SSH, processus `ndb_mgmd`/`ndbmtd`/`mysqld`, routes | Vérifier l'absence de route par défaut vers Internet et la présence des processus | Pas d'Internet sur les nœuds, accès SSH limité, utilisateur non-root pour mysqld |
-
 ## Lab-14 — Sécuriser MySQL Cluster : TLS, comptes SQL, sauvegardes, isolement
 
 ### Énoncé / Contexte
 
 Sécuriser le cluster MySQL Cluster en administration : activer le chiffrement TLS entre le nœud de gestion, les nœuds de stockage et les nœuds SQL via `config.ini`, créer des comptes SQL à moindre privilège (compte applicatif et compte de sauvegarde), protéger les sauvegardes cluster, et vérifier l'isolement réseau (pas d'accès Internet sur les nœuds). Ce lab réalise les opérations `NDB-29`, `NDB-30` et `NDB-31`. Le cluster doit être démarré et sain. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
+
+> **Note sur l'isolement réseau (F-07)** : les VM du lab disposent d'un second adaptateur NAT (acces Internet via le moteur NAT de VirtualBox ; une route par defaut via 10.0.2.2 peut etre presente dans la table de routage, voir `ip route show default`). L'isolement reseau prescrit dans ce lab porte sur le perimetre d'administration (reseau host-only vboxnet0 isole, aucune redirection NAT permanente, aucun service expose vers Internet). Une route par defaut NAT peut nevertheless apparaitre ; l'apprenant doit en avoir conscience et ne pas considerer les nœuds comme totalement coupes d'Internet au niveau de la table de routage. La verification d'isolement (etape 8) consiste a constater l'absence de route par defaut vers l'exterieur du lab sur l'interface host-only, tout en notant l'eventuelle route NAT.
+
+> **Note d'execution conditionnelle (TLS, F-08)** : l'activation de TLS inter-nœuds necessite de modifier `config.ini` (`TLS = 1`) puis de redemarer tous les nœuds du cluster dans l'ordre critique (gestion -> stockage -> SQL). Les etapes de redemarrage utilisent `--initial` sur les nœuds de stockage, ce qui reinitialise leur stockage et est disruptif pour le cluster partage. Sur l'infrastructure partagee du parcours, ces etapes (arret du cluster, redemarrage `--initial`) sont a executer uniquement si l'apprenant dispose d'un cluster dedie ou apres avoir pris un snapshot `propre-avant-lab` permettant un retour arrière. Sinon, ces etapes doivent etre lues a titre de procedure de reference sans etre executees sur le cluster partage en cours.
 
 ### Outils et commandes utilisées
 
@@ -1427,37 +1423,6 @@ mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
 
 Ce lab couvre la sécurisation concrète d'un cluster MySQL Cluster en administration : activation du chiffrement TLS inter-nœuds via `config.ini` (`TLS = 1`, `TLSCAFile`, `TLSCertificateFile`, `TLSKeyFile`) et redémarrage des nœuds (`ndb_mgmd`, `ndbmtd`, `mysqld` avec `--user=mysql`), création de comptes SQL à moindre privilège (compte applicatif limité sur une base, compte de sauvegarde en lecture, `root` réservé à l'administration), absence de comptes anonymes ou sans mot de passe, sauvegarde protégée (`START BACKUP` avec répertoires à droits restreints `chmod 700`), et vérification de l'isolement réseau (pas de route par défaut vers Internet, vboxnet0 isolé). Les opérations `NDB-29`, `NDB-30` et `NDB-31` du syllabus sont réalisées. Le chapitre reste dans le périmètre de l'administration MySQL Cluster : aucun contenu de type test d'intrusion, équipe rouge, centre d'opérations de sécurité, gestion d'événements de sécurité, vulnérabilité référencée, code d'exploitation, logiciel malveillant, détection d'intrusion, prévention d'intrusion ou pare-feu complexe n'est abordé. Renvoi : le parcours de formation MySQL Cluster est maintenant couvert dans son ensemble (chapitres 1 à 5).
 
-## Erreurs fréquentes et corrections détaillées (Partie D)
-
-### Erreurs de conception
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| Pas de chiffrement inter-nœuds | Communications en clair entre les nœuds du cluster | Activer `TLS = 1` dans `config.ini` pour `[tcp default]`, `[ndb_mgmd]`, `[ndbd]` et `[mysqld]` |
-| Comptes applicatifs sur-privilégiés | Risque d'escalade de privilèges en cas de compromission | Appliquer le moindre privilège (droits stricts par base, compte dédié par application) |
-| Clé privée de CA non protégée | Usurpation d'identité de tous les nœuds | `chmod 600` sur les clés privées, stocker hors des nœuds du lab |
-
-### Erreurs d'architecture
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| Nœuds avec accès Internet | Exposition élargie aux risques | Pas d'Internet sur les nœuds de production, réseau vboxnet0 isolé |
-| Tous les nœuds sur un même segment | Propagation rapide d'une compromission | Segreger les réseaux de gestion, stockage et SQL si possible |
-
-### Erreurs de configuration
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| `TLS = 1` mais certificats absents | Échec de démarrage TLS des nœuds | Générer les certificats et vérifier les chemins `TLSCAFile`, `TLSCertificateFile`, `TLSKeyFile` dans `config.ini` |
-| Comptes sans mot de passe | Accès non authentifié aux données | Supprimer les comptes anonymes, définir des mots de passe forts |
-| `root` SQL sans mot de passe | Accès complet sans authentification | Définir un mot de passe root SQL et ne pas l'utiliser par les applications |
-
-### Erreurs sur gros volumes
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| Sauvegardes non protégées | Données sensibles exposées sur disque | Protéger le répertoire de sauvegarde (`chmod 700`), restreindre l'accès aux seuls comptes autorisés |
-| Accès large aux données de sauvegarde | Fuite de données | Restreindre l'accès au répertoire de sauvegarde aux seuls comptes de sauvegarde |
 
 ## Synthèse du chapitre
 

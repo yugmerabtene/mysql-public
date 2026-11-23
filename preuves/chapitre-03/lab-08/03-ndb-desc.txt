@@ -1,0 +1,9 @@
+# date: 2026-11-23 15:27:37
+# cmd: ndb_desc --ndb-connectstring=192.168.56.10 --database=labndb t_ndb_desc
+# rc= 0 (aucune sortie produite - anomalie documentée)
+# note: ndb_desc ne produit aucune sortie dans cet environnement (8.0.50). Alternative fonctionnelle : DESCRIBE via mysql.
+
+=== ALTERNATIVE : DESCRIBE labndb.t_ndb_desc ===
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	
+val	varchar(100)	YES		NULL	

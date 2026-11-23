@@ -62,22 +62,6 @@ flowchart TD
 
 **Surveillance recommandée** : vérifier `ndb_mgm -e "SHOW"` quotidiennement, surveiller l'usage `DataMemory`/`IndexMemory` via `ALL REPORT MEMORYUSAGE`, et consulter les logs du cluster en cas d'erreur 2315 (nœud déclaré mort) ou d'échec d'arbitrage.
 
-## Cartographie de référence des opérations (NDB-nn)
-
-Le tableau ci-dessous classe les opérations de ce chapitre selon le référentiel standard du parcours (syllabus, Jour 2, modules 2.0 et 2.1). Chaque opération cite son identifiant de référence, sa source de données, sa règle de détection et sa mitigation.
-
-| Opération | ID | Composant | Source de données | Règle de détection | Mitigation |
-|---|---|---|---|---|---|
-| Moteur NDB | NDB-06 | Architecture | Schéma Fig 2.1, `ndb_mgm SHOW` | Vérifier les 3 types de nœuds | Documenter l'architecture avant l'administration |
-| Types de nœuds | NDB-07 | Nœuds | `SHOW`, processus `ndb_mgmd`/`ndbmtd`/`mysqld` | Confirmer la présence de chaque type | Installer les bons composants sur chaque VM |
-| Quorum et split-brain | NDB-09 | Résilience | `SHOW` états des nœuds | Alerte si `not connected` | Configurer un nœud de gestion arbitre |
-| Node groups | NDB-10 | Stockage | `SHOW` Nodegroup | Vérifier au moins 2 nœuds par groupe | Déployer les stockages sur des machines distinctes |
-| Configuration nœuds | NDB-11 | config.ini | Fichier `config.ini` | Vérifier `NoOfReplicas`, `DataDir` | Sauvegarder `config.ini` avant modification |
-| Ajout/suppression nœuds | NDB-12 | Topologie | `ndb_mgm` START/STOP | Vérifier l'état après ajout | Respecter l'ordre de démarrage |
-| Surveillance état | NDB-13 | Cluster | `ndb_mgm SHOW`, `ALL REPORT MEMORYUSAGE` | Détecter un nœud absent | Redémarrer dans l'ordre : gestion, stockage, SQL |
-| Test de panne | NDB-14 | Résilience | Arrêt d'un `ndbmtd`, `SHOW` | Observer le failover | Maintenir `NoOfReplicas = 2` |
-| Redémarrage rolling | NDB-15 | Maintenance | Redémarrage successif des nœuds | Vérifier le service continu | Arrêter un nœud à la fois |
-
 ## Lab-03 — Architecture NDB, nœuds, partitionnement et réplication
 
 ### Énoncé / Contexte
@@ -1466,45 +1450,6 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 Ce lab démontre le failover immédiat à la perte d'un nœud de stockage, la mesure du temps de récupération, et le redémarrage rolling d'un nœud SQL sans interruption du cluster (maintenance à chaud via le second nœud SQL). Les opérations `NDB-14` et `NDB-15` sont réalisées. Le chapitre 2 est terminé ; le prochain chapitre (Jour 3) couvrira la supervision, la maintenance et la sauvegarde/restauration.
 
-## Erreurs fréquentes et corrections détaillées (Partie D)
-
-### Erreurs de conception
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| `NoOfReplicas = 1` | Pas de redondance ; perte d'un nœud de stockage = perte de données | Définir `NoOfReplicas = 2` avant le premier démarrage et ne pas modifier à chaud |
-| DataMemory / IndexMemory sous-dimensionnés | Cluster refuse les insertions (« table is full »), performances en chute | Dimensionner `DataMemory`/`IndexMemory` selon le jeu de données, laisser une marge anti-swap |
-| Node group unique sur une seule VM | Vulnérabilité à la perte d'une machine entière (tous les replicas collocés) | Déployer les nœuds de stockage sur des VM distinctes |
-| Un seul nœud de gestion | Single point of failure ; perte du gestionnaire = pas de nouvelle configuration | Prévoir un second nœud de gestion |
-
-### Erreurs d'architecture
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| Split-brain après perte de liaison | Pas d'arbitre ou node groups de taille égale sans quorum | Configurer un nœud de gestion arbitre ; éviter les partitions de taille égale |
-| Failover lent | Détection de panne trop longue | Réduire `HeartbeatIntervalDbDb` et `ConnectCheckIntervalDelay` |
-| Auto-sharding sur un seul node group | Pas de montée en charge du stockage | Ajouter des nœuds de stockage pour créer plusieurs node groups |
-| Pas de redondance physique | Tous les nœuds sur un même hôte physique | Distribuer les nœuds sur des hôtes physiques distincts |
-
-### Erreurs de configuration
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| `ndb_mgmd` échoue (adresse déjà utilisée) | Un `ndb_mgmd` tourne déjà sur le même canal de gestion | Tuer le processus existant avant de redémarrer (`pkill -x ndb_mgmd`) |
-| Nœud de stockage `not connected` | `ndbmtd` ne rejoint pas le gestionnaire | Vérifier `--ndb-connectstring=192.168.56.10` et le démarrage de `ndb_mgmd` |
-| `mysqld` ne voit pas NDB | Moteur `--ndbcluster` absent | Relancer `mysqld` avec l'option `--ndbcluster` |
-| Adresse IP non persistante | Netplan mal appliqué ou interface mal nommée | Vérifier le nom d'interface avec `ip -br link show` et relancer `netplan apply` |
-| Ordre de démarrage incorrect (SQL avant stockage) | Les nœuds SQL ne trouvent pas le gestionnaire | Respecter l'ordre : gestion → stockage → SQL |
-
-### Erreurs sur gros volumes
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| `table is full` | `DataMemory` ou `IndexMemory` saturé | Augmenter `DataMemory`/`IndexMemory` dans `config.ini` et redémarrer les nœuds de stockage |
-| Swap prolongé | RAM insuffisante pour `DataMemory` + `IndexMemory` | Réduire `DataMemory`/`IndexMemory` ou ajouter de la RAM à la VM |
-| Latence de commit élevée | Goulot disque sur les journaux de redo | Placer les fichiers de cluster sur un disque rapide (SSD) |
-| Saturation du réseau | Trafic de réplication sur le réseau unique | Segreger le trafic de cluster sur un réseau dédié |
-| Auto-sharding inadapté | Un seul node group, charge non répartie | Ajouter des nœuds de stockage pour créer plusieurs node groups et répartir les fragments |
 
 ## Synthèse du chapitre
 

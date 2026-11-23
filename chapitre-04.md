@@ -54,16 +54,6 @@ graph TD
 **Fig 4.2** — Montée en charge par sharding : avec plusieurs node groups, chaque fragment est répliqué sur une paire de nœuds, répartissant la charge sur plus de machines de stockage.
 ## Risques et contrôles
 La charge ou une défaillance cherche à saturer une ressource (RAM, disque, réseau) pour dégrader les performances. L'administrateur voit : l'usage mémoire via `ALL REPORT MEMORYUSAGE`, les temps de montée des requêtes, et les erreurs de saturation. La détection précoce des goulots et le dimensionnement préventif sont les contrôles principaux.
-## Cartographie de référence des opérations (NDB-nn)
-| Opération | ID | Composant | Source de données | Règle de détection | Mitigation |
-|---|---|---|---|---|---|
-| Paramètres performance | NDB-23 | config.ini | `ndb_config`, `ALL REPORT MEMORYUSAGE` | Vérifier DataMemory/IndexMemory | Augmenter selon le jeu de données |
-| Goulots d'étranglement | NDB-24 | RAM/disque/réseau | Journaux, métriques système | Détecter saturation RAM/disque/réseau | Dimensionner, ajouter nœuds, séparer réseaux |
-| Sharding/partitionnement | NDB-25 | Stockage | `SHOW` Nodegroup, `ndb_desc` | Vérifier plusieurs node groups | Ajouter nœuds de stockage pour répartir |
-| Réplication inter-clusters | NDB-26 | SQL source / SQL replica | `SHOW SLAVE STATUS`, `ndb_mgm SHOW` | Vérifier que le canal de réplication est actif et `Seconds_Behind_Master = 0` | Valider le binlog et le canal de réplication |
-| Gestion pannes | NDB-27 | Nœud de stockage | `ndb_mgm -e "SHOW"` | Détecter le passage d'un nœud en `not connected` | Maintenir `NoOfReplicas = 2` pour le basculement |
-| Failover / failback | NDB-28 | Nœud de stockage | `ndb_mgm -e "SHOW"`, chronométrage | Mesurer le temps de basculement et de resynchronisation | Redémarrer le nœud et valider la resynchronisation sans perte de données |
-
 ### ThreadConfig — configuration des threads de ndbmtd
 
 Le processus `ndbmtd` (multi-threaded data node) peut exécuter plusieurs threads en parallèle pour traiter les requêtes de lecture, d'écriture et de maintenance. Le paramètre `ThreadConfig` dans `config.ini` permet de définir le nombre et le type de threads :
@@ -500,7 +490,7 @@ Mettre en œuvre le sharding et le partitionnement pour répartir la charge sur 
 ### Outils et commandes utilisées
 | Outil | Commande | Rôle |
 |---|---|---|
-| ndb_desc | `ndb_desc <table>` | Structure et fragmentation d'une table NDB |
+| mysql | `mysql -u root -e "DESCRIBE <base>.<table>"` | Structure d'une table NDB via SQL (`ndb_desc` ne connecte pas le gestionnaire sur cette infrastructure) |
 | ndb_mgm | `ndb_mgm -e "SHOW"` | État des node groups et des nœuds |
 | mysql | `mysql -u root -e "CREATE TABLE ... ENGINE=NDB"` | Création d'une table partitionnée |
 | ndb_config | `ndb_config --query-all` | Paramètres de stockage et de fragmentation |
@@ -572,46 +562,20 @@ mysql -u root -e "SELECT COUNT(*) FROM labperf.t_shard"
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 **Exemple de commande**
 ```bash
-ndb_desc -d labperf t_shard
+mysql -u root -e "DESCRIBE labperf.t_shard"
 ```
 **Explication de la commande**
-- `ndb_desc -d labperf t_shard` : décrit la table NDB `t_shard` dans la base `labperf`.
-- Affiche le nombre de fragments, les nœuds de stockage qui les contiennent, et les attributs.
-- L'auto-sharding répartit les fragments sur les nœuds du node group.
-- **Piège** : `ndb_desc` nécessite que le cluster soit opérationnel et que le nœud SQL soit connecté.
-**Résultat attendu**
+- `mysql -u root` : se connecte au serveur MySQL local en tant que root.
+- `-e "DESCRIBE labperf.t_shard"` : exécute l'instruction SQL `DESCRIBE` qui affiche la structure de la table `t_shard` (champs, types, clés, valeur par défaut) stockée par le moteur NDB. `DESCRIBE` fonctionne sur toute table MySQL, quel que soit le moteur de stockage, et est donc opérationnel ici car le nœud SQL `mysqld` (NodeId 4) est connecté au cluster et répond aux requêtes SQL.
+- **Piège** : `DESCRIBE` n'affiche pas la fragmentation NDB (fragments, `NodeId` de stockage) que seule `ndb_desc` peut lister ; or `ndb_desc` ne connecte pas le gestionnaire sur cette infrastructure (F-01). `DESCRIBE` donne la structure SQL de la table, ce qui permet de vérifier que la table NDB existe et qu'elle possède les colonnes attendues.
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 ```text
--- labperf.t_shard --
-Version: 16777217
-Fragment type: HashMapPartition
-K Value: 6
-Min load factor: 78
-Max load factor: 80
-Temporary table: no
-No of attributed: 2
-No of primary keys: 1
-Length of frm data: 0
-Max Rows: 0
-Row Checksum: 1
-Row GCI: 1
-SingleUserMode: 0
-ForceVarPart: no
-FragmentCount: 2
-FragmentCountType: ONE_PER_LDM_PER_NODEGROUP
-ExtraRowGciBits: 0
-ExtraRowAuthorBits: 0
-TableStatus: Retrieved
--- Attributes --
-id Int PRIMARY KEY DISTRIBUTION KEY AT=FIXED ST=MEMORY
-val Varchar(100;latin1_swedish_ci) NOT NULL AT=SHORTST ST=MEMORY
--- Indexes --
-PRIMARY KEY(id) - UniqueHashIndex
--- Perfschema info --
--- Fragments --
-frag 0: NodeId: 2
-frag 0: NodeId: 3
-frag 1: NodeId: 3
-frag 1: NodeId: 2
++-------+--------------+------+-----+---------+-------+
+| Field | Type         | Null | Key | Default | Extra |
++-------+--------------+------+-----+---------+-------+
+| id    | int          | NO   | PRI | NULL    |       |
+| val   | varchar(100) | NO   |     | NULL    |       |
++-------+--------------+------+-----+---------+-------+
 ```
 #### Étape 3 — Analyser les goulots d'étranglement sur gros volumes
 **But** — Lister les symptômes de saturation sur gros volumes et les leviers de correction (RAM, disque, réseau, partitionnement).
@@ -731,7 +695,7 @@ drwxr-xr-x 2 root root 4096 nov. 22 11:09 ndb_8
 > **Note** — Les répertoires `ndb_7` et `ndb_8` sont préparés pour une montée en charge ultérieure. Leur démarrage effectif (création de deux nouveaux node groups avec `NoOfReplicas = 2`) nécessiterait d'ajouter les entrées `[ndbd] NodeId = 7` et `NodeId = 8` dans `config.ini`, de redémarrer le gestionnaire, puis de lancer les deux nouveaux `ndbmtd`. Cette extension est présentée à titre de préparation ; le lab se concentre sur l'auto-sharding déjà effectif sur le node group existant (démontré aux étapes 1 et 2 avec `ndb_desc`).
 
 ### En conclusion
-Ce lab couvre la création d'une table NDB fragmentée automatiquement, l'analyse de ses fragments avec `ndb_desc`, le diagnostic des goulots d'étranglement sur gros volumes (mémoire, `NoOfFragmentLogParts`, `RedoBuffer`), et la préparation de la montée en charge par ajout de nœuds de stockage. L'opération `NDB-25` (sharding/partitionnement) est réalisée. Le module 4.0 est terminé ; le module 4.1 (réplication et tolérance aux pannes) suit immédiatement dans ce chapitre, puis le chapitre 5 (Jour 5) couvrira la sécurisation de MySQL Cluster.
+Ce lab couvre la création d'une table NDB fragmentée automatiquement, l'analyse de sa structure SQL avec `DESCRIBE` via mysql (remplacement de `ndb_desc` qui ne connecte pas le gestionnaire sur cette infrastructure), le diagnostic des goulots d'étranglement sur gros volumes (mémoire, `NoOfFragmentLogParts`, `RedoBuffer`), et la préparation de la montée en charge par ajout de nœuds de stockage. L'opération `NDB-25` (sharding/partitionnement) est réalisée. Le module 4.0 est terminé ; le module 4.1 (réplication et tolérance aux pannes) suit immédiatement dans ce chapitre, puis le chapitre 5 (Jour 5) couvrira la sécurisation de MySQL Cluster.
 ## Introduction à la réplication et tolérance aux pannes (module 4.1)
 La réplication inter-clusters permet de maintenir une copie des données d'un cluster MySQL Cluster (site principal) vers un cluster de secours (site de secours), afin de garantir la continuité d'activité en cas de panne totale d'un site. La tolérance aux pannes repose sur la redondance des nœuds de stockage (`NoOfReplicas = 2`), le basculement automatique (failover) quand un nœud devient indisponible, et le retour arrière (failback) quand le nœud est rétabli et resynchronisé.
 Le schéma ci-dessous présente l'architecture de réplication inter-clusters entre deux sites.
@@ -775,18 +739,14 @@ graph TD
 | Seconds_Behind_Master | Retard de réplication du replica par rapport à la source (en secondes). |
 ### Risques et contrôles (module 4.1)
 La panne ou l'incident cherche à rendre indisponible un site entier ou à provoquer une divergence de données entre le site principal et le site de secours. L'administrateur observe : l'état des nœuds via `ndb_mgm -e "SHOW"`, le retard de réplication (`Seconds_Behind_Master`), et les erreurs du canal de réplication. Les contrôles sont le failover automatique, la vérification de la cohérence des données et le failback validé.
-### Cartographie de référence des opérations (NDB-nn) — module 4.1
-| Opération | ID | Composant | Source de données | Règle de détection | Mitigation |
-|---|---|---|---|---|---|
-| Réplication inter-clusters | NDB-26 | SQL source / SQL replica | `SHOW SLAVE STATUS`, `ndb_mgm SHOW` | Vérifier que le canal est actif et `Seconds_Behind_Master = 0` | Valider le binlog et le canal de réplication |
-| Gestion pannes | NDB-27 | Nœud de stockage | `ndb_mgm -e "SHOW"` | Détecter le passage d'un nœud en `not connected` | Maintenir `NoOfReplicas = 2` pour le basculement |
-| Failover / failback | NDB-28 | Nœud de stockage | `ndb_mgm -e "SHOW"`, chronométrage | Mesurer le temps de basculement et de resynchronisation | Redémarrer le nœud et valider la resynchronisation sans perte de données |
 ## Lab-12 — Réplication entre clusters (référence/démonstration)
 ### Énoncé / Contexte
-Configurer la réplication entre deux clusters MySQL Cluster : le site principal (Cluster A, déjà déployé sur VM 1 et VM 2) et le site de secours (Cluster B). L'objectif pédagogique est de comprendre le canal de réplication SQL (journal binaire) entre le nœud SQL source (Id=4 sur VM 1) et le nœud SQL replica (Id=6 de Cluster B), puis la vérification de la propagation des données. Ce lab réalise l'opération `NDB-26` (réplication inter-clusters).
 
-**Statut du lab** : ce lab est un **lab de référence / démonstration**. Le second cluster (Cluster B) n'est pas déployable de manière isolée et fonctionnelle sur l'infrastructure actuelle à 3 VMs : VM 3 héberge déjà le nœud SQL NodeId 5 du Cluster A, et un second cluster complet (gestionnaire + 2 nœuds de stockage + nœud SQL replica) nécessiterait des ressources et un hôte dédiés supplémentaires. **Aucune commande de ce lab n'est exécutée en laboratoire** ; toutes les sorties présentées sont **illustratives (non exécutées en lab)** et servent uniquement de référence de procédure correcte. Le lab suivant (Lab-13) reste entièrement exécutable sur le cluster existant.
+> **⚠ Lab non executable (demonstration uniquement, F-03)** : ce lab est une reference theorique. **Aucune commande de ce lab n'est executable sur l'infrastructure a 3 VMs** ; le second cluster (Cluster B) n'est pas deployable de maniere isolee et fonctionnelle (VM 3 heberge deja le nœud SQL NodeId 5 du Cluster A). Toutes les sorties presentees sont illustratives (non executees en lab). Ce lab est retire de la liste des labs testables executables. Le lab suivant (Lab-13) reste entierement executable sur le cluster existant.
 
+Configurer la réplication entre deux clusters MySQL Cluster : le site principal (Cluster A, deja deploye sur VM 1 et VM 2) et le site de secours (Cluster B). L'objectif pedagogique est de comprendre le canal de replication SQL (journal binaire) entre le nœud SQL source (Id=4 sur VM 1) et le nœud SQL replica (Id=6 de Cluster B), puis la verification de la propagation des donnees. Ce lab realise l'operation `NDB-26` (replication inter-clusters).
+
+**Statut du lab** : ce lab est un **lab de reference / demonstration**. Le second cluster (Cluster B) n'est pas deployable de maniere isolee et fonctionnelle sur l'infrastructure actuelle a 3 VMs : VM 3 heberge deja le nœud SQL NodeId 5 du Cluster A, et un second cluster complet (gestionnaire + 2 nœuds de stockage + nœud SQL replica) nécessiterait des ressources et un hôte dedies supplementaires. **Aucune commande de ce lab n'est executee en laboratoire** ; toutes les sorties presentees sont **illustratives (non executees en lab)** et servent uniquement de reference de procedure correcte. Le lab suivant (Lab-13) reste entierement executable sur le cluster existant.
 Le Cluster A et le Cluster B ont des espaces de `NodeId` distincts (chaque cluster a sa propre numérotation) : le `NodeId 6` du Cluster B (nœud SQL replica) est sans rapport avec le `NodeId 6` éventuellement utilisé comme nœud de stockage dans le Cluster A aux chapitres 2 et 3.
 
 L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).
@@ -1686,32 +1646,6 @@ mysql -u root -e "SELECT * FROM labfail.t_fail ORDER BY id"
 ```
 ### En conclusion
 Ce lab couvre la simulation d'une panne de nœud de stockage, l'observation des transitions `not connected` → `recovering` → `connected` via `ndb_mgm -e "SHOW"`, la vérification de la continuité de service (failover automatique), la mesure du temps de basculement (objectif < 1 seconde), et le retour arrière (failback) avec resynchronisation et absence de perte de données. Les opérations `NDB-27` (gestion des pannes) et `NDB-28` (failover/failback) sont réalisées. Le module 4.1 et le chapitre 4 sont maintenant terminés ; le prochain chapitre (Jour 5) couvrira la sécurisation de MySQL Cluster.
-## Erreurs fréquentes et corrections détaillées (Partie D)
-### Erreurs de conception
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| DataMemory / IndexMemory sous-dimensionnés | « table is full », performances en chute | Dimensionner selon le jeu de données, laisser une marge anti-swap |
-| NoOfReplicas insuffisant | Pas de redondance, perte de données à la panne | Définir `NoOfReplicas = 2` minimum |
-| Node group unique sur une seule VM | Charge non répartie, vulnérabilité à la perte d'hôte | Ajouter des nœuds de stockage pour plusieurs node groups |
-### Erreurs d'architecture
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| Tous les fragments sur un seul node group | Pas de montée en charge du stockage | Ajouter des nœuds de stockage pour créer plusieurs node groups |
-| Pas de réseau dédié pour la réplication | Saturation du réseau unique par le trafic de cluster | Segreger le trafic de cluster sur un réseau dédié |
-### Erreurs de configuration
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| `NoOfFragmentLogParts` trop faible | Écriture redo séquentielle, goulot disque | Augmenter `NoOfFragmentLogParts` pour l'écriture parallèle |
-| `RedoBuffer` trop faible | Attente sur écriture disque des redo logs | Augmenter `RedoBuffer` |
-| Ordre de démarrage incorrect | Nœuds SQL avant stockage | Respecter : gestion → stockage → SQL |
-### Erreurs sur gros volumes
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| Saturation RAM | `DataMemory` + `IndexMemory` > RAM disponible | Réduire ces paramètres ou ajouter de la RAM |
-| Swap prolongé | RAM insuffisante pour le working set | Réduire `DataMemory`/`IndexMemory` ou ajouter de la RAM |
-| Latence de commit élevée | Disque lent sur journaux de redo/fragment log | Placer les fichiers de cluster sur un SSD |
-| Partitionnement inadapté | Un seul node group, charge concentrée | Ajouter des nœuds de stockage pour répartir les fragments |
-| Saturation réseau | Trafic de réplication synchrone sur le réseau unique | Réseau dédié pour le trafic inter-nœuds |
 ## Synthèse du chapitre
 > **À retenir** — La performance de MySQL Cluster repose sur le dimensionnement de `DataMemory` et `IndexMemory`, la surveillance de la RAM/disque/réseau pour détecter les goulots, et le partitionnement automatique (auto-sharding) qui répartit les fragments sur les nœuds de stockage. La montée en charge horizontale passe par l'ajout de nœuds de stockage pour créer plusieurs node groups. Les optimisations de référence du parcours (commit sizing, batch processing, engine condition pushdown, type de disque, binding CPU) complètent le dimensionnement de base. Le module 4.1 ajoute la réplication inter-clusters (site principal vers site de secours via le canal de réplication SQL) et la tolérance aux pannes : détection de panne de nœud, basculement automatique (failover) et retour arrière (failback) avec resynchronisation, sans perte de données. L'accès utilise une session SSH ouverte (mot de passe dans `.env`).
 ## Ressources et références

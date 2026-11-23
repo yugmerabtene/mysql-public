@@ -176,9 +176,56 @@ Le split-brain est prévenu par l'arbitrage : le nœud de gestion agit comme arb
 ### Figure 6 — Topologie région unique vs multi-région (illustration du quorum et du split-brain)
 
 ![Figure 6 : Topologie région unique vs multi-région](image-16.png)
+
+```mermaid
+graph TD
+    GM["Nœud de gestion (arbitre, NodeId 1)"] <==> DS1["Nœud de stockage NodeId 2"]
+    DS1 <==> DS2["Nœud de stockage NodeId 3"]
+    DS2 <==> GM
+    Quorum["Quorum : (N/2) + 1 = 2 sur 3"]:::q
+    GM --> Quorum
+    DS1 --> Quorum
+    DS2 --> Quorum
+    Split["Split-brain : partition réseau"]:::sb
+    GM -.->|panne réseau| Split
+    DS1 -.->|panne réseau| Split
+    DS2 -.->|panne réseau| Split
+    Maj["Majorité garde l'arbitre : reste active"]:::ok
+    Min["Minorité : fige, pas d'écriture"]:::ko
+    Split --> Maj
+    Split --> Min
+    classDef q fill:#e3f2fd,stroke:#1565c0;
+    classDef sb fill:#ffebee,stroke:#c62828;
+    classDef ok fill:#e8f5e9,stroke:#2e7d32;
+    classDef ko fill:#fff3e0,stroke:#ef6c00;
+```
+
+### Figure 7 — Topologie multi-région 3 sites (Régions A, B, C)
+
 ![Figure 7 : Topologie multi-région 3 sites (Régions A, B, C)](image-17.png)
 
-*Figures 6 et 7 : ces illustrations présentent le concept de topologie région unique (Single Region) versus topologie multi-région (Multi Region) avec plusieurs régions (A, B, C). Elles illustrent le principe de quorum réparti sur plusieurs sites : un cluster déployé sur plusieurs régions peut continuer à fonctionner si une région entière tombe en panne, à condition qu'une majorité de nœuds reste joignable. Dans le lab NDB sur 3 VM (toutes sur le même réseau vboxnet0), le quorum est assuré localement par le nœud de gestion + le nœud de stockage restant ; il n'y a pas de réplica distant ni de ClusterSet. Ces images illustrent le principe général de quorum et de résilience géographique, à contraster avec le failover intra-node-group du lab.*
+```mermaid
+graph TD
+    subgraph RA["Région A"]
+        A1["Nœud de gestion + SQL"]
+        A2["Nœud de stockage"]
+    end
+    subgraph RB["Région B"]
+        B1["Nœud de stockage"]
+        B2["Nœud SQL"]
+    end
+    subgraph RC["Région C"]
+        C1["Nœud de stockage"]
+    end
+    RA <==> RB
+    RB <==> RC
+    RC <==> RA
+    QMR["Quorum multi-région : majorité sur les 3 sites"]:::q
+    RA --> QMR
+    RB --> QMR
+    RC --> QMR
+    classDef q fill:#e3f2fd,stroke:#1565c0;
+```
 
 **Lien avec le concept** : illustration du quorum (N/2 + 1) et du split-brain à l'échelle multi-région, concepts fondements de la résilience des clusters distribués.
 
@@ -186,9 +233,20 @@ Le split-brain est prévenu par l'arbitrage : le nœud de gestion agit comme arb
 
 ### Figure 8 — Cycle de failover et réintégration d'un nœud de stockage
 
-![Figure 8 : Cycle de failover — détection, basculement, resynchronisation, réintégration](image-16.png)
+![Figure 8 : Cycle de failover — détection, basculement, resynchronisation, réintégration](image-15.png)
 
-*Figure 8 : illustration du cycle de failover. À gauche, l'état normal avec les deux nœuds de stockage actifs. Au centre, la panne d'un nœud détectée par le nœud de gestion via heartbeat. À droite, le basculement automatique sur la réplica restante, puis la resynchronisation à chaud du nœud redémarré et sa réintégration dans le cluster, sans interruption de service.*
+```mermaid
+stateDiagram-v2
+    [*] --> E1
+    E1["État normal"] --> E2["Détection"] : panne détectée (heartbeat perdu)
+    E2 --> E3["Basculement"] : bascule sur réplica restante
+    E3 --> E4["Resynchronisation"] : rattrapage à chaud
+    E4 --> E5["Réintégration"] : nœud réintègre le cluster
+    E5 --> E1
+    note right de E2 : le nœud de gestion marque not connected
+    note right de E3 : les opérations SQL basculent automatiquement
+    note right de E4 : pas d'interruption de service
+```
 
 **Lien avec le concept** : le failover automatique, le quorum (N/2 + 1) et l'arbitrage par le nœud de gestion sont les fondements de la résilience du cluster NDB.
 
@@ -418,19 +476,6 @@ Les architectures de type partagé-nothing (shared-nothing) avec réplication sy
 Ces principes justifient le choix de `NoOfReplicas = 2`, l'ordre de démarrage strict (gestion → stockage → SQL), et l'arbitrage par le nœud de gestion pour prévenir le split-brain. Ils s'appliquent directement aux systèmes critiques à haut volume où l'indisponibilité a un impact métier immédiat.
 
 > **Partagé-nothing (shared-nothing) :** ce n'est pas une erreur, c'est le terme technique de l'architecture NDB Cluster. Cela signifie que chaque nœud possède sa propre mémoire vive et ses propres disques, sans rien partager avec les autres nœuds. Les données sont fragmentées et répliquées sur plusieurs nœuds de stockage indépendants, ce qui élimine tout point de défaillance unique (single point of failure).
-
-## Cartographie de référence des opérations (NDB-nn)
-
-Le tableau ci-dessous classe les opérations de ce chapitre selon le référentiel standard du parcours (syllabus, Jour 1, modules 1.0 et 1.1). Chaque opération cite son identifiant de référence, sa source de données, sa règle de détection et sa mitigation.
-
-| Opération | ID | Composant | Source de données | Règle de détection | Mitigation |
-|---|---|---|---|---|---|
-| Présentation des composants | NDB-01 | Architecture | Schéma Fig 1.1, `ndb_mgm SHOW` | Vérifier la présence des trois types de nœuds | Documenter l'architecture avant toute installation |
-| Études de cas | NDB-02 | Usage critique | Systèmes critiques (téléphonie, finance, logistique, 99,999 %) | Identifier les charges à haute disponibilité | Réserver MySQL Cluster aux cas critiques |
-| Installation des composants | NDB-03 | Tous les nœuds | Sortie `dpkg -l`, commande `which` | Vérifier la présence de `ndb_mgmd`, `ndbmtd`, `mysqld` | Installer depuis le dépôt officiel MySQL |
-| Configuration initiale | NDB-04 | Nœud de gestion | Fichier `config.ini` | Vérifier que `ndb_mgmd` démarre sans erreur | Sauvegarder `config.ini` avant toute modification |
-| Dimensionnement résilience | NDB-08 | Stockage | `config.ini`, `ndb_mgm SHOW` | Vérifier `NoOfReplicas = 2` et un seul node group (Nodegroup: 0) | Définir `NoOfReplicas = 2` avant le premier démarrage |
-| Vérification d'intégrité | NDB-05 | Cluster entier | `ndb_mgm -e "SHOW"` | Alerte si un nœud apparaît `not connected` | Redémarrer dans l'ordre : gestion, stockage, SQL |
 
 ## Plan d'installation maître
 

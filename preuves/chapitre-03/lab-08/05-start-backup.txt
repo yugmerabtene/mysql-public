@@ -1,0 +1,11 @@
+# date: 2026-11-23 15:25:44
+# cmd: ndb_mgm -e 'START BACKUP'
+# rc= 0
+
+Connected to Management Server at: localhost:1186
+Waiting for completed, this may take several minutes
+Node 3: Backup 6 started from node 1
+Node 3: Backup 6 started from node 1 completed
+ StartGCP: 10440 StopGCP: 10443
+ #Records: 33 #LogRecords: 0
+ Data: 4764 bytes Log: 0 bytes

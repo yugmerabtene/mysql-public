@@ -83,15 +83,6 @@ Lorsqu'une sauvegarde est lancée, NDB s'assure qu'elle s'appuie sur un GCP réc
 
 **PITR conceptuel (Point-in-Time Recovery)** : NDB ne propose pas de PITR natif à la granularité de la transaction comme certains moteurs basés sur un journal binaire. La restauration avec `ndb_restore` revient à l'état de la sauvegarde choisie. Pour une reprise à un instant précis, il faut combiner une sauvegarde complète avec les binaires de redo appliqués manuellement — ce qui n'est pas mis en œuvre dans les Labs 1 à 3 du parcours.
 
-## Cartographie de référence des opérations (NDB-nn)
-
-| Opération | ID | Composant | Source de données | Règle de détection | Mitigation |
-|---|---|---|---|---|---|
-| Outils de supervision | NDB-16 | Cluster | `ndb_mgm`, `ndb_config`, `ndb_desc` | Vérifier la disponibilité des outils | Installer les paquets de gestion sur le nœud MGM |
-| Tâches de maintenance | NDB-17 | Cluster | Journaux `ndbmtd_*.log`, `SHOW` | Détecter un nœud absent ou une mémoire saturée | Planifier la maintenance à chaud |
-| Sauvegarde/restauration | NDB-18 | Données | `START BACKUP`, `ndb_restore` | Vérifier qu'un BACKUP est créé et restaurable | Tester la restauration régulièrement |
-| Remplacement nœud | NDB-19 | Stockage | `SHOW`, remplacement physique | Détecter un nœud défaillant et le remplacer | Procédure documentée de remplacement sans arrêt |
-
 ## Lab-07 — Outils de supervision, alertes ndb_mgm et surveillance
 
 ### Énoncé / Contexte
@@ -104,7 +95,7 @@ Utiliser les outils de supervision du cluster : lister les nœuds, interroger la
 |---|---|---|
 | ndb_mgm | `ndb_mgm -e "SHOW"` | État des nœuds du cluster |
 | ndb_config | `ndb_config --query-all` | Configuration effective des nœuds |
-| ndb_desc | `ndb_desc <table>` | Structure d'une table NDB |
+| mysql | `mysql -u root -e "DESCRIBE <base>.<table>"` | Structure d'une table NDB via SQL (`ndb_desc` ne connecte pas le gestionnaire sur cette infrastructure) |
 | ndb_mgm | `ndb_mgm -e "ALL REPORT MEMORYUSAGE"` | Usage mémoire Data/Index |
 
 ### Commande et laboratoire étape par étape
@@ -213,44 +204,24 @@ Query OK, 0 rows affected (0.05 sec)
 **Exemple de commande**
 
 ```bash
-ndb_desc -d labndb t_ndb_desc
+mysql -u root -e "DESCRIBE labndb.t_ndb_desc"
 ```
 
 **Explication de la commande**
 
-- `ndb_desc -d labndb t_ndb_desc` : décrit la table NDB `t_ndb_desc` dans la base `labndb` (fragments, attributs, index, nœuds de stockage qui la contiennent).
-- Le résultat affiche le nombre de fragments, les `NodeId` de stockage qui les contiennent, et les attributs de la table.
-- **Piège** : `ndb_desc` nécessite que le cluster soit opérationnel et que le nœud SQL soit connecté au gestionnaire.
+- `mysql -u root` : se connecte au serveur MySQL local en tant que root.
+- `-e "DESCRIBE labndb.t_ndb_desc"` : exécute l'instruction SQL `DESCRIBE` qui affiche la structure de la table `t_ndb_desc` (champs, types, clés, valeur par défaut) stockée par le moteur NDB. `DESCRIBE` fonctionne sur toute table MySQL, quel que soit le moteur de stockage, et est donc opérationnel ici car le nœud SQL `mysqld` (NodeId 4) est connecté au cluster et répond aux requêtes SQL.
+- **Piège** : `DESCRIBE` n'affiche pas la fragmentation NDB (fragments, `NodeId` de stockage) que seule `ndb_desc` peut lister ; or `ndb_desc` ne connecte pas le gestionnaire sur cette infrastructure (F-01). `DESCRIBE` donne la structure SQL de la table, ce qui permet de vérifier que la table NDB existe et qu'elle possède les colonnes attendues.
 
-**Résultat attendu** (résultat réaliste de `ndb_desc`, exécuté sur VM 1 gestion-sql avec le cluster opérationnel, rc=0)
+**Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
--- table t_ndb_desc --
-Version: 16777217
-Fragment type: Fragmented by PRIMARY KEY
-K Value: 6
-Min load factor: 78
-Max load factor: 80
-Temporary table: no
-Number of attributes: 2
-Number of primary keys: 1
-Length of frm data: 0
-Row Checksum: 1
-Row GCI: 1
-SingleUserMode: 0
-ForceVarPart: 1
-FragmentCount: 2
-TableStatus: Retrieved
--- attributes --
-id Int PRIMARY KEY DISTRIBUTION KEY AT=FIXED ST=MEMORY
-val Varchar(100;latin1_swedish_ci) NOT NULL AT=FIXED ST=MEMORY
--- indexes --
-PRIMARY KEY(id) - UniqueHashIndex
--- per partition info --
-Partition	Row count	Commit count	Fragment fixed Max size
-0		2		2		1048576
-1		2		2		1048576
-NDBT_ProgramExit: 0
++-------+--------------+------+-----+---------+-------+
+| Field | Type         | Null | Key | Default | Extra |
++-------+--------------+------+-----+---------+-------+
+| id    | int          | NO   | PRI | NULL    |       |
+| val   | varchar(100) | NO   |     | NULL    |       |
++-------+--------------+------+-----+---------+-------+
 ```
 
 #### Étape 4 — Détecter un nœud en état not connected (alerte)
@@ -1116,9 +1087,20 @@ binaires mcm absents
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Explication de la démonstration théorique**
+**Exemple de commande**
 
-- **Installation MCM** : il faudrait installer le paquet `mysql-cluster-manager` sur chaque VM depuis le dépôt MySQL/Oracle (nécessite un accès réseau vers le dépôt, donc l'adaptateur NAT temporaire uniquement pendant l'installation des paquets, et une licence Oracle).
+```bash
+echo 'Demonstration theorique MCM : aucune commande mcm/mcmd n est executee sur cette infrastructure'
+```
+
+**Explication de la commande**
+
+- `echo ...` : affiche le constat que MySQL Cluster Manager n'est pas installable sur l'infrastructure actuelle (pas de binaires `mcm`/`mcmd`, pas de licence Oracle, pas d'accès Internet permanent sur les VM).
+- Les commandes `mcm`, `mcmd`, `create cluster`, `start cluster` decrites ci-dessous sont purement theorique et ne sont pas executees sur les VM.
+
+**Explication de la demonstration theorique**
+
+- **Installation MCM** : il faudrait installer le paquet `mysql-cluster-manager` sur chaque VM depuis le depot MySQL/Oracle (necessite un acces reseau vers le depot, donc l'adaptateur NAT temporaire uniquement pendant l'installation des paquets, et une licence Oracle).
 - **Démarrage des agents** : sur chaque VM, lancer `mcmd --nodeid=<n> --manager-server=192.168.56.10` en arrière-plan. Un agent par VM permet à MCM de piloter tous les nœuds. *Non exécuté : binaire `mcmd` introuvable.*
 - **Création d'un cluster** : via le client `mcm -u admin -p <pass>`, exécuter `create cluster <nom>; add process ndb_mgmd 192.168.56.10; add process ndbmtd 192.168.56.11; add process mysqld 192.168.56.10; add process mysqld 192.168.56.12; start cluster <nom>;`. *Non exécuté : commande `mcm` introuvable.*
 - **Interrogation/modification** : `get NoOfReplicas cluster <nom>`, `set NoOfReplicas=2 cluster <nom>`, `show status cluster <nom>`. *Non exécutés : commande `mcm` introuvable.*
@@ -1134,40 +1116,6 @@ Démonstration théorique uniquement : aucune commande mcm/mcmd exécutée (bina
 
 Ce lab est consacré à MySQL Cluster Manager (MCM). Les opérations `NDB-20` (installation des agents MCM), `NDB-21` (création de clusters) et `NDB-22` (gestion des clusters) sont présentées en démonstration théorique uniquement : les binaires `mcm`/`mcmd` sont absents de l'infrastructure actuelle et indisponibles sans licence Oracle, aucune commande `mcm` ni `mcmd` n'a pu être exécutée. Le chapitre 3 est terminé ; le prochain chapitre (Jour 4) couvrira l'optimisation, les performances et la scalabilité.
 
-## Erreurs fréquentes et corrections détaillées (Partie D)
-
-### Erreurs de conception
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| `NoOfReplicas = 1` | Pas de redondance ; perte d'un nœud de stockage = perte de données | Définir `NoOfReplicas = 2` avant le premier démarrage |
-| DataMemory / IndexMemory sous-dimensionnés | Refus d'insertion (« table is full ») | Dimensionner selon le jeu de données, laisser une marge anti-swap |
-| Sauvegarde non testée | Restauration impossible en cas de sinistre | Tester `ndb_restore` régulièrement sur un cluster de recette |
-
-### Erreurs d'architecture
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| Pas de nœud de gestion de secours | Single point of failure sur le gestionnaire | Prévoir un second nœud de gestion |
-| Tous les nœuds sur une seule VM | Perte de l'hôte = perte du cluster | Distribuer les nœuds sur des hôtes distincts |
-| Sauvegardes sur le même disque que les données | Perte disque = perte données + sauvegardes | Séparer les disques de données et de sauvegarde |
-
-### Erreurs de configuration
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| `ndb_mgm` ne voit aucun nœud | `ndb_mgmd` pas démarré ou connect-string erroné | Démarrer `ndb_mgmd` en premier, vérifier `--ndb-connectstring` |
-| `START BACKUP` échoue | Espace disque insuffisant sur un nœud de stockage | Libérer de l'espace ou augmenter le disque des nœuds de stockage |
-| `ndb_restore` rejette la restauration | Table cible absente ou moteur non NDB | Créer la table avec `ENGINE=NDB` avant la restauration |
-| Agent MCM absent sur un nœud | `mcmd` pas installé/lancé sur cette VM | Installer et démarrer `mcmd` sur chaque nœud du cluster |
-
-### Erreurs sur gros volumes
-
-| Symptôme | Cause probable | Correction |
-|---|---|---|
-| Sauvegarde très longue | Volume de données important sur un réseau lent | Segreger le trafic de sauvegarde sur un réseau dédié |
-| Restauration partielle | Fichiers de sauvegarde manquants sur un nœud | Vérifier que `BACKUP/` existe sur chaque nœud de stockage avant de restaurer |
-| Mémoire saturée pendant restauration | `DataMemory` insuffisant pour réinjecter les données | Augmenter `DataMemory` avant la restauration |
 
 ## Synthèse du chapitre
 
