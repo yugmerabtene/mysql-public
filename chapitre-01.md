@@ -243,9 +243,9 @@ stateDiagram-v2
     E3 --> E4["Resynchronisation"] : rattrapage à chaud
     E4 --> E5["Réintégration"] : nœud réintègre le cluster
     E5 --> E1
-    note right de E2 : le nœud de gestion marque not connected
-    note right de E3 : les opérations SQL basculent automatiquement
-    note right de E4 : pas d'interruption de service
+    note right of E2 : le nœud de gestion marque not connected
+    note right of E3 : les opérations SQL basculent automatiquement
+    note right of E4 : pas d'interruption de service
 ```
 
 **Lien avec le concept** : le failover automatique, le quorum (N/2 + 1) et l'arbitrage par le nœud de gestion sont les fondements de la résilience du cluster NDB.
