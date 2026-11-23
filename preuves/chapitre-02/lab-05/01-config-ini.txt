@@ -1,0 +1,36 @@
+# date: 2026-11-23 00:06:21 UTC
+# host: 192.168.56.10
+# cmd: cat /var/lib/mysql-cluster/config.ini
+[ndb_mgmd default]
+DataDir = /var/lib/mysql-cluster
+
+[ndbd default]
+NoOfReplicas = 2
+DataMemory = 512M
+IndexMemory = 256M
+
+[tcp default]
+
+[ndb_mgmd]
+NodeId = 1
+HostName = 192.168.56.10
+DataDir = /var/lib/mysql-cluster
+
+[ndbd]
+NodeId = 2
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_2
+
+[ndbd]
+NodeId = 3
+HostName = 192.168.56.11
+DataDir = /var/lib/mysql-cluster/ndb_3
+
+[mysqld]
+NodeId = 4
+HostName = 192.168.56.10
+
+[mysqld]
+NodeId = 5
+
+# rc=0

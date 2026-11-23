@@ -1,0 +1,6 @@
+# date: 2026-11-23 00:13:57 UTC
+# host: 192.168.56.10
+# cmd: ip route show default || echo 'aucune route par defaut'
+default via 192.168.56.1 dev enp0s8 proto static 
+default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric 100 
+# rc=0

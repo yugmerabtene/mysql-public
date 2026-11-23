@@ -1,0 +1,5 @@
+# date: 2026-11-23 00:06:30 UTC
+# host: 192.168.56.10
+# cmd: kill 48787; sleep 3; pgrep -a mysqld || echo 'mysqld arrete sur VM1'
+mysqld arrete sur VM1
+# rc=0

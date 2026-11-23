@@ -1,0 +1,7 @@
+# date: 2026-11-23 00:13:55 UTC
+# host: 192.168.56.10
+# cmd: mysql -u root -e "SHOW GRANTS FOR 'app_user'@'192.168.56.%'"
+Grants for app_user@192.168.56.%
+GRANT USAGE ON *.* TO `app_user`@`192.168.56.%`
+GRANT SELECT, INSERT, UPDATE, DELETE ON `labperf`.* TO `app_user`@`192.168.56.%`
+# rc=0

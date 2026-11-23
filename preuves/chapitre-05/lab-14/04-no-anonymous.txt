@@ -1,0 +1,6 @@
+# date: 2026-11-23 00:13:56 UTC
+# host: 192.168.56.10
+# cmd: mysql -u root -e "SELECT User, Host FROM mysql.user WHERE User='' OR authentication_string=''"
+User	Host
+root	localhost
+# rc=0

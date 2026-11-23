@@ -118,7 +118,7 @@ Progression :
 3. **Autonome** : objectif et critères de réussite seulement.
 4. **Variante** : changement de machine, de port, de service ou de protection.
 
-Chaque exercice précise : objectif, entrée, sortie attendue, critère de réussite, durée du lab.
+Chaque exercice précise : objectif, entrée, sortie attendue, critère de réussite. Aucune durée de lab n'est spécifiée (interdite dans les chapitres).
 
 ### Solution intégrée
 
@@ -466,7 +466,11 @@ Question de vérification :
 - Corriger sans versionner ni documenter.
 - Modifier une commande sans refaire le self-test.
 
-## 12. Règle finale
+## 13. Règle d'interdiction des durées dans les chapitres
+
+Aucune mention de durée estimée, d'heures de lab, de planning temporel ou de "X heures" n'est autorisée dans les chapitres 1 à 5 ni dans aucun lab. La durée est laissée à l'appréciation de l'apprenant. Toute section "Durée estimée" doit être supprimée ou remplacée par une mention neutre sans durée (ex. "Durée : non spécifiée (à adapter selon le rythme de l'apprenant)").
+
+## 14. Règle finale
 
 Une démonstration de configuration n'est valide que si elle est reproductible dans le lab, détectable,
 corrigeable et rédigée selon le style commun (skill `common`, section 14) : français clair,

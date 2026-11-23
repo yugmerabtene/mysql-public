@@ -1,0 +1,10 @@
+# date: 2026-11-23 00:05:19 UTC
+# host: 192.168.56.10
+# cmd: ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
+Connected to Management Server at: localhost:1186
+Node 2: Data usage is 0%(26 32K pages of total 24576)
+Node 2: Index usage is 0%(8 32K pages of total 24558)
+Node 3: Data usage is 0%(26 32K pages of total 24575)
+Node 3: Index usage is 0%(9 32K pages of total 24558)
+
+# rc=0

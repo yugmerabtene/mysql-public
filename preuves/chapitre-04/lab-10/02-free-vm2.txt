@@ -1,0 +1,7 @@
+# date: 2026-11-23 00:12:42 UTC
+# host: 192.168.56.11
+# cmd: free -m
+               total        used        free      shared  buff/cache   available
+Mem:            1382        1300         107           0          99          81
+Swap:           2047        2003          44
+# rc=0

@@ -1,0 +1,64 @@
+# date: 2026-11-23 00:05:19 UTC
+# host: 192.168.56.10
+# cmd: mysql -u root -e 'SHOW ENGINE NDB STATUS\G' 2>&1
+*************************** 1. row ***************************
+  Type: ndbclus
+  Name: connection
+Status: cluster_node_id=4, connected_host=192.168.56.10, connected_port=1186, number_of_data_nodes=2, number_of_ready_data_nodes=2, connect_count=1
+*************************** 2. row ***************************
+  Type: ndbclus
+  Name: NdbTransaction
+Status: created=2, free=2, sizeof=392
+*************************** 3. row ***************************
+  Type: ndbclus
+  Name: NdbOperation
+Status: created=4, free=4, sizeof=944
+*************************** 4. row ***************************
+  Type: ndbclus
+  Name: NdbIndexScanOperation
+Status: created=0, free=0, sizeof=1160
+*************************** 5. row ***************************
+  Type: ndbclus
+  Name: NdbIndexOperation
+Status: created=0, free=0, sizeof=952
+*************************** 6. row ***************************
+  Type: ndbclus
+  Name: NdbRecAttr
+Status: created=0, free=0, sizeof=88
+*************************** 7. row ***************************
+  Type: ndbclus
+  Name: NdbApiSignal
+Status: created=16, free=16, sizeof=144
+*************************** 8. row ***************************
+  Type: ndbclus
+  Name: NdbLabel
+Status: created=0, free=0, sizeof=200
+*************************** 9. row ***************************
+  Type: ndbclus
+  Name: NdbBranch
+Status: created=0, free=0, sizeof=32
+*************************** 10. row ***************************
+  Type: ndbclus
+  Name: NdbSubroutine
+Status: created=0, free=0, sizeof=72
+*************************** 11. row ***************************
+  Type: ndbclus
+  Name: NdbCall
+Status: created=0, free=0, sizeof=24
+*************************** 12. row ***************************
+  Type: ndbclus
+  Name: NdbBlob
+Status: created=0, free=0, sizeof=600
+*************************** 13. row ***************************
+  Type: ndbclus
+  Name: NdbReceiver
+Status: created=0, free=0, sizeof=128
+*************************** 14. row ***************************
+  Type: ndbclus
+  Name: NdbLockHandle
+Status: created=0, free=0, sizeof=48
+*************************** 15. row ***************************
+  Type: ndbclus
+  Name: binlog
+Status: latest_epoch=36124969926669, latest_trans_epoch=19142669238285, latest_received_binlog_epoch=0, latest_handled_binlog_epoch=27457725923336, latest_applied_binlog_epoch=0
+# rc=0

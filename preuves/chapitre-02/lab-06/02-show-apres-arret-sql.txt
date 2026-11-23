@@ -1,0 +1,18 @@
+# date: 2026-11-23 00:06:37 UTC
+# host: 192.168.56.10
+# cmd: ndb_mgm -e 'SHOW'
+Connected to Management Server at: localhost:1186
+Cluster Configuration
+---------------------
+[ndbd(NDB)]	2 node(s)
+id=2	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
+id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0, *)
+
+[ndb_mgmd(MGM)]	1 node(s)
+id=1	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
+
+[mysqld(API)]	2 node(s)
+id=4 (not connected, accepting connect from 192.168.56.10)
+id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
+
+# rc=0

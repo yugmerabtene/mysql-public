@@ -1,0 +1,5 @@
+# date: 2026-11-23 00:06:58 UTC
+# host: 192.168.56.11
+# cmd: which mcm mcmd || echo 'binaires mcm absents'
+binaires mcm absents
+# rc=0

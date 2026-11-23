@@ -1,0 +1,4 @@
+# date: 2026-11-23 00:06:40 UTC
+# host: 192.168.56.10
+# cmd: nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld_restart.log 2>&1 &
+# rc=0

@@ -1,0 +1,5 @@
+# date: 2026-11-23 00:10:52 UTC
+# host: 192.168.56.10
+# cmd: ndb_desc --ndb-connectstring=192.168.56.10:1186 --connect-retry-delay=2 -d labndb t_ndb_desc 2>&1
+Unable to connect to management server.
+# rc=1

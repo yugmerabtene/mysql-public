@@ -1,0 +1,9 @@
+# date: 2026-11-23 00:05:10 UTC
+# host: 192.168.56.12
+# cmd: dpkg -l | grep -i -E 'mysql-cluster|ndb' || echo 'aucun paquet mysql-cluster'
+ii  mysql-cluster-community-client         8.0.50-1ubuntu24.04                              amd64        MySQL Client
+ii  mysql-cluster-community-client-core    8.0.50-1ubuntu24.04                              amd64        MySQL Client Core Binaries
+ii  mysql-cluster-community-client-plugins 8.0.50-1ubuntu24.04                              amd64        MySQL Client plugin
+iF  mysql-cluster-community-server         8.0.50-1ubuntu24.04                              amd64        MySQL Server
+ii  mysql-cluster-community-server-core    8.0.50-1ubuntu24.04                              amd64        MySQL Server Core Binaries
+# rc=0

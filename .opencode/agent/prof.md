@@ -143,3 +143,7 @@ viennent du livre, pas de mémoire. Règle complète : skill `common`, section 1
 - Chaque affirmation factuelle des cours et des labs est sourcée : commande testée,
   fichier lu ou page citée ; aucune phrase inventée.
 - Checklist qualité complète : skill `common`, section 13.
+
+## Règle d'interdiction des durées dans les chapitres
+
+Aucune mention de durée estimée, d'heures de lab, de planning temporel ou de "X heures" n'est autorisée dans les chapitres 1 à 5 ni dans aucun lab. La durée est laissée à l'appréciation de l'apprenant. Toute section "Durée estimée" doit être supprimée ou remplacée par une mention neutre sans durée (ex. "Durée : non spécifiée (à adapter selon le rythme de l'apprenant)").

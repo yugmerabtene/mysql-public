@@ -1,0 +1,8 @@
+# date: 2026-11-23 00:05:02 UTC
+# host: 192.168.56.10
+# cmd: hostname; date; whoami; ip -br addr show enp0s8
+gestion-sql
+lun. 23 nov. 2026 00:05:02 UTC
+root
+enp0s8           UP             192.168.56.10/24 fe80::a00:27ff:fef7:44ec/64 
+# rc=0

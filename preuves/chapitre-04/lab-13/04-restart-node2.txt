@@ -1,0 +1,4 @@
+# date: 2026-11-23 00:13:24 UTC
+# host: 192.168.56.11
+# cmd: cd /var/lib/mysql-cluster/ndb_2 && nohup ndbmtd --ndb-connectstring=192.168.56.10 > /tmp/ndbmtd_failback.log 2>&1 &
+# rc=0

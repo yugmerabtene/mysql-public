@@ -245,7 +245,7 @@ En cas de blocage : `student` alerte, `prof` corrige, `orchestrator` décide de 
 ## 12. Checklist qualité
 
 - [ ] Périmètre explicite et respecté.
-- [ ] Objectif et durée annoncés.
+- [ ] Objectif annoncé (aucune durée estimée ni heure de lab n'est autorisée dans les chapitres).
 - [ ] Prérequis vérifiés.
 - [ ] Cours rédigé et compréhensible sans prérequis implicite.
 - [ ] Lab et exercices rédigés.
@@ -640,7 +640,7 @@ Machines du lab (VMs, IP), réseau isolé du laboratoire (sous-réseau défini d
 
 ## Durée estimée
 
-Durée totale, puis durée par lab.
+Interdite dans les chapitres. Aucune mention de durée estimée, d'heures de lab ou de planning temporel n'est autorisée dans les chapitres 1 à 5. La durée est laissée à l'appréciation de l'apprenant.
 
 ## Prérequis
 
@@ -719,7 +719,7 @@ recopiée dans le chapitre livré.
 |---|---|---|
 | Objectif du chapitre | Résultat mesurable | Une phrase, vérifiable en fin de chapitre |
 | Avertissement et périmètre | VMs, IP, réseau, snapshots, interdits | Aucun réseau de production |
-| Durée estimée | Total et durée par lab | Mesurée pendant l'auto-test |
+| Durée estimée | Interdite | Aucune mention de durée, d'heures de lab ou de planning temporel n'est autorisée dans les chapitres |
 | Prérequis | VM, outil, service, snapshot | Chaque ligne a une vérification exécutable |
 | Vocabulaire | Termes techniques du chapitre | Définition à la première occurrence |
 | Cartographie des opérations et contrôles | Tableau complet de la section 4.2 | Toute opération a un ID, une détection et une mitigation |

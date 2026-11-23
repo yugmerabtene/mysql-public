@@ -1,0 +1,6 @@
+# date: 2026-11-23 00:12:21 UTC
+# host: 192.168.56.10
+# cmd: timeout 15 ndb_desc --ndb-mgmd-host=127.0.0.1 --connect-retry-delay=2 labndb.t_ndb_desc 2>&1; echo '---RC---'; echo 0
+---RC---
+0
+# rc=0

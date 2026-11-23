@@ -1,0 +1,7 @@
+# date: 2026-11-23 00:05:25 UTC
+# host: 192.168.56.10
+# cmd: ndb_mgm -e '2 STOP'
+Connected to Management Server at: localhost:1186
+Node 2 has shutdown.
+
+# rc=0
