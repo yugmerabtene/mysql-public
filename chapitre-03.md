@@ -29,7 +29,7 @@ Le chapitre 2 doit avoir été réalisé : le cluster est installé, les 5 nœud
 | Agent MCM | Processus installé sur chaque nœud hôte, piloté par le client `mcm`. |
 | Global Checkpoint (GCP) | Point de contrôle global qui synchronise la vidange du journal de redo sur les nœuds de stockage. |
 
-## Introduction à la supervision et maintenance (module 3.0)
+## Introduction à la supervision et maintenance
 
 La supervision de MySQL Cluster repose sur le client de gestion `ndb_mgm`, qui interroge le nœud de gestion pour obtenir l'état de chaque nœud (`SHOW`), l'usage mémoire (`ALL REPORT MEMORYUSAGE`) et la configuration effective (`ndb_config`). La maintenance couvre la sauvegarde et la restauration des données (`START BACKUP`, `ndb_restore`) ainsi que le remplacement d'un nœud défaillant sans interruption de service.
 
@@ -211,7 +211,7 @@ mysql -u root -e "DESCRIBE labndb.t_ndb_desc"
 
 - `mysql -u root` : se connecte au serveur MySQL local en tant que root.
 - `-e "DESCRIBE labndb.t_ndb_desc"` : exécute l'instruction SQL `DESCRIBE` qui affiche la structure de la table `t_ndb_desc` (champs, types, clés, valeur par défaut) stockée par le moteur NDB. `DESCRIBE` fonctionne sur toute table MySQL, quel que soit le moteur de stockage, et est donc opérationnel ici car le nœud SQL `mysqld` (NodeId 4) est connecté au cluster et répond aux requêtes SQL.
-- **Piège** : `DESCRIBE` n'affiche pas la fragmentation NDB (fragments, `NodeId` de stockage) que seule `ndb_desc` peut lister ; or `ndb_desc` ne connecte pas le gestionnaire sur cette infrastructure (F-01). `DESCRIBE` donne la structure SQL de la table, ce qui permet de vérifier que la table NDB existe et qu'elle possède les colonnes attendues.
+- **Piège** : `DESCRIBE` n'affiche pas la fragmentation NDB (fragments, `NodeId` de stockage) que seule `ndb_desc` peut lister ; `ndb_desc` n'est pas couvert dans ce lab. `DESCRIBE` donne la structure SQL de la table, ce qui permet de vérifier que la table NDB existe et qu'elle possède les colonnes attendues.
 
 **Résultat attendu** (sortie réelle, exécuté sur VM 1 gestion-sql, rc=0)
 
@@ -948,10 +948,10 @@ pgrep -a ndbmtd
 **Résultat attendu**
 
 ```text
-21811 ndbmtd --ndb-connectstring=192.168.56.10 --initial
-21812 ndbmtd --ndb-connectstring=192.168.56.10 --initial
-22284 ndbmtd --ndb-connectstring=192.168.56.10
-22285 ndbmtd --ndb-connectstring=192.168.56.10
+[PID] ndbmtd --ndb-connectstring=192.168.56.10 --initial
+[PID] ndbmtd --ndb-connectstring=192.168.56.10 --initial
+[PID] ndbmtd --ndb-connectstring=192.168.56.10
+[PID] ndbmtd --ndb-connectstring=192.168.56.10
 ```
 
 #### Étape 11 — Vérifier l'état du cluster après remplacement (NodeId 6 présent)

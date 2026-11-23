@@ -21,7 +21,7 @@
 | Auto-sharding | Répartition automatique des fragments de données sur les nœuds de stockage par le moteur NDB. |
 
 
-## Introduction à MySQL et au clustering (module 1.0)
+## Introduction à MySQL et au clustering
 
 MySQL Cluster, basé sur le moteur de stockage NDB (Network Database), est une technologie de base de données distribuée qui fournit une haute disponibilité et une scalabilité horizontale. Son architecture, connue sous le nom d'"architecture Shared-Nothing" (partagé-nothing), répartit les données et les traitements sur plusieurs serveurs (ou machines virtuelles), éliminant tout point de défaillance unique (SPOF). Chaque nœud possède sa propre mémoire et ses propres disques ; les données sont fragmentées et répliquées sur plusieurs nœuds de stockage indépendants.
 
@@ -375,7 +375,7 @@ Outre MySQL Cluster NDB (le moteur partagé-nothing étudié dans ce lab), MySQL
 | Snapshot | `propre-avant-lab` présent sur chaque VM | `VBoxManage snapshot <vm> list` |
 
 
-## Architecture de laboratoire : cluster MySQL sur 3 VM (module 1.0)
+## Architecture de laboratoire : cluster MySQL sur 3 VM
 
 
 Le schéma ci-dessous présente l'architecture concrète du lab de ce chapitre sur trois VM, avec la numérotation canonique des NodeId du parcours.

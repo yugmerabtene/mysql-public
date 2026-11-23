@@ -456,30 +456,14 @@ sleep 6
 
 **Explication de la commande**
 
-- `pgrep -a ndbmtd` : liste tous les processus `ndbmtd` en cours avec leur ligne de commande complète. Cela permet d'identifier le PID du NodeId 6 (celui lancé depuis le répertoire `ndb_6` avec l'option `--initial`) pour l'arrêter spécifiquement, sans toucher aux nodes 2 et 3 du node group 0.
-- **Piège** : ne pas utiliser `pkill -x ndbmtd` qui arrêterait simultanément les deux nœuds de stockage du node group 0 (NodeId 2 et NodeId 3), coupant le service du cluster.
+- `sleep 6` : laisse au NodeId 2 le temps de redémarrer, de se déclarer au gestionnaire et de resynchroniser ses données depuis le NodeId 3 (réplica vivant).
 
 **Résultat attendu**
 
 ```text
-21811 ndbmtd --ndb-connectstring=192.168.56.10 --initial
-21812 ndbmtd --ndb-connectstring=192.168.56.10 --initial
-22284 ndbmtd --ndb-connectstring=192.168.56.10
-22285 ndbmtd --ndb-connectstring=192.168.56.10
+
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
-
-> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
-
-**Exemple de commande**
-
-```bash
-kill <PID_du_node_6>
-```
-
-**Explication de la commande**
-
-- `kill <PID_du_node_6>` : arrête uniquement le processus `ndbmtd` du NodeId 6, dont le PID a été identifié à l'étape précédente. Remplacer `<PID_du_node_6>` par le numéro de PID réel (par exemple `22284` ou `22285` selon l'ordre d'affichage de `pgrep`).
-- **Piège** : vérifier que le PID correspond bien au NodeId 6 (processus lancé depuis `/var/lib/mysql-cluster/ndb_6`) avant de tuer, afin de ne pas arrêter par erreur un nœud du node group 0.
 
 
 #### Étape 4 — Confirmer le retour à l'état nominal
@@ -1404,7 +1388,7 @@ pgrep -a mysqld
 **Résultat attendu**
 
 ```text
-5138 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
+[PID] mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
 ```
 
 

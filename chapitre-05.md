@@ -32,7 +32,7 @@ Le chapitre 4 doit avoir été réalisé : le cluster est installé, les 5 nœud
 | Sauvegarde protégée | Sauvegarde cluster (`START BACKUP`) dont les fichiers sont stockés dans un répertoire à droits restreints et restaurée avec `ndb_restore` par un compte dédié. |
 | Accès SSH limité | Connexion administrative restreinte au compte root sur les VM de lab, sans exposition vers Internet. |
 
-## Introduction à la sécurité de MySQL Cluster (module 5.0)
+## Introduction à la sécurité de MySQL Cluster
 
 La sécurité de l'administration MySQL Cluster repose sur trois piliers concrets :
 
@@ -83,11 +83,11 @@ Les risques à surveiller sont l'interception des communications inter-nœuds en
 
 ### Énoncé / Contexte
 
-Sécuriser le cluster MySQL Cluster en administration : activer le chiffrement TLS entre le nœud de gestion, les nœuds de stockage et les nœuds SQL via `config.ini`, créer des comptes SQL à moindre privilège (compte applicatif et compte de sauvegarde), protéger les sauvegardes cluster, et vérifier l'isolement réseau (pas d'accès Internet sur les nœuds). Ce lab réalise les opérations `NDB-29`, `NDB-30` et `NDB-31`. Le cluster doit être démarré et sain. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
+Sécuriser le cluster MySQL Cluster en administration : activer le chiffrement TLS entre le nœud de gestion, les nœuds de stockage et les nœuds SQL via `config.ini`, créer des comptes SQL à moindre privilège (compte applicatif et compte de sauvegarde), protéger les sauvegardes cluster, et vérifier l'isolement réseau (pas de route par défaut vers Internet sur l'interface host-only vboxnet0, pas de service exposé vers Internet). Ce lab réalise les opérations `NDB-29`, `NDB-30` et `NDB-31`. Le cluster doit être démarré et sain. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
 
-> **Note sur l'isolement réseau (F-07)** : les VM du lab disposent d'un second adaptateur NAT (acces Internet via le moteur NAT de VirtualBox ; une route par defaut via 10.0.2.2 peut etre presente dans la table de routage, voir `ip route show default`). L'isolement reseau prescrit dans ce lab porte sur le perimetre d'administration (reseau host-only vboxnet0 isole, aucune redirection NAT permanente, aucun service expose vers Internet). Une route par defaut NAT peut nevertheless apparaitre ; l'apprenant doit en avoir conscience et ne pas considerer les nœuds comme totalement coupes d'Internet au niveau de la table de routage. La verification d'isolement (etape 8) consiste a constater l'absence de route par defaut vers l'exterieur du lab sur l'interface host-only, tout en notant l'eventuelle route NAT.
+> **Note sur l'isolement réseau** : les VM du lab disposent d'un second adaptateur NAT (acces Internet via le moteur NAT de VirtualBox ; une route par defaut via 10.0.2.2 peut etre presente dans la table de routage, voir `ip route show default`). L'isolement reseau prescrit dans ce lab porte sur le perimetre d'administration (reseau host-only vboxnet0 isole, aucune redirection NAT permanente, aucun service expose vers Internet). Une route par defaut NAT peut nevertheless apparaitre ; l'apprenant doit en avoir conscience et ne pas considerer les nœuds comme totalement coupes d'Internet au niveau de la table de routage. La verification d'isolement (etape 8) consiste a constater l'absence de route par defaut vers l'exterieur du lab sur l'interface host-only, tout en notant l'eventuelle route NAT.
 
-> **Note d'execution conditionnelle (TLS, F-08)** : l'activation de TLS inter-nœuds necessite de modifier `config.ini` (`TLS = 1`) puis de redemarer tous les nœuds du cluster dans l'ordre critique (gestion -> stockage -> SQL). Les etapes de redemarrage utilisent `--initial` sur les nœuds de stockage, ce qui reinitialise leur stockage et est disruptif pour le cluster partage. Sur l'infrastructure partagee du parcours, ces etapes (arret du cluster, redemarrage `--initial`) sont a executer uniquement si l'apprenant dispose d'un cluster dedie ou apres avoir pris un snapshot `propre-avant-lab` permettant un retour arrière. Sinon, ces etapes doivent etre lues a titre de procedure de reference sans etre executees sur le cluster partage en cours.
+> **Note d'execution conditionnelle (TLS)** : l'activation de TLS inter-nœuds necessite de modifier `config.ini` (`TLS = 1`) puis de redemarer tous les nœuds du cluster dans l'ordre critique (gestion -> stockage -> SQL). Les etapes de redemarrage utilisent `--initial` sur les nœuds de stockage, ce qui reinitialise leur stockage et est disruptif pour le cluster partage. Sur l'infrastructure partagee du parcours, ces etapes (arret du cluster, redemarrage `--initial`) sont a executer uniquement si l'apprenant dispose d'un cluster dedie ou apres avoir pris un snapshot `propre-avant-lab` permettant un retour arrière. Sinon, ces etapes doivent etre lues a titre de procedure de reference sans etre executees sur le cluster partage en cours.
 
 ### Outils et commandes utilisées
 
@@ -594,8 +594,8 @@ pgrep -a ndbmtd
 **Résultat attendu**
 
 ```text
-21811 ndbmtd --ndb-connectstring=192.168.56.10
-21812 ndbmtd --ndb-connectstring=192.168.56.10
+[PID] ndbmtd --ndb-connectstring=192.168.56.10
+[PID] ndbmtd --ndb-connectstring=192.168.56.10
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -1202,33 +1202,34 @@ drwxr-xr-x 3 root root 4096 … ..
 -rw------- 1 root root … BACKUP-1.0.3.ctl
 ```
 
-#### Étape 8 — Vérifier l'isolement réseau (pas d'accès Internet sur les nœuds)
+#### Étape 8 — Vérifier l'isolement réseau (pas de service exposé vers Internet)
 
-**But** — Confirmer que les nœuds n'ont pas de route par défaut vers Internet et ne sont joignables que sur le réseau host-only vboxnet0, réduisant ainsi la surface d'exposition.
+**But** — Confirmer que les nœuds ne sont pas exposés vers Internet et que l'administration se fait uniquement sur le réseau host-only vboxnet0, réduisant ainsi la surface d'exposition. Une route par défaut NAT peut être présente (adaptateur NAT pour l'installation des paquets), mais aucun service du cluster n'est accessible depuis Internet.
 
 **Machine** — 192.168.56.10 (gestion-sql) et 192.168.56.11 (stockage).
 
-**Prérequis** — Réseau vboxnet0 configuré, pas de passerelle par défaut vers Internet.
+**Prérequis** — Réseau vboxnet0 configuré, adaptateur NAT présent sur chaque VM.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
 
 ```bash
-ip route show default || echo 'aucune route par défaut'
+ip route show default
 ```
 
 **Explication de la commande**
 
-- `ip route show default` : affiche la route par défaut ; si aucune route n'est retournée, le nœud est isolé d'Internet (aucune passerelle vers l'extérieur).
-- L'absence de route par défaut vers Internet réduit l'exposition aux risques des nœuds de production.
-- **Piège** : si une route par défaut existe vers une passerelle Internet, le nœud est exposé ; supprimer la route ou l'interface NAT correspondante.
+- `ip route show default` : affiche la route par défaut. Une route vers `10.0.2.2` (passerelle NAT de VirtualBox) peut apparaître : c'est normal, elle sert uniquement à l'installation des paquets depuis les dépôts. L'isolement du lab porte sur l'absence de service exposé vers Internet, pas sur l'absence de route NAT.
+- **Piège** : ne pas supprimer la route NAT, car elle est nécessaire pour l'installation des paquets MySQL Cluster. Vérifier simplement qu'aucun port du cluster (1186, 3306, etc.) n'est exposé vers Internet.
 
 **Résultat attendu**
 
 ```text
-aucune route par défaut
+default via 10.0.2.2 dev enp0s3
 ```
+
+ou toute autre passerelle NAT configurée par VirtualBox.
 
 #### Étape 9 — Vérifier l'interface réseau sur VM 1
 
