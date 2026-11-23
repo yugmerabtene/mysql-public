@@ -112,6 +112,7 @@ La durabilité des données est assurée par :
 * **Redo Logs** : enregistrent toutes les transactions pour permettre la reconstruction en cas de panne.
 
 ### Node groups, partitionnement (sharding) et réplication synchrone
+![alt text](image-6.png)
 
 Le cluster est structuré autour de **groupes de nœuds (node group)**. Un groupe de nœuds est constitué d'un ensemble de nœuds de stockage qui contiennent les mêmes fragments de données. Chaque fragment est répliqué sur chaque nœud du groupe.
 
@@ -127,6 +128,7 @@ Deux mécanismes fondamentaux assurent scalabilité et disponibilité :
 ![Image 3 : Réplication synchrone et partitionnement](image.png)
 
 *Description de l'image : un schéma détaillé de la couche de stockage (correspondant logiquement à VM 2) montrant comment les données sont organisées entre les deux processus `ndbmtd`. Une table NDB nommée `t1` est divisée en quatre partitions logiques : P1, P2, P3, P4. Le schéma montre que P1 et P3 sont stockées dans `ndbmtd NodeId 2`, tandis que P2 et P4 sont stockées dans `ndbmtd NodeId 3`. Des flèches bidirectionnelles épaisses entre `ndbmtd NodeId 2` et `ndbmtd NodeId 3` illustrent la réplication synchrone de P1/P3 vers `ndbmtd NodeId 3` et de P2/P4 vers `ndbmtd NodeId 2`. La légende `NoOfReplicas = 2` souligne que chaque partition existe en deux exemplaires dans ce groupe de nœuds.*
+![alt text](image-7.png)
 
 ## Architecture de laboratoire : cluster MySQL sur 3 VM (module 1.0)
 
