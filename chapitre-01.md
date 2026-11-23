@@ -205,6 +205,60 @@ En complément d'un InnoDB Cluster, des **Read Replicas** (nœuds en lecture seu
 
 **Distinction avec le lab NDB Cluster** : InnoDB Cluster et InnoDB ReplicaSet sont des approches HA fondées sur le moteur InnoDB ; elles sont **distinctes de NDB Cluster**, qui est le cœur de ce parcours. Dans ce lab, le cluster étudié est un cluster NDB partagé-nothing avec nœuds de gestion, de stockage et SQL, `NoOfReplicas = 2`, ordre de démarrage gestionnaire → stockage → SQL, et vérification d'intégrité avec `ndb_mgm -e "SHOW"`. InnoDB Cluster/ReplicaSet n'est ni installé ni mis en œuvre dans les Labs 1 et 2 du parcours ; cette sous-section a uniquement pour objectif de situer NDB Cluster parmi les solutions HA officielles de MySQL.
 
+### Mise en perspective : InnoDB ClusterSet (failover inter-sites) et MySQL Router (routage applicatif)
+
+Au-delà d'InnoDB Cluster et d'InnoDB ReplicaSet, MySQL complète son offre de haute disponibilité avec deux composants qui étendent la protection des données et l'accès applicatif sur plusieurs sites : **InnoDB ClusterSet** et **MySQL Router**.
+
+Comme InnoDB Cluster et InnoDB ReplicaSet, ces solutions reposent sur le moteur de stockage **InnoDB** et sur la réplication de serveurs MySQL. Elles sont **distinctes de NDB Cluster**, qui est le cœur de ce parcours. InnoDB ClusterSet n'est ni installé ni mis en œuvre dans les Labs 1 et 2 ; cette sous-section a uniquement pour objectif de situer ces solutions parmi l'offre HA de MySQL, sans les confondre avec le cluster NDB partagé-nothing du lab.
+
+#### InnoDB ClusterSet — ensemble de clusters InnoDB et failover inter-sites
+
+Un **InnoDB ClusterSet** est un ensemble de plusieurs **InnoDB Clusters** (chaque cluster étant lui-même un groupe de réplication **Group Replication**) reliés entre eux par une **réplication asynchrone inter-sites**. L'architecture repose sur :
+
+- un **site primary** (site principal) qui accueille le cluster InnoDB maître et traite les écritures ;
+- un ou plusieurs **sites réplica** qui maintiennent des copies à jour des données via la réplication asynchrone depuis le site primary.
+
+Chaque cluster du ClusterSet conserve son **quorum interne** et son autonomie de fonctionnement. En cas de panne du site principal, un **failover inter-sites** permet de basculer l'activité vers un site réplica (disaster recovery, reprise après sinistre sur plusieurs sites géographiques). Le ClusterSet étend ainsi InnoDB Cluster de la haute disponibilité locale à une haute disponibilité géographique/multi-site.
+
+![InnoDB ClusterSet Failover — figure 9.3, bascule entre site primary et site réplica](image-10.png)
+
+*Description de l'image : la figure 9.3 illustre le mécanisme de failover d'un InnoDB ClusterSet. Un site primary et un ou plusieurs sites réplica sont reliés par réplication asynchrone ; en cas de panne du site primary, l'activité applicative est basculée vers un site réplica. Cette image illustre une solution InnoDB (autre que le lab NDB Cluster sur 3 VM) et n'est pas déployée dans les Labs 1 et 2.*
+
+**Adaptation au lab** : ce mécanisme de failover inter-sites diffère du failover intra-cluster NDB du lab (`NoOfReplicas = 2`, node group unique sur VM 2, arbitrage par le nœud de gestion). Dans le lab, il n'y a pas de site réplica distant ni de ClusterSet ; la résilience est assurée localement par la réplication synchrone des deux nœuds de stockage (NodeId 2 et NodeId 3).
+
+**Lien avec le concept** : illustration du failover inter-sites et du disaster recovery, à contraster avec le failover automatique intra-node-group du cluster NDB étudié dans ce parcours.
+
+#### MySQL Router — routage du trafic applicatif entre l'application et MySQL
+
+**MySQL Router** est un **proxy léger** placé entre l'application et les serveurs MySQL. Il intercepte les connexions applicatives et les redirige automatiquement vers le bon nœud de base de données, en lecture ou en écriture, en s'appuyant sur les **métadonnées du cluster** (consultées au bootstrapping depuis InnoDB Cluster, InnoDB ReplicaSet ou InnoDB ClusterSet). Ses fonctions principales sont :
+
+- le **routage lecture/écriture** (split read/write) : les écritures sont envoyées vers le nœud primaire, les lectures vers les nœuds secondaires ;
+- le **routage vers les nœuds sains** : un nœud détecté indisponible est retiré du pool de routage ;
+- la **haute disponibilité de l'accès applicatif** : en cas de basculement (failover), le Router réoriente automatiquement les connexions vers le nouveau nœud disponible sans intervention de l'application.
+
+Les "routing guidelines" (bonnes pratiques de gestion et de configuration du routage) portent sur la définition des règles de routage, la configuration du Router via le bootstrap, et la surveillance des nœuds sains pour garantir un accès applicatif continu.
+
+![MySQL Routing Guidelines — configuration et gestion du routage MySQL Router (1)](image-11.png)
+![MySQL Routing Guidelines — configuration et gestion du routage MySQL Router (2)](image-12.png)
+
+*Description des images : ces illustrations présentent le placement de MySQL Router entre l'application et les serveurs MySQL, le split lecture/écriture du trafic, et les règles de configuration du routage (nœuds cibles, basculement, nœuds sains). Elles illustrent une solution InnoDB (autre que le lab NDB Cluster sur 3 VM) et ne sont pas déployées dans les Labs 1 et 2.*
+
+**Adaptation au lab** : dans le lab NDB Cluster sur 3 VM, il n'y a pas de MySQL Router intermédiaire. L'application s'adresse directement aux deux nœuds SQL (NodeId 4 sur `192.168.56.10` et NodeId 5 sur `192.168.56.12`), chacun capable de lectures et d'écritures sur le moteur NDB. La redondance est assurée par la réplication synchrone NDB (`NoOfReplicas = 2`), sans routeur externe ni split lecture/écriture au niveau applicatif.
+
+**Lien avec le concept** : illustration du routage applicatif et du proxy MySQL Router, à contraster avec l'accès direct aux nœuds SQL NDB dans le lab.
+
+#### Distinction nette avec NDB Cluster (cœur du lab)
+
+| Composant | Moteur sous-jacent | Réplication | Rôle | Mis en œuvre dans le lab ? |
+|---|---|---|---|---|
+| NDB Cluster (lab) | NDB (partagé-nothing) | Synchrone intra-node-group | Gestion, stockage, SQL, `NoOfReplicas = 2` | Oui (Labs 1 et 2) |
+| InnoDB Cluster | InnoDB / Group Replication | Quasi-synchrone | HA locale, failover automatique | Non (perspective uniquement) |
+| InnoDB ReplicaSet | InnoDB / réplication asynchrone | Asynchrone source → replica | HA simple, lecture scalable | Non (perspective uniquement) |
+| InnoDB ClusterSet | InnoDB / Group Replication + asynchrone inter-sites | Asynchrone entre sites | HA géographique, failover inter-sites | Non (perspective uniquement) |
+| MySQL Router | — (proxy) | — | Routage applicatif lecture/écriture | Non (perspective uniquement) |
+
+Dans ce lab, le cluster étudié reste le cluster NDB partagé-nothing avec nœuds de gestion, de stockage et SQL, `NoOfReplicas = 2`, ordre de démarrage gestion → stockage → SQL, et vérification d'intégrité avec `ndb_mgm -e "SHOW"`. Aucun composant InnoDB ClusterSet ni MySQL Router n'est installé ni configuré dans les Labs 1 et 2.
+
 
 ## Architecture de laboratoire : cluster MySQL sur 3 VM (module 1.0)
 
