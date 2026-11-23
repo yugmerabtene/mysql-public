@@ -46,6 +46,8 @@
 
 MySQL Cluster, basé sur le moteur de stockage NDB (Network Database), est une technologie de base de données distribuée qui fournit une haute disponibilité et une scalabilité horizontale. Son architecture, connue sous le nom d'"architecture Shared-Nothing" (partagé-nothing), répartit les données et les traitements sur plusieurs serveurs (ou machines virtuelles), éliminant tout point de défaillance unique (SPOF). Chaque nœud possède sa propre mémoire et ses propres disques ; les données sont fragmentées et répliquées sur plusieurs nœuds de stockage indépendants.
 
+### Déploiement de référence sur 3 VM
+
 Dans le contexte de ce lab sur 3 VM, l'architecture est déployée comme suit :
 
 - **VM 1** (`192.168.56.10`, `gestion-sql`) : héberge le **nœud de gestion** (`ndb_mgmd`, NodeId 1) et le **premier nœud SQL** (`mysqld`, NodeId 4).
@@ -62,7 +64,7 @@ Dans le contexte de ce lab sur 3 VM, l'architecture est déployée comme suit :
 
 **Lien avec le concept** : illustration de l'architecture partagé-nothing et de la séparation des rôles (gestion, stockage, SQL) qui structure tout le chapitre.
 
-### Les composants principaux
+### Les trois types de nœuds et leurs rôles
 
 MySQL Cluster repose sur trois types de nœuds distincts qui communiquent entre eux via le réseau :
 
@@ -93,6 +95,72 @@ Ces composants interagissent de manière coordonnée, comme le montre l'illustra
 
 **Lien avec le concept** : cette image illustre les trois rôles de nœuds définis plus haut et le cheminement d'une requête (application → node SQL → node de stockage), sous la supervision du node de gestion.
 
+### Ordre de démarrage critique : gestionnaire → stockage → SQL
+
+L'ordre de démarrage des nœuds est déterminant pour la bonne constitution du cluster :
+
+1. **Le nœud de gestion (`ndb_mgmd`, NodeId 1)** doit être lancé en premier. Il lit le fichier `config.ini`, devient le maître de configuration et attend les déclarations des autres nœuds.
+2. **Les nœuds de stockage (`ndbmtd`, NodeId 2 et 3)** se déclarent au nœud de gestion au démarrage, chargent leurs données et forment le node group.
+3. **Les nœuds SQL (`mysqld`, NodeId 4 et 5)** se connectent au nœud de gestion pour découvrir la topologie du cluster et activer le moteur NDB.
+
+Si un nœud SQL démarre avant le nœud de gestion, il ne peut pas découvrir le cluster et échoue. Si un nœud de stockage démarre avant le gestionnaire, il ne peut pas déclarer son appartenance au node group. Cet ordre strict (gestion → stockage → SQL) est celui de référence du parcours et doit être respecté à chaque démarrage ou redémarrage rolling du cluster.
+
+### Le moteur de stockage NDB — stockage en mémoire et durabilité
+
+Le moteur de stockage NDB est le cœur de MySQL Cluster. Contrairement à InnoDB qui stocke les données principalement sur disque avec des caches en mémoire, NDB privilégie le stockage des données en **mémoire vive (RAM)** pour des performances d'accès extrêmement faibles.
+
+La durabilité des données est assurée par trois mécanismes complémentaires :
+
+* **Checkpoints Locaux (LCP)** : périodiquement, les données modifiées en mémoire sont écrites sur disque par chaque nœud de stockage, de façon indépendante.
+* **Checkpoints Globaux (GCP)** : assurent la cohérence transactionnelle entre tous les nœuds du cluster en marquant un point de synchronisation global.
+* **Redo Logs** : enregistrent toutes les transactions sur disque pour permettre la reconstruction des données après une panne, depuis le dernier checkpoint global.
+
+Ces mécanismes garantissent que, même en cas de perte d'un nœud de stockage, aucune donnée validée n'est perdue et que le cluster peut se resynchroniser automatiquement.
+
+### NoOfReplicas = 2, node groups, quorum, split-brain et failover automatique
+
+Le cluster est structuré autour de **groupes de nœuds (node group)**. Un groupe de nœuds est constitué d'un ensemble de nœuds de stockage qui contiennent les mêmes fragments de données. Chaque fragment est répliqué sur chaque nœud du groupe.
+
+Dans une configuration avec `NoOfReplicas = 2` (valeur de référence du parcours), chaque groupe de nœuds contient exactement deux nœuds de stockage. Dans ce lab, VM 2 exécute les deux processus `ndbmtd` (NodeId 2 et NodeId 3) qui appartiennent au même node group (Nodegroup: 0) afin d'assurer la réplication synchrone.
+
+**Réplication synchrone** : chaque partition est répliquée sur tous les nœuds d'un groupe de nœuds. Lorsqu'une transaction valide une écriture, cette écriture doit être confirmée avec succès par **tous** les nœuds de stockage du groupe avant que le nœud SQL ne puisse confirmer la réussite de la transaction à l'application cliente. Cela garantit que toutes les répliques sont cohérentes à tout moment.
+
+**Quorum** : le quorum est la règle de décision par majorité qui empêche deux partitions du cluster d'agir simultanément. Avec deux nœuds de stockage dans un seul node group, la perte d'un nœud de stockage ne rompt pas le quorum car le nœud de gestion et le nœud de stockage restant conservent la majorité.
+
+**Split-brain** : le split-brain est la situation où le cluster est partitionné en deux groupes qui ne peuvent plus communiquer. Il est prévenu par l'arbitrage : le nœud de gestion agit comme arbitre et tranche quel node group reste actif lorsque la communication entre node groups est perdue. L'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin.
+
+**Failover automatique** : lorsqu'un nœud de stockage défaillant est détecté, le nœud de gestion marque ce node comme `not connected` et les opérations SQL basculent automatiquement sur la réplica restante. Lorsqu'un nœud est rajouté ou redémarré, il resynchronise ses données depuis la réplica vivante et réintègre le cluster. Ce mécanisme de failover automatique est au cœur de la haute disponibilité visée par les systèmes critiques.
+
+### Partitionnement (sharding / auto-sharding) et contraintes des gros volumes
+
+Le moteur NDB assure nativement le **partitionnement (sharding)** des données :
+
+1. **Partitionnement automatique** : les tables NDB sont automatiquement divisées en partitions (fragments). Ces partitions sont distribuées entre les différents groupes de nœuds de stockage disponibles. Par défaut, le partitionnement est basé sur la valeur de la clé primaire, assurant une distribution uniforme et une recherche rapide (auto-sharding du moteur NDB).
+2. **Répartition sur les nœuds de stockage** : chaque fragment est répliqué selon `NoOfReplicas` sur tous les nœuds de son node group. Le moteur NDB gère lui-même la distribution et le rééquilibrage des fragments lorsque de nouveaux nœuds de stockage sont ajoutés.
+
+**Contraintes des gros volumes de données** :
+
+* **DataMemory** : mémoire allouée aux données et aux index sur chaque nœud de stockage. Doit être dimensionnée pour contenir l'ensemble des données et index du cluster, avec une marge pour les opérations en cours. Une valeur insuffisante provoque des erreurs d'espace disque plein (erreur NDB 871) et l'arrêt du nœud.
+* **IndexMemory** : mémoire allouée aux index sur chaque nœud de stockage. Doit être dimensionnée en fonction du nombre et de la taille des index définis sur les tables NDB.
+* **Consommation RAM** : comme NDB stocke les données en mémoire, la RAM totale disponible sur chaque nœud de stockage limite la taille maximale du jeu de données du cluster. Sur des VM avec 1 Go de RAM (comme dans ce lab), ces paramètres doivent rester très conservateurs (`DataMemory = 256M`, `IndexMemory = 128M` dans le `config.ini` de référence).
+* **Pas de compression native** : NDB ne compresse pas les données en mémoire ; le dimensionnement doit tenir compte de la taille brute des données et des index.
+
+### Vérification d'intégrité du cluster : ndb_mgm -e "SHOW"
+
+Après le démarrage de tous les nœuds dans l'ordre critique, l'intégrité du cluster doit être vérifiée avec la commande de gestion :
+
+```
+ndb_mgm -e "SHOW"
+```
+
+Cette commande affiche l'état hiérarchique de tous les nœuds du cluster. Dans un cluster sain sur 3 VM, les 5 nœuds doivent apparaître comme `connected` :
+
+- 1 nœud de gestion (NodeId 1)
+- 2 nœuds de stockage (NodeId 2 et NodeId 3, `started`)
+- 2 nœuds SQL (NodeId 4 et NodeId 5)
+
+Si un nœud apparaît comme `not connected`, cela indique un problème de démarrage, de connectivité réseau ou de configuration. La résolution consiste à redémarrer les nœuds dans l'ordre critique (gestion → stockage → SQL) et à revérifier avec `SHOW`.
+
 ### Pourquoi MySQL Cluster est adapté aux applications critiques
 
 MySQL Cluster est conçu pour répondre aux exigences les plus élevées en matière de disponibilité et de performance :
@@ -109,155 +177,9 @@ Les caractéristiques uniques de MySQL Cluster en font une solution privilégié
 * **Finance et Paiements** : utilisé pour les plateformes de traitement des transactions qui exigent une intégrité transactionnelle (ACID) et aucune perte de données, tout en supportant une charge élevée.
 * **Web et Services à Haute Concurrence** : utilisé pour les systèmes de gestion de sessions, les catalogues de produits en ligne ou les infrastructures de messagerie où la performance et la scalabilité sont primordiales.
 
-### Figure 3 — MySQL Group Replication : haute disponibilité et séparation lecture/écriture
+### Mise en perspective (solutions HA InnoDB distinctes du lab)
 
-![Figure 3 : MySQL Group Replication — 3 nodes avec routeur, flux RW et RO](image-2.png)
-
-*Figure 3 : le schéma "MySQL Group Replication" présente trois nœuds de base de données db1 (192.168.10.41), db2 (192.168.10.42) et db3 (192.168.10.43) formant un groupe de réplication. Un applicatif avec un routeur (192.168.10.40) se connecte au groupe ; des flèches "RW" (lecture-écriture) pointent vers db1, le nœud primaire en mode single-primary, tandis que des flèches "RO" (lecture seule) pointent vers db2 et db3, les nœuds secondaires.*
-
-**Adaptation au lab** : il s'agit d'une technologie MySQL distincte du clustering NDB étudié ici. Dans notre lab sur 3 VM, il n'y a pas de routeur intermédiaire ni de séparation primaire/secondaires au niveau applicatif : l'application s'adresse directement aux deux nœuds SQL (NodeId 4 sur `192.168.56.10` et NodeId 5 sur `192.168.56.12`), chacun capable de lectures et d'écritures. La redondance des données est assurée par la réplication synchrone NDB dans le node group (NodeId 2 et NodeId 3 sur `192.168.56.11`, `NoOfReplicas = 2`), sans routeur externe. Les adresses `192.168.10.x` de l'image sont une topologie générique ; dans le lab on les remplace par `192.168.56.10/11/12` et les NodeId canoniques 1 à 5.
-
-**Lien avec le concept** : mise en perspective d'une autre solution de haute disponibilité MySQL (réplication de groupe, séparation lecture/écriture), à contraster avec la réplication synchrone intra-cluster du moteur NDB.
-
-### Le moteur de stockage NDB — fonctionnement interne
-
-Le moteur de stockage NDB est le cœur de MySQL Cluster. Contrairement à InnoDB qui stocke les données principalement sur disque avec des caches en mémoire, NDB privilégie le stockage des données en **mémoire vive (RAM)** pour des performances d'accès extrêmement élevées.
-
-La durabilité des données est assurée par :
-
-* **Checkpoints Locaux (LCP)** : périodiquement, les données modifiées en mémoire sont écrites sur disque.
-* **Checkpoints Globaux (GCP)** : assurent la cohérence transactionnelle entre tous les nœuds du cluster.
-* **Redo Logs** : enregistrent toutes les transactions pour permettre la reconstruction en cas de panne.
-
-### Node groups, partitionnement (sharding) et réplication synchrone
-
-Le cluster est structuré autour de **groupes de nœuds (node group)**. Un groupe de nœuds est constitué d'un ensemble de nœuds de stockage qui contiennent les mêmes fragments de données. Chaque fragment est répliqué sur chaque nœud du groupe.
-
-Dans une configuration avec `NoOfReplicas = 2` (valeur de référence du parcours), chaque groupe de nœuds contient deux nœuds de stockage. Dans ce lab, VM 2 exécute les deux processus `ndbmtd` (NodeId 2 et NodeId 3) qui appartiennent au même node group (Nodegroup: 0) afin d'assurer la réplication synchrone.
-
-Deux mécanismes fondamentaux assurent scalabilité et disponibilité :
-
-1. **Partitionnement (sharding)** : les tables NDB sont automatiquement divisées en partitions (fragments). Ces partitions sont distribuées entre les différents groupes de nœuds de stockage disponibles. Par défaut, le partitionnement est basé sur la valeur de la clé primaire, assurant une distribution uniforme et une recherche rapide (auto-sharding du moteur NDB).
-2. **Réplication synchrone (`NoOfReplicas`)** : chaque partition est répliquée sur tous les nœuds d'un groupe de nœuds. Lorsqu'une transaction valide une écriture, cette écriture doit être confirmée avec succès par **tous** les nœuds de stockage du groupe avant que le nœud SQL ne puisse confirmer la réussite de la transaction à l'application cliente. Cela garantit que toutes les répliques sont cohérentes à tout moment.
-
-### Figure 4 — Sharding, MySQL Router et groupes de shards
-
-![Figure 4 : Sharding avec MySQL Router — Shard 1 et Shard 2, trafic applicatif, Global group](image-6.png)
-
-*Figure 4 : l'illustration montre le partitionnement (sharding) des données. Le trafic applicatif arrive au centre via MySQL Router (avec mention de ProxySQL, application server et MySQL Fabric). Deux shards, "Shard 1" et "Shard 2", chacun composé de deux nœuds empilés, reçoivent les partitions. À droite, un "Global group" ; une flèche "Replication" relie Shard 2 au Global group.*
-
-**Note** : `image-5.png` et `image-6.png` sont deux fichiers identiques qui illustrent le même schéma de sharding MySQL Router ; seule `image-6.png` est affichée ci-dessus.
-
-**Adaptation au lab** : MySQL Cluster NDB réalise nativement l'auto-sharding : les tables NDB sont automatiquement partitionnées par clé primaire et distribuées entre les node groups, sans routeur externe. Dans notre lab, un seul node group (Nodegroup: 0) rassemble NodeId 2 et NodeId 3 sur VM 2 (`192.168.56.11`) avec `NoOfReplicas = 2` ; le partitionnement et la réplication des fragments sont gérés par le moteur NDB, contrairement à l'illustration où un routeur et des shards distincts sont déployés.
-
-**Lien avec le concept** : illustration du partitionnement (sharding) et de la distribution des fragments, concepts mis en œuvre nativement par NDB via l'auto-sharding et les node groups.
-
-### Figure 5 — Réplication synchrone et partitionnement (sharding) de la couche de stockage
-
-![Figure 5 : Réplication synchrone et partitionnement](image.png)
-
-*Figure 5 : un schéma détaillé de la couche de stockage (correspondant logiquement à VM 2) montrant comment les données sont organisées entre les deux processus `ndbmtd`. Une table NDB nommée `t1` est divisée en quatre partitions logiques : P1, P2, P3, P4. Le schéma montre que P1 et P3 sont stockées dans `ndbmtd NodeId 2`, tandis que P2 et P4 sont stockées dans `ndbmtd NodeId 3`. Des flèches bidirectionnelles épaisses entre `ndbmtd NodeId 2` et `ndbmtd NodeId 3` illustrent la réplication synchrone de P1/P3 vers `ndbmtd NodeId 3` et de P2/P4 vers `ndbmtd NodeId 2`. La légende `NoOfReplicas = 2` souligne que chaque partition existe en deux exemplaires dans ce groupe de nœuds.*
-
-**Adaptation au lab** : les NodeId 2 et NodeId 3 de l'image correspondent aux deux nœuds de stockage collocés sur VM 2 (`192.168.56.11`), dans des répertoires distincts (`ndb_2` et `ndb_3`). Le node group unique (Nodegroup: 0) du lab contient exactement ces deux répliques, conformément à `NoOfReplicas = 2`.
-
-**Lien avec le concept** : illustration concrète du partitionnement (sharding) et de la réplication synchrone intra-node-group qui fondent la résilience du cluster.
-
-### Réplication source/replica MySQL (asynchrone)
-
-![Figure 6 : Réplication source/replica MySQL — binaire, threads I/O et SQL, relay log](image-4.png)
-
-*Figure 6 : le schéma "Réplication source/replica" montre, côté Source, un nœud MySQL (SQL Node) qui écrit dans le Binary Log, puis le NDB Storage Engine et le NDB Kernel (Data Nodes). Côté Replica, on trouve un I/O Thread qui lit le binaire distant, un SQL Thread qui l'applique, un Relay Log, un Binary Log local, le NDB Storage Engine et le NDB Kernel. Une flèche "Replication" relie la Source au Replica.*
-
-**Adaptation au lab** : il s'agit d'une réplication MySQL asynchrone (source → replica), différente de la réplication synchrone intra-cluster NDB (`NoOfReplicas = 2`) utilisée dans notre lab. Elle pourrait servir à répliquer asynchrone notre cluster de lab (`192.168.56.10/11/12`) vers un cluster de secours distant ou un entrepôt de lecture ; ce mécanisme n'est pas mis en œuvre dans les Labs 1 et 2 du parcours.
-
-**Lien avec le concept** : mise en contraste de la réplication asynchrone source/replica avec la réplication synchrone du moteur NDB.
-
-### Réplication en pipeline : modes asynchrone, semi-synchrone et synchrone
-
-![Figure 7 : Réplication en pipeline — master, binlog, réseau, transaction store, slave ; barreaux de temps async / semi-sync / sync](image-7.png)
-
-*Figure 7 : le schéma "Replication as a pipeline" présente le flux d'une écriture : une application envoie des données sur le master ("Send data", puis "Ack wait") ; les données sont écrites dans le binaire (binlog, disque bleu), traversent le réseau, sont stockées dans un "Transaction store" puis appliquées sur le slave. En dessous, trois barreaux de temps comparent les modes Asynchronous, Semi-synchronous et Synchronous selon le moment où l'accusé de réception est renvoyé à l'application.*
-
-**Adaptation au lab** : dans notre cluster NDB, l'écriture est synchrone : une transaction n'est confirmée à l'application que lorsque tous les nœuds de stockage du node group (NodeId 2 et NodeId 3, `NoOfReplicas = 2`) ont acquitté l'écriture — cela correspond au mode "Synchronous" de l'illustration. Il n'y a pas de binlog de réplication asynchrone entre un master et un slave dans le cœur du cluster NDB ; la cohérence est garantie par le GCP (Checkpoint Global) et la réplication synchrone intra-node-group.
-**Lien avec le concept** : illustration des trois modes de réplication (asynchrone, semi-synchrone, synchrone) et de l'attente d'accusé (ack), directement reliée au comportement synchrone de NDB dans le lab.
-
-
-### Mise en perspective : InnoDB Cluster et InnoDB ReplicaSet (solutions HA MySQL InnoDB)
-
-Outre MySQL Cluster NDB (le moteur partagé-nothing étudié dans ce lab), MySQL propose deux autres solutions officielles de haute disponibilité (HA) et de réplication intégrées nativement à l'écosystème MySQL : **MySQL InnoDB Cluster** et **MySQL InnoDB ReplicaSet**. Ces deux architectures reposent sur le moteur de stockage **InnoDB**, le moteur de stockage par défaut de MySQL, et synchronisent plusieurs serveurs MySQL entre eux afin d'éviter toute perte de données ou interruption de service en cas de panne d'un serveur.
-
-Ces deux approches s'appuient sur les mêmes trois briques de base :
-
-1. **Serveurs MySQL (moteur InnoDB)** : ils hébergent les données et assurent leur réplication d'un serveur à l'autre.
-2. **MySQL Router** : proxy léger placé entre l'application et les bases de données ; il redirige automatiquement le trafic applicatif vers le bon serveur, en lecture ou en écriture.
-3. **MySQL Shell** : outil en ligne de commande qui expose l'AdminAPI ; il permet de déployer, configurer et administrer l'architecture en quelques commandes.
-
-La différence entre InnoDB Cluster et InnoDB ReplicaSet porte sur le niveau d'exigence :
-
-| Critère | InnoDB Cluster | InnoDB ReplicaSet |
-|---|---|---|
-| Technologie sous-jacente | Group Replication (réplication de groupe quasi-synchrone) | Réplication classique asynchrone Source/Replica |
-| Basculement (failover) | Automatique, en quelques secondes en cas de panne d'un serveur | Manuel, via une commande MySQL Shell |
-| Nombre de nœuds | Minimum 3 serveurs recommandés (quorum) | À partir de 2 serveurs (1 source + 1 ou plusieurs réplicas) |
-| Usage principal | Applications critiques nécessitant une disponibilité continue (zéro interruption) | Montée en charge en lecture, sauvegardes, reprise après sinistre simple |
-
-En complément d'un InnoDB Cluster, des **Read Replicas** (nœuds en lecture seule) peuvent être ajoutés pour absorber un fort trafic de lecture sans alourdir le groupe principal.
-
-**Distinction avec le lab NDB Cluster** : InnoDB Cluster et InnoDB ReplicaSet sont des approches HA fondées sur le moteur InnoDB ; elles sont **distinctes de NDB Cluster**, qui est le cœur de ce parcours. Dans ce lab, le cluster étudié est un cluster NDB partagé-nothing avec nœuds de gestion, de stockage et SQL, `NoOfReplicas = 2`, ordre de démarrage gestionnaire → stockage → SQL, et vérification d'intégrité avec `ndb_mgm -e "SHOW"`. InnoDB Cluster/ReplicaSet n'est ni installé ni mis en œuvre dans les Labs 1 et 2 du parcours ; cette sous-section a uniquement pour objectif de situer NDB Cluster parmi les solutions HA officielles de MySQL.
-
-### Mise en perspective : InnoDB ClusterSet (failover inter-sites) et MySQL Router (routage applicatif)
-
-Au-delà d'InnoDB Cluster et d'InnoDB ReplicaSet, MySQL complète son offre de haute disponibilité avec deux composants qui étendent la protection des données et l'accès applicatif sur plusieurs sites : **InnoDB ClusterSet** et **MySQL Router**.
-
-Comme InnoDB Cluster et InnoDB ReplicaSet, ces solutions reposent sur le moteur de stockage **InnoDB** et sur la réplication de serveurs MySQL. Elles sont **distinctes de NDB Cluster**, qui est le cœur de ce parcours. InnoDB ClusterSet n'est ni installé ni mis en œuvre dans les Labs 1 et 2 ; cette sous-section a uniquement pour objectif de situer ces solutions parmi l'offre HA de MySQL, sans les confondre avec le cluster NDB partagé-nothing du lab.
-
-#### InnoDB ClusterSet — ensemble de clusters InnoDB et failover inter-sites
-
-Un **InnoDB ClusterSet** est un ensemble de plusieurs **InnoDB Clusters** (chaque cluster étant lui-même un groupe de réplication **Group Replication**) reliés entre eux par une **réplication asynchrone inter-sites**. L'architecture repose sur :
-
-- un **site primary** (site principal) qui accueille le cluster InnoDB maître et traite les écritures ;
-- un ou plusieurs **sites réplica** qui maintiennent des copies à jour des données via la réplication asynchrone depuis le site primary.
-
-Chaque cluster du ClusterSet conserve son **quorum interne** et son autonomie de fonctionnement. En cas de panne du site principal, un **failover inter-sites** permet de basculer l'activité vers un site réplica (disaster recovery, reprise après sinistre sur plusieurs sites géographiques). Le ClusterSet étend ainsi InnoDB Cluster de la haute disponibilité locale à une haute disponibilité géographique/multi-site.
-
-![Figure 8 : InnoDB ClusterSet Failover — figure 9.3, bascule entre site primary et site réplica](image-10.png)
-
-*Figure 8 : la figure 9.3 illustre le mécanisme de failover d'un InnoDB ClusterSet. Un site primary et un ou plusieurs sites réplica sont reliés par réplication asynchrone ; en cas de panne du site primary, l'activité applicative est basculée vers un site réplica. Cette image illustre une solution InnoDB (autre que le lab NDB Cluster sur 3 VM) et n'est pas déployée dans les Labs 1 et 2.*
-
-**Adaptation au lab** : ce mécanisme de failover inter-sites diffère du failover intra-cluster NDB du lab (`NoOfReplicas = 2`, node group unique sur VM 2, arbitrage par le nœud de gestion). Dans le lab, il n'y a pas de site réplica distant ni de ClusterSet ; la résilience est assurée localement par la réplication synchrone des deux nœuds de stockage (NodeId 2 et NodeId 3).
-
-**Lien avec le concept** : illustration du failover inter-sites et du disaster recovery, à contraster avec le failover automatique intra-node-group du cluster NDB étudié dans ce parcours.
-
-#### MySQL Router — routage du trafic applicatif entre l'application et MySQL
-
-**MySQL Router** est un **proxy léger** placé entre l'application et les serveurs MySQL. Il intercepte les connexions applicatives et les redirige automatiquement vers le bon nœud de base de données, en lecture ou en écriture, en s'appuyant sur les **métadonnées du cluster** (consultées au bootstrapping depuis InnoDB Cluster, InnoDB ReplicaSet ou InnoDB ClusterSet). Ses fonctions principales sont :
-
-- le **routage lecture/écriture** (split read/write) : les écritures sont envoyées vers le nœud primaire, les lectures vers les nœuds secondaires ;
-- le **routage vers les nœuds sains** : un nœud détecté indisponible est retiré du pool de routage ;
-- la **haute disponibilité de l'accès applicatif** : en cas de basculement (failover), le Router réoriente automatiquement les connexions vers le nouveau nœud disponible sans intervention de l'application.
-
-Les "routing guidelines" (bonnes pratiques de gestion et de configuration du routage) portent sur la définition des règles de routage, la configuration du Router via le bootstrap, et la surveillance des nœuds sains pour garantir un accès applicatif continu.
-
-![Figure 9 : MySQL Routing Guidelines — configuration et gestion du routage MySQL Router (1)](image-11.png)
-![Figure 10 : MySQL Routing Guidelines — configuration et gestion du routage MySQL Router (2)](image-12.png)
-
-*Figures 9 et 10 : ces illustrations présentent le placement de MySQL Router entre l'application et les serveurs MySQL, le split lecture/écriture du trafic, et les règles de configuration du routage (nœuds cibles, basculement, nœuds sains). Elles illustrent une solution InnoDB (autre que le lab NDB Cluster sur 3 VM) et ne sont pas déployées dans les Labs 1 et 2.*
-
-**Adaptation au lab** : dans le lab NDB Cluster sur 3 VM, il n'y a pas de MySQL Router intermédiaire. L'application s'adresse directement aux deux nœuds SQL (NodeId 4 sur `192.168.56.10` et NodeId 5 sur `192.168.56.12`), chacun capable de lectures et d'écritures sur le moteur NDB. La redondance est assurée par la réplication synchrone NDB (`NoOfReplicas = 2`), sans routeur externe ni split lecture/écriture au niveau applicatif.
-
-**Lien avec le concept** : illustration du routage applicatif et du proxy MySQL Router, à contraster avec l'accès direct aux nœuds SQL NDB dans le lab.
-
-#### Distinction nette avec NDB Cluster (cœur du lab)
-
-| Composant | Moteur sous-jacent | Réplication | Rôle | Mis en œuvre dans le lab ? |
-|---|---|---|---|---|
-| NDB Cluster (lab) | NDB (partagé-nothing) | Synchrone intra-node-group | Gestion, stockage, SQL, `NoOfReplicas = 2` | Oui (Labs 1 et 2) |
-| InnoDB Cluster | InnoDB / Group Replication | Quasi-synchrone | HA locale, failover automatique | Non (perspective uniquement) |
-| InnoDB ReplicaSet | InnoDB / réplication asynchrone | Asynchrone source → replica | HA simple, lecture scalable | Non (perspective uniquement) |
-| InnoDB ClusterSet | InnoDB / Group Replication + asynchrone inter-sites | Asynchrone entre sites | HA géographique, failover inter-sites | Non (perspective uniquement) |
-| MySQL Router | — (proxy) | — | Routage applicatif lecture/écriture | Non (perspective uniquement) |
-
-Dans ce lab, le cluster étudié reste le cluster NDB partagé-nothing avec nœuds de gestion, de stockage et SQL, `NoOfReplicas = 2`, ordre de démarrage gestion → stockage → SQL, et vérification d'intégrité avec `ndb_mgm -e "SHOW"`. Aucun composant InnoDB ClusterSet ni MySQL Router n'est installé ni configuré dans les Labs 1 et 2.
+Outre MySQL Cluster NDB (le moteur partagé-nothing étudié dans ce lab), MySQL propose d'autres solutions de haute disponibilité fondées sur le moteur InnoDB (InnoDB Cluster, InnoDB ReplicaSet, InnoDB ClusterSet, MySQL Router). Ces approches utilisent la réplication asynchrone Source/Replica ou Group Replication quasi-synchrone, et sont **distinctes de NDB Cluster**, qui est le cœur de ce parcours. Elles ne sont ni installées ni mises en œuvre dans les Labs 1 et 2 ; cette introduction se concentre exclusivement sur le cluster NDB partagé-nothing avec `NoOfReplicas = 2`, nœuds de gestion, de stockage et SQL, ordre de démarrage gestion → stockage → SQL, et vérification d'intégrité avec `ndb_mgm -e "SHOW"`.
 
 
 ## Architecture de laboratoire : cluster MySQL sur 3 VM (module 1.0)
