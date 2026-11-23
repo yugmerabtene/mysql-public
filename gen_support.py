@@ -291,7 +291,7 @@ html_parts.append('<div class="subtitle">Administration et exploitation d\'un cl
 html_parts.append('<div class="meta">')
 html_parts.append('<p><b>Parcours de formation :</b> MySQL Cluster — Administration et exploitation</p>')
 html_parts.append('<p><b>Public :</b> administrateurs système et bases de données (niveau débutant à intermédiaire)</p>')
-html_parts.append('<p><b>Durée :</b> 5 jours (modules 1.0 à 1.1)</p>')
+html_parts.append('<p><b>Durée :</b> 5 jours</p>')
 html_parts.append('<p><b>Infrastructure :</b> 3 VM Ubuntu Server 24.04 LTS sur réseau isolé vboxnet0 192.168.56.0/24</p>')
 html_parts.append('<p><b>Architecture :</b> 1 nœud de gestion (NodeId 1) + 2 nœuds de stockage (NodeId 2 et 3) + 2 nœuds SQL (NodeId 4 et 5)</p>')
 html_parts.append('<p><b>Contenu :</b> Chapitres 1 à 5 — Introduction, installation, architecture, administration, supervision, maintenance, optimisation, réplication, sécurité</p>')
