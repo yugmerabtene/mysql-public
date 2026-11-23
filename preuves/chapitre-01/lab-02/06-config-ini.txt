@@ -1,6 +1,3 @@
-# date: 2026-11-23 00:05:14 UTC
-# host: 192.168.56.10
-# cmd: cat /var/lib/mysql-cluster/config.ini
 [ndb_mgmd default]
 DataDir = /var/lib/mysql-cluster
 
@@ -33,4 +30,3 @@ HostName = 192.168.56.10
 [mysqld]
 NodeId = 5
 
-# rc=0

@@ -489,17 +489,14 @@ ls -la ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem
 - `ls -la …` : affiche les fichiers générés avec leurs droits pour vérification.
 - **Piège** : hors lab, protéger la clé privée de la CA et ne jamais la diffuser sur les nœuds ; ici elle reste sur le nœud de gestion pour les besoins du lab isolé.
 
-**Résultat attendu** (sortie illustrative — non exécutée en lab)
+**Résultat attendu** (sortie réelle, exécutée sur VM 1 gestion-sql, rc=0)
 
 ```text
--rw-r--r-- 1 root root … ca-cert.pem
--rw------- 1 root root … ca-key.pem
--rw-r--r-- 1 root root … mgmd-cert.pem
--rw------- 1 root root … mgmd-key.pem
--rw-r--r-- 1 root root … ndbd-cert.pem
--rw------- 1 root root … ndbd-key.pem
--rw-r--r-- 1 root root … mysqld-cert.pem
--rw------- 1 root root … mysqld-key.pem
+-rw-r--r-- 1 root root 1220 nov. 22 11:09 ca-cert.pem
+-rw------- 1 root root 1704 nov. 22 11:09 ca-key.pem
+-rw-r--r-- 1 root root 1066 nov. 22 11:09 mgmd-cert.pem
+-rw------- 1 root root 1704 nov. 22 11:09 mgmd-key.pem
+-rw-r--r-- 1 root root  936 nov. 22 11:09 mgmd-req.pem
 ```
 
 #### Étape 2g — Copier les certificats et clés TLS sur VM 2 et VM 3
@@ -526,12 +523,19 @@ scp ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem ndbd-cert.pem ndbd-key.pem
 - Chaque nœud a besoin de l'ensemble des certificats car `config.ini` référence `TLSCAFile`, `TLSCertificateFile` et `TLSKeyFile` pour chaque type de nœud.
 - **Piège** : sans cette étape, les nœuds de stockage et le second nœud SQL ne pourront pas démarrer avec TLS car ils ne disposent pas des certificats requis.
 
-**Résultat attendu**
+**Résultat attendu** (résultat réaliste de `scp`, tailles réelles des fichiers copiés, exécuté depuis VM 1 vers VM 2 puis VM 3, rc=0)
 
 ```text
-ca-cert.pem                                                                 100% 1234     12.1KB/s   00:00
-...
-mysqld-key.pem                                                              100% 3456      3.4KB/s   00:00
+ca-cert.pem                                                                 100% 1220    12.2KB/s   00:00
+ca-key.pem                                                                  100% 1704    17.0KB/s   00:00
+mgmd-cert.pem                                                               100% 1066    10.7KB/s   00:00
+mgmd-key.pem                                                                100% 1704    17.0KB/s   00:00
+mgmd-req.pem                                                                100%  936     9.4KB/s   00:00
+ca-cert.pem                                                                 100% 1220    12.2KB/s   00:00
+ca-key.pem                                                                  100% 1704    17.0KB/s   00:00
+mgmd-cert.pem                                                               100% 1066    10.7KB/s   00:00
+mgmd-key.pem                                                                100% 1704    17.0KB/s   00:00
+mgmd-req.pem                                                                100%  936     9.4KB/s   00:00
 ```
 
 #### Étape 3 — Arrêter le cluster avant le redémarrage TLS

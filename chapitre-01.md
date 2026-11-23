@@ -506,20 +506,59 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 
 ```text
 
-Lecture des listes de paquets... Fait
-Construction de l'arbre des dependances... Fait
-Lecture des informations d'etat... Fait
-Note : selection de mysql-server pour le motif rationnel "mysql-server-*"
-Les paquets suivants seront ENLES :
-  mysql-cluster-* mysql-server-* mysql-common-*
-0 mis a jour, 0 nouvellement installes, 3 a enlever et 0 non mis a jour.
-Apres cette operation, XXX Mo d'espace disque seront liberes.
-(Lecture de la base de donnees... 124568 fichiers et repertoires deja installes.)
-Suppression de mysql-cluster-common (8.0.xx-xxx) ...
-Suppression de mysql-server-core (8.0.xx-xxx) ...
-Suppression de mysql-common (8.0.xx-xxx) ...
-Traitement des actions differes pour man-db (2.xx-xxubuntuy) ...
-Traitement des actions differes pour libc-bin (2.xx-xxubuntuy) ...
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Lecture des informations d'état…
+Le paquet « mysql-cluster-commercial-client » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-client-core » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-server-core » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-client-plugins » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-server » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-test » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.7 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.7 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.1 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.5 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.6 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.1 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.5 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.6 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-core-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-plugins-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-data-node » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-data-node-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-java » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-management-server-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-nodejs » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-nodejs-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-core-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-debug » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-debug-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test-debug » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-8.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-8.0 » n'est pas installé, et ne peut donc être supprimé
+Les paquets suivants ont été installés automatiquement et ne sont plus nécessaires :
+  libmecab2 mysql-common
+Veuillez utiliser « apt autoremove » pour les supprimer.
+Les paquets suivants seront ENLEVÉS :
+  mysql-client* mysql-cluster-community-client*
+  mysql-cluster-community-client-core* mysql-cluster-community-client-plugins*
+  mysql-cluster-community-management-server* mysql-cluster-community-server*
+  mysql-cluster-community-server-core*
+0 mis à jour, 0 nouvellement installés, 7 à enlever et 40 non mis à jour.
+1 partiellement installés ou enlevés.
+Purg mysql-cluster-community-server [8.0.50-1ubuntu24.04]
+Purg mysql-client [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-client [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-client-core [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-client-plugins [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-management-server [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-server-core [8.0.50-1ubuntu24.04]
 
 ```
 
@@ -730,20 +769,53 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 
 ```text
 
-Lecture des listes de paquets... Fait
-Construction de l'arbre des dependances... Fait
-Lecture des informations d'etat... Fait
-Note : selection de mysql-server pour le motif rationnel "mysql-server-*"
-Les paquets suivants seront ENLES :
-  mysql-cluster-* mysql-server-* mysql-common-*
-0 mis a jour, 0 nouvellement installes, 3 a enlever et 0 non mis a jour.
-Apres cette operation, XXX Mo d'espace disque seront liberes.
-(Lecture de la base de donnees... 124568 fichiers et repertoires deja installes.)
-Suppression de mysql-cluster-common (8.0.xx-xxx) ...
-Suppression de mysql-server-core (8.0.xx-xxx) ...
-Suppression de mysql-common (8.0.xx-xxx) ...
-Traitement des actions differes pour man-db (2.xx-xxubuntuy) ...
-Traitement des actions differes pour libc-bin (2.xx-xxubuntuy) ...
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Lecture des informations d'état…
+Le paquet « mysql-cluster-commercial-client » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-client-core » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-server-core » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-client-plugins » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-server » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-test » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.7 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.7 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.1 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.5 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.6 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.1 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.5 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.6 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-plugins » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-core » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-core-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-plugins-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-data-node-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-java » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-management-server » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-management-server-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-nodejs » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-nodejs-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-core-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-debug » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-debug-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test-debug » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-8.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-8.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet suivant a été installé automatiquement et n'est plus nécessaire :
+  libclass-methodmaker-perl
+Veuillez utiliser « apt autoremove » pour le supprimer.
+Les paquets suivants seront ENLEVÉS :
+  mysql-cluster-community-data-node*
+0 mis à jour, 0 nouvellement installés, 1 à enlever et 40 non mis à jour.
+Purg mysql-cluster-community-data-node [8.0.50-1ubuntu24.04]
 
 ```
 
@@ -954,20 +1026,58 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 
 ```text
 
-Lecture des listes de paquets... Fait
-Construction de l'arbre des dependances... Fait
-Lecture des informations d'etat... Fait
-Note : selection de mysql-server pour le motif rationnel "mysql-server-*"
-Les paquets suivants seront ENLES :
-  mysql-cluster-* mysql-server-* mysql-common-*
-0 mis a jour, 0 nouvellement installes, 3 a enlever et 0 non mis a jour.
-Apres cette operation, XXX Mo d'espace disque seront liberes.
-(Lecture de la base de donnees... 124568 fichiers et repertoires deja installes.)
-Suppression de mysql-cluster-common (8.0.xx-xxx) ...
-Suppression de mysql-server-core (8.0.xx-xxx) ...
-Suppression de mysql-common (8.0.xx-xxx) ...
-Traitement des actions differes pour man-db (2.xx-xxubuntuy) ...
-Traitement des actions differes pour libc-bin (2.xx-xxubuntuy) ...
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Lecture des informations d'état…
+Le paquet « mysql-cluster-commercial-client » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-client-core » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-server-core » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-client-plugins » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-server » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-commercial-test » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.7 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.7 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.1 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.5 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-5.6 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.1 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.5 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-5.6 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-core-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-client-plugins-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-data-node » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-data-node-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-java » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-management-server » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-management-server-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-nodejs » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-nodejs-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-core-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-debug » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-server-debug-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test-dbgsym » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-cluster-community-test-debug » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-8.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet « mysql-server-core-8.0 » n'est pas installé, et ne peut donc être supprimé
+Le paquet suivant a été installé automatiquement et n'est plus nécessaire :
+  libmecab2
+Veuillez utiliser « apt autoremove » pour le supprimer.
+Les paquets suivants seront ENLEVÉS :
+  mysql-client* mysql-cluster-community-client*
+  mysql-cluster-community-client-core* mysql-cluster-community-client-plugins*
+  mysql-cluster-community-server* mysql-cluster-community-server-core*
+0 mis à jour, 0 nouvellement installés, 6 à enlever et 40 non mis à jour.
+1 partiellement installés ou enlevés.
+Purg mysql-cluster-community-server [8.0.50-1ubuntu24.04]
+Purg mysql-client [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-client [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-client-core [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-client-plugins [8.0.50-1ubuntu24.04]
+Purg mysql-cluster-community-server-core [8.0.50-1ubuntu24.04]
 
 ```
 

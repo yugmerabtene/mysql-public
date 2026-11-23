@@ -1,8 +1,9 @@
-# date: 2026-11-23 00:05:03 UTC
-# host: 192.168.56.11
-# cmd: hostname; date; whoami; ip -br addr show enp0s8
-stockage
-lun. 23 nov. 2026 00:05:02 UTC
-root
-enp0s8           UP             192.168.56.11/24 fe80::a00:27ff:fe62:5198/64 
-# rc=0
+PING 192.168.56.11 (192.168.56.11) 56(84) bytes of data.
+64 bytes from 192.168.56.11: icmp_seq=1 ttl=64 time=0.202 ms
+64 bytes from 192.168.56.11: icmp_seq=2 ttl=64 time=0.166 ms
+64 bytes from 192.168.56.11: icmp_seq=3 ttl=64 time=0.267 ms
+64 bytes from 192.168.56.11: icmp_seq=4 ttl=64 time=0.222 ms
+
+--- 192.168.56.11 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3070ms
+rtt min/avg/max/mdev = 0.166/0.214/0.267/0.036 ms
