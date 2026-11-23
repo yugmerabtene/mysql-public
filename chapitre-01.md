@@ -42,41 +42,7 @@
 | Lab | Mot de passe factice (uniquement pour le laboratoire) |
 | Auto-sharding | Répartition automatique des fragments de données sur les nœuds de stockage par le moteur NDB. |
 
-## Introduction à MySQL Cluster — Architecture et composants (module 1.0)
-
-MySQL Cluster (NDB Cluster) est une architecture partagée-nothing (shared-nothing) où chaque nœud possède sa propre mémoire et ses propres disques, et où les données sont fragmentées et répliquées sur plusieurs nœuds de stockage. Le moteur NDB assure le stockage distribué, la réplication synchrone des données et le basculement automatique en cas de panne d'un nœud.
-
-Le schéma ci-dessous présente l'architecture du lab de ce chapitre sur trois VM.
-
-```mermaid
-graph TD
-    H["Hôte 192.168.56.1"] -->|SSH admin| G["VM1 gestion-sql 192.168.56.10"]
-    H -->|SSH admin| S["VM2 stockage 192.168.56.11"]
-    H -->|SSH admin| T["VM3 mysql-node3 192.168.56.12"]
-    G --> MGM["ndb_mgmd NodeId=1"]
-    G --> SQL1["mysqld NodeId=4"]
-    S --> ND2["ndbmtd NodeId=2"]
-    S --> ND3["ndbmtd NodeId=3"]
-    T --> SQL2["mysqld NodeId=5"]
-    MGM -.->|connect-string| ND2
-    MGM -.->|connect-string| ND3
-    MGM -.->|connect-string| SQL1
-    MGM -.->|connect-string| SQL2
-```
-
-**Fig 1.1** — Architecture du cluster de lab sur 3 VM : gestion + SQL NodeId 4 sur VM 1, stockage NodeId 2 et 3 sur VM 2, second SQL NodeId 5 sur VM 3 ; accès d'administration par SSH depuis l'hôte.
-
-Les trois types de nœuds jouent des rôles distincts :
-
-- Le **nœud de gestion** (`ndb_mgmd`) lit le fichier `config.ini` qui décrit la topologie du cluster et la communique aux autres nœuds au démarrage. Il est le premier élément à démarrer.
-- Les **nœuds de stockage** (`ndbmtd`) contiennent les données en mémoire et les répliquent selon le paramètre `NoOfReplicas`. Ils se déclarent au nœud de gestion au démarrage.
-- Le **nœud SQL** (`mysqld`) active le moteur NDB et permet d'exécuter des requêtes SQL sur les données du cluster. Il se connecte au nœud de gestion pour découvrir la topologie.
-
-L'ordre de démarrage est critique : le nœud de gestion doit être lancé avant les nœuds de stockage, qui doivent être lancés avant les nœuds SQL. Cet ordre garantit que chaque nœud trouve le gestionnaire et rejoint le cluster sans erreur. Cet ordre est celui de référence du parcours : gestionnaire, puis stockage, puis SQL.
-
-MySQL Cluster est adapté aux applications critiques car il offre une haute disponibilité et une tolérance aux pannes : avec `NoOfReplicas = 2`, la perte d'un nœud de stockage n'interrompt pas le service, la réplique restante continue de répondre.
-
-## Présentation détaillée et architecture (enrichissement module 1.0)
+## Introduction à MySQL et au clustering (module 1.0)
 
 MySQL Cluster, basé sur le moteur de stockage NDB (Network Database), est une technologie de base de données distribuée qui fournit une haute disponibilité et une scalabilité horizontale. Son architecture, connue sous le nom d'"architecture Shared-Nothing" (partagé-nothing), répartit les données et les traitements sur plusieurs serveurs (ou machines virtuelles), éliminant tout point de défaillance unique (SPOF). Chaque nœud possède sa propre mémoire et ses propres disques ; les données sont fragmentées et répliquées sur plusieurs nœuds de stockage indépendants.
 
@@ -161,6 +127,39 @@ Deux mécanismes fondamentaux assurent scalabilité et disponibilité :
 ![Image 3 : Réplication synchrone et partitionnement](image.png)
 
 *Description de l'image : un schéma détaillé de la couche de stockage (correspondant logiquement à VM 2) montrant comment les données sont organisées entre les deux processus `ndbmtd`. Une table NDB nommée `t1` est divisée en quatre partitions logiques : P1, P2, P3, P4. Le schéma montre que P1 et P3 sont stockées dans `ndbmtd NodeId 2`, tandis que P2 et P4 sont stockées dans `ndbmtd NodeId 3`. Des flèches bidirectionnelles épaisses entre `ndbmtd NodeId 2` et `ndbmtd NodeId 3` illustrent la réplication synchrone de P1/P3 vers `ndbmtd NodeId 3` et de P2/P4 vers `ndbmtd NodeId 2`. La légende `NoOfReplicas = 2` souligne que chaque partition existe en deux exemplaires dans ce groupe de nœuds.*
+
+## Architecture de laboratoire : cluster MySQL sur 3 VM (module 1.0)
+
+
+Le schéma ci-dessous présente l'architecture concrète du lab de ce chapitre sur trois VM, avec la numérotation canonique des NodeId du parcours.
+
+```mermaid
+graph TD
+    H["Hôte 192.168.56.1"] -->|SSH admin| G["VM1 gestion-sql 192.168.56.10"]
+    H -->|SSH admin| S["VM2 stockage 192.168.56.11"]
+    H -->|SSH admin| T["VM3 mysql-node3 192.168.56.12"]
+    G --> MGM["ndb_mgmd NodeId=1"]
+    G --> SQL1["mysqld NodeId=4"]
+    S --> ND2["ndbmtd NodeId=2"]
+    S --> ND3["ndbmtd NodeId=3"]
+    T --> SQL2["mysqld NodeId=5"]
+    MGM -.->|connect-string| ND2
+    MGM -.->|connect-string| ND3
+    MGM -.->|connect-string| SQL1
+    MGM -.->|connect-string| SQL2
+```
+
+**Fig 1.1** — Architecture du cluster de lab sur 3 VM : gestion + SQL NodeId 4 sur VM 1, stockage NodeId 2 et 3 sur VM 2, second SQL NodeId 5 sur VM 3 ; accès d'administration par SSH depuis l'hôte.
+
+Les trois types de nœuds jouent des rôles distincts dans ce lab :
+
+- Le **nœud de gestion** (`ndb_mgmd`) lit le fichier `config.ini` qui décrit la topologie du cluster et la communique aux autres nœuds au démarrage. Il est le premier élément à démarrer.
+- Les **nœuds de stockage** (`ndbmtd`) contiennent les données en mémoire et les répliquent selon le paramètre `NoOfReplicas`. Ils se déclarent au nœud de gestion au démarrage.
+- Le **nœud SQL** (`mysqld`) active le moteur NDB et permet d'exécuter des requêtes SQL sur les données du cluster. Il se connecte au nœud de gestion pour découvrir la topologie.
+
+L'ordre de démarrage est critique : le nœud de gestion doit être lancé avant les nœuds de stockage, qui doivent être lancés avant les nœuds SQL. Cet ordre garantit que chaque nœud trouve le gestionnaire et rejoint le cluster sans erreur. Cet ordre est celui de référence du parcours : gestionnaire, puis stockage, puis SQL.
+
+MySQL Cluster est adapté aux applications critiques car il offre une haute disponibilité et une tolérance aux pannes : avec `NoOfReplicas = 2`, la perte d'un nœud de stockage n'interrompt pas le service, la réplique restante continue de répondre.
 
 ## Fichier de configuration config.ini — référence du parcours
 
