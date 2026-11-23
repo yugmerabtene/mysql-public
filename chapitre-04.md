@@ -63,6 +63,40 @@ La charge ou une défaillance cherche à saturer une ressource (RAM, disque, ré
 | Réplication inter-clusters | NDB-26 | SQL source / SQL replica | `SHOW SLAVE STATUS`, `ndb_mgm SHOW` | Vérifier que le canal de réplication est actif et `Seconds_Behind_Master = 0` | Valider le binlog et le canal de réplication |
 | Gestion pannes | NDB-27 | Nœud de stockage | `ndb_mgm -e "SHOW"` | Détecter le passage d'un nœud en `not connected` | Maintenir `NoOfReplicas = 2` pour le basculement |
 | Failover / failback | NDB-28 | Nœud de stockage | `ndb_mgm -e "SHOW"`, chronométrage | Mesurer le temps de basculement et de resynchronisation | Redémarrer le nœud et valider la resynchronisation sans perte de données |
+
+### ThreadConfig — configuration des threads de ndbmtd
+
+Le processus `ndbmtd` (multi-threaded data node) peut exécuter plusieurs threads en parallèle pour traiter les requêtes de lecture, d'écriture et de maintenance. Le paramètre `ThreadConfig` dans `config.ini` permet de définir le nombre et le type de threads :
+
+* **ldm** (Local Data Manager) : gère les données et les index en mémoire. C'est le thread le plus critique ; son nombre doit être adapté au nombre de cœurs CPU et à la taille du jeu de données.
+* **tc** (Transaction Coordinator) : coordonne les transactions et le Two-Phase Commit.
+* **main** : gère la communication avec le nœud de gestion et les requêtes de schéma.
+* **recv** / **send** : gèrent la réception et l'envoi des messages réseau entre nœuds.
+
+Exemple de configuration pour un nœud multi-cœurs :
+```
+ThreadConfig = ldm=4,tc=4,main=1,recv=1,send=1
+```
+
+Un nombre insuffisant de threads `ldm` limite le débit de lecture/écriture ; un nombre excessif génère du surcoût de contexte (context switching) et peut dégrader les performances. Le réglage doit être itératif, guidé par les métriques de `ndbinfo`.
+
+### Métriques de diagnostic : ndbinfo
+
+`ndbinfo` est une base de données mémoire intégrée au moteur NDB, accessible via SQL sur n'importe quel nœud SQL. Elle expose des tables de diagnostic en temps réel :
+
+* **`memoryusage`** : usage de `DataMemory` et `IndexMemory` par nœud de stockage (équivalent de `ALL REPORT MEMORYUSAGE`).
+* **`threadstat`** : activité et occupation CPU de chaque thread de `ndbmtd`.
+* **`transporters`** : état des connexions réseau entre nœuds (octets envoyés/reçus, erreurs, retards).
+* **`operations`** : nombre d'opérations lues/écrites par nœud de stockage.
+* **`lock_holders` / `lock_waiters`** : détection des verrous en attente et des blocages potentiels.
+
+Exemple de requête de diagnostic :
+```sql
+SELECT node_id, memory_type, used, total FROM ndbinfo.memoryusage;
+```
+
+Ces métriques permettent d'identifier un nœud de stockage en surcharge, un goulot réseau, ou une saturation mémoire avant qu'elle n'impacte le service.
+
 ## Lab-10 — Paramètres performance et goulots d'étranglement
 ### Énoncé / Contexte
 Optimiser les paramètres de performance du moteur NDB (`DataMemory`, `IndexMemory`, `NoOfFragmentLogParts`, `RedoBuffer`) et diagnostiquer les goulots d'étranglement (RAM, disque, réseau). Ce lab réalise les opérations `NDB-23` et `NDB-24`. Le cluster doit être démarré et sain. L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dans `.env`, non affiché en clair).

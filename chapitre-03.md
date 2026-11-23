@@ -72,6 +72,17 @@ graph TD
 
 La panne ou la défaillance cherche à rendre les données indisponibles ou à corrompre une sauvegarde. L'administrateur voit : tout nœud passant en `not connected` dans `SHOW`, toute sauvegarde échouée dans les journaux, et tout écart de mémoire détecté par `ALL REPORT MEMORYUSAGE`. La détection précoce et la sauvegarde validée sont les deux contrôles principaux.
 
+### Cohérence des sauvegardes et lien avec LCP / GCP
+
+Une sauvegarde NDB (`START BACKUP`) capture une image consistante des données à un instant donné. Cette consistence repose sur les mécanismes de durabilité du moteur NDB :
+
+* **Checkpoints Locaux (LCP)** : chaque nœud de stockage vide périodiquement ses données modifiées en mémoire vers son propre disque. Un LCP est local à un nœud et ne garantit pas à lui seul la cohérence globale du cluster.
+* **Checkpoints Globaux (GCP)** : un point de contrôle global synchronise la vidange du journal de redo (Redo Log) sur **tous** les nœuds de stockage. Le GCP marque un point de cohérence transactionnelle commun à tout le cluster.
+
+Lorsqu'une sauvegarde est lancée, NDB s'assure qu'elle s'appuie sur un GCP récent pour garantir que toutes les partitions et leurs répliques sont cohérentes entre elles. La sauvegarde produite est donc un instantané consistant du cluster entier, même si les nœuds de stockage écrivent leurs fichiers de sauvegarde de façon indépendante.
+
+**PITR conceptuel (Point-in-Time Recovery)** : NDB ne propose pas de PITR natif à la granularité de la transaction comme certains moteurs basés sur un journal binaire. La restauration avec `ndb_restore` revient à l'état de la sauvegarde choisie. Pour une reprise à un instant précis, il faut combiner une sauvegarde complète avec les binaires de redo appliqués manuellement — ce qui n'est pas mis en œuvre dans les Labs 1 à 3 du parcours.
+
 ## Cartographie de référence des opérations (NDB-nn)
 
 | Opération | ID | Composant | Source de données | Règle de détection | Mitigation |

@@ -117,6 +117,25 @@ La durabilité des données est assurée par trois mécanismes complémentaires 
 
 Ces mécanismes garantissent que, même en cas de perte d'un nœud de stockage, aucune donnée validée n'est perdue et que le cluster peut se resynchroniser automatiquement.
 
+### ndbd vs ndbmtd — deux implémentations du nœud de stockage
+
+MySQL Cluster propose deux binaires pour le nœud de stockage :
+
+* **`ndbd`** : implémentation mono-thread. Un processus `ndbd` gère toutes les opérations de lecture/écriture dans un seul thread. Plus simple, mais limité par les performances d'un seul cœur CPU.
+* **`ndbmtd`** (multi-threaded data node) : implémentation multi-thread. Un processus `ndbmtd` peut exécuter plusieurs threads de traitement en parallèle (`ThreadConfig`), ce qui améliore fortement le débit sur les machines multi-cœurs.
+
+Dans ce lab, VM 2 exécute deux instances `ndbmtd` (NodeId 2 et NodeId 3) car c'est l'implémentation recommandée pour les charges de production et pour exploiter plusieurs cœurs CPU sur une même machine.
+
+### Ports et connect-string du cluster NDB
+
+Chaque nœud du cluster NDB doit savoir comment contacter le nœud de gestion pour rejoindre le cluster. Cela se fait via la **connect-string** :
+
+* Port par défaut du nœud de gestion (`ndb_mgmd`) : **1186**
+* Port par défaut des nœuds SQL (`mysqld`) : **3306** (protocole MySQL classique)
+* Port de communication interne NDB entre nœuds de stockage : dynamique, géré par le gestionnaire
+
+Exemple de connect-string : `192.168.56.10:1186` (adresse IP du nœud de gestion + port 1186). Cette connect-string est transmise à chaque `ndbmtd` et `mysqld` au démarrage, et au client `ndb_mgm` pour l'administration.
+
 ### NoOfReplicas = 2, node groups, quorum, split-brain et failover automatique
 
 Le cluster est structuré autour de **groupes de nœuds (node group)**. Un groupe de nœuds est constitué d'un ensemble de nœuds de stockage qui contiennent les mêmes fragments de données. Chaque fragment est répliqué sur chaque nœud du groupe.
@@ -124,6 +143,27 @@ Le cluster est structuré autour de **groupes de nœuds (node group)**. Un group
 Dans une configuration avec `NoOfReplicas = 2` (valeur de référence du parcours), chaque groupe de nœuds contient exactement deux nœuds de stockage. Dans ce lab, VM 2 exécute les deux processus `ndbmtd` (NodeId 2 et NodeId 3) qui appartiennent au même node group (Nodegroup: 0) afin d'assurer la réplication synchrone.
 
 **Réplication synchrone** : chaque partition est répliquée sur tous les nœuds d'un groupe de nœuds. Lorsqu'une transaction valide une écriture, cette écriture doit être confirmée avec succès par **tous** les nœuds de stockage du groupe avant que le nœud SQL ne puisse confirmer la réussite de la transaction à l'application cliente. Cela garantit que toutes les répliques sont cohérentes à tout moment.
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant SQL as Nœud SQL (mysqld)
+    participant DN1 as Data Node NodeId 2
+    participant DN2 as Data Node NodeId 3
+    App->>SQL: INSERT INTO t1 (id,val) VALUES (1,'x')
+    SQL->>DN1: écrire partition P1 (prepare)
+    SQL->>DN2: écrire réplica P1 (prepare)
+    DN1-->>SQL: acquit prepare OK
+    DN2-->>SQL: acquit prepare OK
+    SQL->>DN1: commit
+    SQL->>DN2: commit
+    DN1-->>SQL: commit OK
+    DN2-->>SQL: commit OK
+    SQL-->>App: succès (ACK)
+    note over App,DN2: Two-Phase Commit (2PC) : validation sur TOUS les nœuds du node group
+```
+
+**Two-Phase Commit (2PC)** : protocole de validation distribuée utilisé par NDB pour garantir la cohérence. Le nœud SQL joue le rôle de coordinateur. Il envoie d'abord une requête "prepare" à tous les nœuds de stockage du node group ; chaque nœud acquitte. Puis, une fois tous les acquit reçus, le coordinateur envoie "commit" à tous. La transaction n'est confirmée à l'application que lorsque **tous** les nœuds ont acquitté le commit. Si un nœud ne répond pas dans les temps, la transaction est annulée (rollback) pour préserver la cohérence.
 
 **Quorum** : le quorum est la règle de décision par majorité qui empêche deux partitions du cluster d'agir simultanément. Dans un système distribué, un quorum se calcule généralement comme (N / 2) + 1, où N est le nombre total de nœuds participants. Cela signifie qu'une majorité de nœuds doit s'accorder avant qu'une décision ne soit prise. C'est pourquoi les clusters sont généralement déployés avec un nombre impair de serveurs (à partir de 3) : cela garantit qu'une majorité peut toujours être formée, même après une défaillance.
 
@@ -133,7 +173,32 @@ Dans ce lab NDB, le quorum est assuré par le nœud de gestion qui agit comme ar
 
 Le split-brain est prévenu par l'arbitrage : le nœud de gestion agit comme arbitre et tranche quel node group reste actif lorsque la communication entre node groups est perdue. Le groupe majoritaire (qui peut atteindre le quorum) reste opérationnel ; le groupe minoritaire devient indisponible et cesse d'accepter des écritures. Si le nœud de gestion se trouve dans la partition minoritaire, il reconnaît sa séparation et cède son rôle d'arbitre. L'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin.
 
+### Figure 6 — Topologie région unique vs multi-région (illustration du quorum et du split-brain)
+
+![Figure 6 : Topologie région unique vs multi-région](image-16.png)
+![Figure 7 : Topologie multi-région 3 sites (Régions A, B, C)](image-17.png)
+
+*Figures 6 et 7 : ces illustrations présentent le concept de topologie région unique (Single Region) versus topologie multi-région (Multi Region) avec plusieurs régions (A, B, C). Elles illustrent le principe de quorum réparti sur plusieurs sites : un cluster déployé sur plusieurs régions peut continuer à fonctionner si une région entière tombe en panne, à condition qu'une majorité de nœuds reste joignable. Dans le lab NDB sur 3 VM (toutes sur le même réseau vboxnet0), le quorum est assuré localement par le nœud de gestion + le nœud de stockage restant ; il n'y a pas de réplica distant ni de ClusterSet. Ces images illustrent le principe général de quorum et de résilience géographique, à contraster avec le failover intra-node-group du lab.*
+
+**Lien avec le concept** : illustration du quorum (N/2 + 1) et du split-brain à l'échelle multi-région, concepts fondements de la résilience des clusters distribués.
+
 **Failover automatique** : lorsqu'un nœud de stockage défaillant est détecté, le nœud de gestion marque ce node comme `not connected` et les opérations SQL basculent automatiquement sur la réplica restante. Lorsqu'un nœud est rajouté ou redémarré, il resynchronise ses données depuis la réplica vivante et réintègre le cluster. Ce mécanisme de failover automatique est au cœur de la haute disponibilité visée par les systèmes critiques.
+
+```mermaid
+flowchart TD
+    A[État normal : NodeId 2 et NodeId 3 actifs] --> B[PanNodeId 2 : nœud de stockage hors service]
+    B --> C[ndb_mgmd détecte not connected (heartbeat)]
+    C --> D[Basculement automatique sur NodeId 3]
+    D --> E[Opérations SQL basculent sur réplica NodeId 3]
+    E --> F[NodeId 2 redémarré]
+    F --> G[Resynchronisation depuis NodeId 3]
+    G --> H[NodeId 2 réintègre le cluster]
+    style B fill:#f96,stroke:#333
+    style E fill:#9f6,stroke:#333
+    style H fill:#9f6,stroke:#333
+```
+
+**Cycle de failover** : détection de panne par heartbeat → basculement sur la réplica vivante → resynchronisation à chaud du nœud redémarré → réintégration dans le cluster, sans interruption de service.
 
 ### Partitionnement (sharding / auto-sharding) et contraintes des gros volumes
 
@@ -148,6 +213,26 @@ Le moteur NDB assure nativement le **partitionnement (sharding)** des données :
 * **IndexMemory** : mémoire allouée aux index sur chaque nœud de stockage. Doit être dimensionnée en fonction du nombre et de la taille des index définis sur les tables NDB.
 * **Consommation RAM** : comme NDB stocke les données en mémoire, la RAM totale disponible sur chaque nœud de stockage limite la taille maximale du jeu de données du cluster. Sur des VM avec 1 Go de RAM (comme dans ce lab), ces paramètres doivent rester très conservateurs (`DataMemory = 256M`, `IndexMemory = 128M` dans le `config.ini` de référence).
 * **Pas de compression native** : NDB ne compresse pas les données en mémoire ; le dimensionnement doit tenir compte de la taille brute des données et des index.
+
+```mermaid
+graph TD
+    Table["Table NDB t1 (clé primaire)"] --> P1[Partition P1]
+    Table --> P2[Partition P2]
+    Table --> P3[Partition P3]
+    Table --> P4[Partition P4]
+    P1 --> DN2["Data Node NodeId 2\n(réplica A)"]
+    P1 --> DN3["Data Node NodeId 3\n(réplica B)"]
+    P2 --> DN2
+    P2 --> DN3
+    P3 --> DN2
+    P3 --> DN3
+    P4 --> DN2
+    P4 --> DN3
+    style DN2 fill:#9f6,stroke:#333
+    style DN3 fill:#9f6,stroke:#333
+```
+
+**Auto-sharding** : les partitions P1..P4 sont réparties automatiquement sur les deux nœuds de stockage selon la clé primaire, chaque partition existant en deux exemplaires (NoOfReplicas = 2) sur NodeId 2 et NodeId 3. Le moteur NDB gère lui-même la distribution et le rééquilibrage, sans routeur externe.
 
 ### Vérification d'intégrité du cluster : ndb_mgm -e "SHOW"
 
@@ -180,6 +265,69 @@ Les caractéristiques uniques de MySQL Cluster en font une solution privilégié
 * **Télécommunications** : utilisé pour les systèmes HLR (Home Location Register) et HSS (Home Subscriber Server) qui gèrent des millions d'abonnés et nécessitent un accès aux données en temps réel et une disponibilité extrême.
 * **Finance et Paiements** : utilisé pour les plateformes de traitement des transactions qui exigent une intégrité transactionnelle (ACID) et aucune perte de données, tout en supportant une charge élevée.
 * **Web et Services à Haute Concurrence** : utilisé pour les systèmes de gestion de sessions, les catalogues de produits en ligne ou les infrastructures de messagerie où la performance et la scalabilité sont primordiales.
+
+### Cycle de vie d'une requête dans NDB (SELECT et INSERT)
+
+Pour comprendre le comportement du cluster, il faut suivre le cheminement d'une requête SQL à travers les trois types de nœuds.
+
+#### SELECT (lecture)
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant SQL as Nœud SQL (mysqld)
+    participant DN as Data Node (ndbmtd)
+    App->>SQL: SELECT * FROM t1 WHERE id = 42
+    SQL->>SQL: calcul de la partition (hash sur clé primaire)
+    SQL->>DN: lire partition Px sur le nœud responsable
+    DN-->>SQL: retour du fragment de données
+    SQL-->>App: résultat SQL
+```
+
+L'application s'adresse à n'importe quel nœud SQL. Celui-ci calcule la partition ciblée à partir de la valeur de la clé primaire (auto-sharding), interroge le nœud de stockage responsable, puis renvoie le résultat. La lecture peut être servie par n'importe quelle réplica de la partition.
+
+#### INSERT / UPDATE / DELETE (écriture)
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant SQL as Nœud SQL (mysqld)
+    participant DN1 as Data Node NodeId 2
+    participant DN2 as Data Node NodeId 3
+    App->>SQL: INSERT INTO t1 (id,val) VALUES (42,'x')
+    SQL->>SQL: calcul de la partition (hash sur clé primaire)
+    SQL->>DN1: écrire partition Px (prepare)
+    SQL->>DN2: écrire réplica Px (prepare)
+    DN1-->>SQL: acquit prepare OK
+    DN2-->>SQL: acquit prepare OK
+    SQL->>DN1: commit
+    SQL->>DN2: commit
+    DN1-->>SQL: commit OK
+    DN2-->>SQL: commit OK
+    SQL-->>App: succès (ACK)
+```
+
+Une écriture suit le même chemin qu'une lecture pour localiser la partition, puis déclenche un Two-Phase Commit (2PC) : le nœud SQL coordonne la validation sur **tous** les nœuds de stockage du node group avant de confirmer à l'application. La cohérence est forte (synchrone) mais le coût est un aller-retour supplémentaire par réplica.
+
+#### Différence de comportement selon le type de requête
+
+| Type de requête | Chemin dans le cluster | Cohérence | Latence |
+|-----------------|------------------------|-----------|---------|
+| SELECT par clé primaire | SQL → nœud de stockage responsable | forte (lecture sur réplica à jour) | faible (1 aller-retour) |
+| SELECT par index secondaire | SQL → tous les nœuds de stockage (scan) | forte | plus élevée (scatter-gather) |
+| INSERT / UPDATE / DELETE | SQL → 2PC sur tous les nœuds du node group | forte (synchrone) | moyenne (2 allers-retours minimum) |
+
+### Tableau comparatif NDB vs InnoDB
+
+| Critère | NDB Cluster (lab) | InnoDB (MySQL classique) |
+|---------|-------------------|--------------------------|
+| Architecture | Partagé-nothing, distribué | Monolythique par serveur, réplication asynchrone |
+| Stockage des données | Mémoire (RAM) + disque (checkpoints/redo) | Principalement disque + buffer pool |
+| Réplication | Synchrone intra-node-group (2PC) | Asynchrone Source/Replica ou Group Replication |
+| Failover | Automatique sur réplica restante | Manuel (ReplicaSet) ou automatique (Cluster/GR) |
+| Quorum | Nœud de gestion arbitre | Quorum de Group Replication (si activé) |
+| Partitionnement | Auto-sharding natif par clé primaire | Sharding manuel ou via middleware |
+| Moteur utilisé dans ce lab | Oui (Labs 1 et 2) | Non (perspective théorique uniquement) |
 
 ### Mise en perspective (solutions HA InnoDB distinctes du lab)
 

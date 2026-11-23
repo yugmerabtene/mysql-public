@@ -14,7 +14,7 @@
 
 ## Prérequis
 
-Le chapitre 1 doit avoir été réalisé : les 3 VM sont nettoyées et configurées (IP statiques, SSH root), MySQL Cluster est installé et les 5 nœuds sont connectés (`ndb_mgm -e "SHOW"` liste 5 nœuds sans état `not connected`). Le fichier `config.ini` est présent sur VM 1 avec `NoOfReplicas = 2`. Le cluster est démarré dans l'ordre (gestion → stockage → SQL).
+Le chapitre 1 doit avoir été réalisé : les 3 VM sont nettoyées et configurées (IP statiques, SSH root), MySQL Cluster est installé et les 5 nœuds sont connectés (`ndb_mgm -e "SHOW"` liste 5 nœuds sans état `not connected`). Le fichier `config.ini` est présent sur VM 1 avec `NoOfReplicas = 2`. Le cluster est démarré dans l'ordre (gestion → stockage → SQL). L'architecture détaillée (3 types de nœuds, node groups, quorum, split-brain, failover automatique) est présentée au chapitre 1 ; ce chapitre se concentre sur l'administration, la surveillance et la maintenance opérationnelle.
 
 ## Vocabulaire
 
@@ -34,79 +34,33 @@ Le chapitre 1 doit avoir été réalisé : les 3 VM sont nettoyées et configur�
 | Arbitrage | Mécanisme par lequel le nœud de gestion tranche en cas de perte de communication entre node groups. |
 | Heartbeat | Battement de cœur périodique entre nœuds pour détecter une panne. |
 
-## Introduction à l'architecture NDB (module 2.0)
-
-MySQL Cluster repose sur une architecture partagée-nothing (shared-nothing) : chaque nœud possède sa propre mémoire et ses propres disques. Le moteur NDB fragmente automatiquement chaque table sur les nœuds de stockage (partitionnement / auto-sharding) et réplique chaque fragment selon `NoOfReplicas`.
-
-Le schéma ci-dessous présente l'architecture détaillée du lab sur 3 VM.
-
-```mermaid
-graph TD
-    H["Hôte 192.168.56.1"] -->|SSH admin| G["VM1 gestion-sql 192.168.56.10"]
-    H -->|SSH admin| S["VM2 stockage 192.168.56.11"]
-    H -->|SSH admin| T["VM3 mysql-node3 192.168.56.12"]
-    G --> MGM["ndb_mgmd NodeId=1"]
-    G --> SQL1["mysqld NodeId=4"]
-    S --> ND2["ndbmtd NodeId=2"]
-    S --> ND3["ndbmtd NodeId=3"]
-    T --> SQL2["mysqld NodeId=5"]
-    MGM -.->|connect-string| ND2
-    MGM -.->|connect-string| ND3
-    MGM -.->|connect-string| SQL1
-    MGM -.->|connect-string| SQL2
-    ND2 <-->|réplication synchrone| ND3
-    SQL1 -.->|requêtes SQL| ND2
-    SQL2 -.->|requêtes SQL| ND3
-```
-
-**Fig 2.1** — Architecture détaillée du cluster sur 3 VM : gestion + SQL NodeId 4 sur VM 1, stockage NodeId 2 et 3 sur VM 2, second SQL NodeId 5 sur VM 3 ; réplication synchrone entre les nœuds de stockage d'un même node group.
-
-Le node group formé par NodeId 2 et NodeId 3 contient les deux répliques de chaque fragment. Avec `NoOfReplicas = 2`, le cluster peut tolérer la perte d'un des deux nœuds de stockage.
-
-Le schéma ci-dessous illustre le partitionnement et la réplication des données.
-
-```mermaid
-graph TD
-    T["Table SQL"] -->|fragment F1| N2["NodeId 2: Réplica A"]
-    T -->|fragment F1| N3["NodeId 3: Réplica B"]
-    T -->|fragment F2| N3
-    T -->|fragment F2| N2
-    SQL1["mysqld NodeId=4"] -->|lecture/écriture| T
-    SQL2["mysqld NodeId=5"] -->|lecture/écriture| T
-    N2 <-->|synchro| N3
-```
-
-**Fig 2.2** — Partitionnement et réplication : chaque fragment existe en deux répliques sur les deux nœuds de stockage du node group ; les nœuds SQL accèdent aux données via le moteur NDB.
-
-## Risques et résilience
-
-Le moteur NDB valide chaque écriture uniquement après réplication sur tous les nœuds d'un node group. La perte d'un nœud de stockage ne rompt pas le service : la réplique restante répond immédiatement.
-
-### Arbitrage, quorum et split-brain
-
-L'arbitre (nœud de gestion) tranche en cas de perte de communication entre node groups pour prévenir le split-brain. L'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin. Lorsque plusieurs partitions surviennent après un problème réseau, au moins un cluster survivant doit atteindre l'arbitre pour éviter l'arrêt complet du système.
-
-Le schéma ci-dessous illustre l'arbitrage et la prévention du split-brain.
-
-```mermaid
-graph TD
-    MGM["ndb_mgmd NodeId=1 arbitre"] -->|quorum| NG["Nodegroup 0: NodeId 2 + NodeId 3"]
-    NG -->|réplication synchrone| R1["NodeId 2: Réplica A"]
-    NG -->|réplication synchrone| R2["NodeId 3: Réplica B"]
-    P["Perte réseau NodeId 2"] -->|déclenche arbitrage| MGM
-    MGM -->|décide NodeId 3 actif| R2
-    R2 -->|service continu| SQL1["mysqld NodeId=4"]
-    R2 -->|service continu| SQL2["mysqld NodeId=5"]
-    SB["Split-brain évité"] -.->|quorum majoritaire| MGM
-```
-
-**Fig 2.3** — Arbitrage et prévention du split-brain : le nœud de gestion tranche quel node group reste actif lorsque la communication est coupée.
-
-### Heartbeat et détection de panne
+### Heartbeat et détection de panne### Heartbeat et détection de panne
 
 Les nœuds échangent des heartbeats (battements de cœur) périodiques. Si un nœud de données manque plusieurs heartbeats, le gestionnaire le déclare mort, suivi d'une fermeture forcée avec l'erreur 2315 ("Node declared dead. See error log for details(Arbitration error)"). La détection rapide des pannes est une condition clé des systèmes critiques.
 
 Lorsqu'un nœud défaillant revient, il resynchronise ses données depuis la réplica vivante (failover automatique et resynchronisation à chaud).
+
+### Événements, alertes et surveillance du cluster
+
+NDB expose un système d'événements (`ndb_event`) qui permet de superviser l'état du cluster en temps réel. Chaque changement notable (démarrage/arrêt d'un nœud, passage en `not connected`, basculement de failover, erreur de configuration, saturation mémoire) génère un événement consigné dans les logs du cluster.
+
+* **Logs du cluster** : les processus `ndb_mgmd`, `ndbmtd` et `mysqld` écrivent leurs traces dans leur répertoire `DataDir` respectif (`/var/lib/mysql-cluster/ndb_X` sur les nœuds de stockage, `/var/lib/mysql-cluster` sur le gestionnaire). Ces logs sont la source principale pour diagnostiquer une erreur de démarrage ou un problème d'arbitrage.
+* **`ndb_mgm SHOW` et `ALL REPORT MEMORYUSAGE`** : la console de gestion affiche l'état des nœuds et l'usage mémoire (`DataMemory`, `IndexMemory`). Une alerte se déclenche lorsqu'un nœud passe en `not connected` ou lorsque l'usage mémoire approche 80-90 %.
+* **`ndb_stat`** : affiche des statistiques de performance par nœud de stockage (opérations lues/écrites, transactions, fragments). Utile pour détecter un déséquilibre de charge entre les nœuds de stockage.
+* **`ndb_top`** : visualise en temps réel l'activité CPU et les opérations NDB par thread sur chaque nœud de stockage. Permet d'identifier un goulot d'étranglement au niveau d'un thread de traitement.
+
+```mermaid
+flowchart TD
+    Event[Événement NDB] --> Log[Log du nœud (ndb_mgmd/ndbmtd/mysqld)]
+    Event --> MGM[ndb_mgmd : arbitre + collecte]
+    MGM --> SHOW[ndb_mgm SHOW / ALL REPORT MEMORYUSAGE]
+    MGM --> Stat[ndb_stat : stats par nœud]
+    MGM --> Top[ndb_top : activité CPU/thread temps réel]
+    Log --> Alerte[Alerte si not connected ou mémoire > 80%]
+    SHOW --> Action[Action admin : redémarrage, ajout nœud, tuning]
+```
+
+**Surveillance recommandée** : vérifier `ndb_mgm -e "SHOW"` quotidiennement, surveiller l'usage `DataMemory`/`IndexMemory` via `ALL REPORT MEMORYUSAGE`, et consulter les logs du cluster en cas d'erreur 2315 (nœud déclaré mort) ou d'échec d'arbitrage.
 
 ## Cartographie de référence des opérations (NDB-nn)
 
