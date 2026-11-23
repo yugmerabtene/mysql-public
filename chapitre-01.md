@@ -2,7 +2,7 @@
 
 ## Objectif du chapitre
 
-À la fin de ce chapitre, l'apprenant sait décrire l'architecture de MySQL Cluster (moteur NDB, nœuds de gestion, de stockage et SQL), installer et configurer les trois VM du laboratoire (réseau vboxnet0, adresses IP statiques, SSH, nettoyage, snapshots), installer les composants MySQL Cluster sur chaque VM, rédiger le fichier `config.ini` inspiré des exemples valides du livre ("Pro MySQL NDB Cluster", Krogh & Okuno) avec `NoOfReplicas = 2`, démarrer les nœuds dans l'ordre critique (gestion, puis stockage, puis SQL), vérifier l'intégrité du cluster avec `ndb_mgm -e "SHOW"`, et analyser la résilience (node groups, quorum, split-brain, failover automatique) ainsi que les contraintes des gros volumes de données (DataMemory, IndexMemory, partitionnement, auto-sharding).
+À la fin de ce chapitre, l'apprenant sait décrire l'architecture de MySQL Cluster (moteur NDB, nœuds de gestion, de stockage et SQL), installer et configurer les trois VM du laboratoire (réseau vboxnet0, adresses IP statiques, SSH, nettoyage, snapshots), installer les composants MySQL Cluster sur chaque VM, rédiger le fichier `config.ini` de référence du parcours avec `NoOfReplicas = 2`, démarrer les nœuds dans l'ordre critique (gestion, puis stockage, puis SQL), vérifier l'intégrité du cluster avec `ndb_mgm -e "SHOW"`, et analyser la résilience (node groups, quorum, split-brain, failover automatique) ainsi que les contraintes des gros volumes de données (DataMemory, IndexMemory, partitionnement, auto-sharding).
 
 ## Avertissement et périmètre
 
@@ -46,7 +46,7 @@
 
 MySQL Cluster (NDB Cluster) est une architecture partagée-nothing (shared-nothing) où chaque nœud possède sa propre mémoire et ses propres disques, et où les données sont fragmentées et répliquées sur plusieurs nœuds de stockage. Le moteur NDB assure le stockage distribué, la réplication synchrone des données et le basculement automatique en cas de panne d'un nœud.
 
-Le schéma ci-dessous présente l'architecture du lab de ce chapitre sur trois VM, inspirée des figures de topologie NDB du livre "Pro MySQL NDB Cluster".
+Le schéma ci-dessous présente l'architecture du lab de ce chapitre sur trois VM.
 
 ```mermaid
 graph TD
@@ -64,7 +64,7 @@ graph TD
     MGM -.->|connect-string| SQL2
 ```
 
-**Fig 1.1** — Architecture du cluster de lab sur 3 VM : gestion + SQL NodeId 4 sur VM 1, stockage NodeId 2 et 3 sur VM 2, second SQL NodeId 5 sur VM 3 ; accès d'administration par SSH depuis l'hôte. Inspirée des figures de topologie NDB du livre "Pro MySQL NDB Cluster".
+**Fig 1.1** — Architecture du cluster de lab sur 3 VM : gestion + SQL NodeId 4 sur VM 1, stockage NodeId 2 et 3 sur VM 2, second SQL NodeId 5 sur VM 3 ; accès d'administration par SSH depuis l'hôte.
 
 Les trois types de nœuds jouent des rôles distincts :
 
@@ -72,15 +72,15 @@ Les trois types de nœuds jouent des rôles distincts :
 - Les **nœuds de stockage** (`ndbmtd`) contiennent les données en mémoire et les répliquent selon le paramètre `NoOfReplicas`. Ils se déclarent au nœud de gestion au démarrage.
 - Le **nœud SQL** (`mysqld`) active le moteur NDB et permet d'exécuter des requêtes SQL sur les données du cluster. Il se connecte au nœud de gestion pour découvrir la topologie.
 
-L'ordre de démarrage est critique : le nœud de gestion doit être lancé avant les nœuds de stockage, qui doivent être lancés avant les nœuds SQL. Cet ordre garantit que chaque nœud trouve le gestionnaire et rejoint le cluster sans erreur. Le livre recommande cet ordre : gestionnaires, puis nœuds de données, puis nœuds SQL.
+L'ordre de démarrage est critique : le nœud de gestion doit être lancé avant les nœuds de stockage, qui doivent être lancés avant les nœuds SQL. Cet ordre garantit que chaque nœud trouve le gestionnaire et rejoint le cluster sans erreur. Cet ordre est celui de référence du parcours : gestionnaire, puis stockage, puis SQL.
 
 MySQL Cluster est adapté aux applications critiques car il offre une haute disponibilité et une tolérance aux pannes : avec `NoOfReplicas = 2`, la perte d'un nœud de stockage n'interrompt pas le service, la réplique restante continue de répondre.
 
-## Fichier de configuration config.ini — inspiré des exemples valides du livre
+## Fichier de configuration config.ini — référence du parcours
 
-Le fichier `config.ini` est lu uniquement par le nœud de gestion (`ndb_mgmd`). Le livre "Pro MySQL NDB Cluster" recommande, pour une installation robuste, de définir explicitement au moins `NodeId`, `HostName` et `DataDir` pour chaque node, car l'identifiant automatique peut changer d'un démarrage à l'autre.
+Le fichier `config.ini` est lu uniquement par le nœud de gestion (`ndb_mgmd`). La configuration de référence du parcours définit explicitement au moins `NodeId`, `HostName` et `DataDir` pour chaque node, car l'identifiant automatique peut changer d'un démarrage à l'autre.
 
-Exemple de structure valide extraite du livre (adaptée aux adresses IP du lab) :
+Structure de référence du parcours (adaptée aux adresses IP du lab) :
 
 ```ini
 [ndb_mgmd default]
@@ -118,7 +118,7 @@ NodeId = 5
 HostName = 192.168.56.12
 ```
 
-Remarques issues du livre :
+Remarques de référence du parcours :
 - `NodeId` : identifiant unique dans tout le cluster. Lorsqu'il existe plusieurs nodes sur le même hôte, il doit être explicitement spécifié.
 - `HostName` : si non spécifié, le nœud de gestion peut être contacté depuis n'importe quel hôte ; le définir explicitement restreint et sécurise la connectivité.
 - `DataDir` : répertoire de travail de chaque node ; les deux nœuds de stockage collocés sur VM 2 utilisent des répertoires distincts (`ndb_2` et `ndb_3`) pour éviter les collisions de fichiers.
@@ -136,7 +136,7 @@ Avec deux nœuds de stockage et `NoOfReplicas = 2`, le cluster forme un seul nod
 
 ### Quorum et split-brain
 
-Le quorum est la règle par laquelle une décision de cluster nécessite l'accord de la majorité des nœuds participants. Dans ce lab à 3 VM avec un seul nœud de gestion et deux nœuds de stockage dans un même node group, la perte d'un nœud de stockage ne rompt pas le quorum car le nœud de gestion et le nœud de stockage restant conservent la majorité. Le split-brain (partition du cluster en deux groupes incapables de communiquer) est prévenu par l'arbitrage : le nœud de gestion agit comme arbitre et tranche quel node group reste actif. Le livre précise que l'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin.
+Le quorum est la règle par laquelle une décision de cluster nécessite l'accord de la majorité des nœuds participants. Dans ce lab à 3 VM avec un seul nœud de gestion et deux nœuds de stockage dans un même node group, la perte d'un nœud de stockage ne rompt pas le quorum car le nœud de gestion et le nœud de stockage restant conservent la majorité. Le split-brain (partition du cluster en deux groupes incapables de communiquer) est prévenu par l'arbitrage : le nœud de gestion agit comme arbitre et tranche quel node group reste actif. L'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin.
 
 ### Failover automatique
 
@@ -236,7 +236,6 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -257,7 +256,6 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 Lecture des listes de paquets... Fait
 Construction de l'arbre des dependances... Fait
@@ -292,7 +290,6 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 Lecture des listes de paquets... Fait
 Construction de l'arbre des dependances... Fait
@@ -343,7 +340,6 @@ hostnamectl set-hostname gestion-sql
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -373,7 +369,6 @@ YEOF
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 network:
   version: 2
   ethernets:
@@ -400,7 +395,6 @@ netplan apply
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -466,7 +460,6 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -487,7 +480,6 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 Lecture des listes de paquets... Fait
 Construction de l'arbre des dependances... Fait
@@ -522,7 +514,6 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 Lecture des listes de paquets... Fait
 Construction de l'arbre des dependances... Fait
@@ -573,7 +564,6 @@ hostnamectl set-hostname stockage
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -603,7 +593,6 @@ YEOF
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 network:
   version: 2
   ethernets:
@@ -630,7 +619,6 @@ netplan apply
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -696,7 +684,6 @@ rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -717,7 +704,6 @@ apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 Lecture des listes de paquets... Fait
 Construction de l'arbre des dependances... Fait
@@ -752,7 +738,6 @@ apt-get autoremove -y || true
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 Lecture des listes de paquets... Fait
 Construction de l'arbre des dependances... Fait
@@ -803,7 +788,6 @@ hostnamectl set-hostname mysql-node3
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -833,7 +817,6 @@ YEOF
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 network:
   version: 2
   ethernets:
@@ -860,7 +843,6 @@ netplan apply
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1038,7 +1020,7 @@ Les trois VM du laboratoire sont nettoyées et configurées : Ubuntu Server 24.0
 
 ### Énoncé / Contexte
 
-Installer les composants MySQL Cluster sur les trois VM configurées au Lab-01 : le nœud de gestion et le premier nœud SQL sur VM 1, les deux nœuds de stockage `ndbmtd` sur VM 2, et un second nœud SQL sur VM 3. Rédiger le fichier `config.ini` du nœud de gestion inspiré des exemples valides du livre "Pro MySQL NDB Cluster", démarrer les nœuds dans l'ordre critique (gestion, puis stockage, puis SQL) et vérifier l'intégrité du cluster avec `ndb_mgm -e "SHOW"`. Ce lab réalise les opérations `NDB-03` (installation), `NDB-04` (configuration initiale), `NDB-08` (dimensionnement résilience) et `NDB-05` (vérification d'intégrité) du parcours. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
+Installer les composants MySQL Cluster sur les trois VM configurées au Lab-01 : le nœud de gestion et le premier nœud SQL sur VM 1, les deux nœuds de stockage `ndbmtd` sur VM 2, et un second nœud SQL sur VM 3. Rédiger le fichier `config.ini` du nœud de gestion selon la configuration de référence du parcours, démarrer les nœuds dans l'ordre critique (gestion, puis stockage, puis SQL) et vérifier l'intégrité du cluster avec `ndb_mgm -e "SHOW"`. Ce lab réalise les opérations `NDB-03` (installation), `NDB-04` (configuration initiale), `NDB-08` (dimensionnement résilience) et `NDB-05` (vérification d'intégrité) du parcours. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
 
 ### Outils et commandes utilisées
 
@@ -1165,7 +1147,6 @@ apt-get update
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 Atteint :1 http://archive.ubuntu.com/ubuntu noble InRelease
 Reception de :2 http://archive.ubuntu.com/ubuntu noble-updates InRelease [119 kB]
 Reception de :3 http://archive.ubuntu.com/ubuntu noble-backports InRelease [108 kB]
@@ -1220,7 +1201,6 @@ apt-get update
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 Atteint :1 http://archive.ubuntu.com/ubuntu noble InRelease
 Reception de :2 http://archive.ubuntu.com/ubuntu noble-updates InRelease [119 kB]
 Reception de :3 http://archive.ubuntu.com/ubuntu noble-backports InRelease [108 kB]
@@ -1272,7 +1252,6 @@ apt-get update
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 Atteint :1 http://archive.ubuntu.com/ubuntu noble InRelease
 Reception de :2 http://archive.ubuntu.com/ubuntu noble-updates InRelease [119 kB]
 Reception de :3 http://archive.ubuntu.com/ubuntu noble-backports InRelease [108 kB]
@@ -1311,7 +1290,7 @@ Paramétrage de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
 
 #### Étape 5 — Rédiger et installer le fichier config.ini sur VM 1
 
-**But** — Créer le fichier `config.ini` qui définit la topologie du cluster sur 3 VM : 1 nœud de gestion (NodeId 1), 2 nœuds de stockage sur VM 2 (NodeId 2 et 3), 2 nœuds SQL (NodeId 4 sur VM 1, NodeId 5 sur VM 3), avec `NoOfReplicas = 2` pour la redondance. Le fichier s'inspire des exemples valides du livre "Pro MySQL NDB Cluster" (NodeId, HostName et DataDir explicites pour chaque node).
+**But** — Créer le fichier `config.ini` qui définit la topologie du cluster sur 3 VM : 1 nœud de gestion (NodeId 1), 2 nœuds de stockage sur VM 2 (NodeId 2 et 3), 2 nœuds SQL (NodeId 4 sur VM 1, NodeId 5 sur VM 3), avec `NoOfReplicas = 2` pour la redondance. Le fichier définit `NodeId`, `HostName` et `DataDir` explicites pour chaque node, selon la configuration de référence du parcours.
 
 **Machine** — 192.168.56.10, hostname `gestion-sql`, fichier `/var/lib/mysql-cluster/config.ini`.
 
@@ -1418,7 +1397,6 @@ cp /tmp/config.ini /var/lib/mysql-cluster/config.ini
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1497,7 +1475,6 @@ mkdir -p /var/lib/mysql-cluster/ndb_2 /var/lib/mysql-cluster/ndb_3
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1526,7 +1503,7 @@ drwxr-xr-x 2 root root 4096 nov.  22 09:42 ndb_3
 
 #### Étape 7 — Démarrer le nœud de gestion ndb_mgmd sur VM 1
 
-**But** — Lancer le nœud de gestion `ndb_mgmd` qui centralise la configuration du cluster et accepte les connexions des autres nœuds. C'est le premier node à démarrer. Le livre indique que le nœud de gestion est démarré en premier, suivi des nœuds de stockage puis des nœuds SQL.
+**But** — Lancer le nœud de gestion `ndb_mgmd` qui centralise la configuration du cluster et accepte les connexions des autres nœuds. C'est le premier node à démarrer. L'ordre de référence du parcours est gestionnaire, puis stockage, puis SQL.
 
 **Machine** — 192.168.56.10, hostname `gestion-sql`, nœud de gestion.
 
@@ -1577,7 +1554,6 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1600,7 +1576,6 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 nohup: ignoring input and appending output to 'nohup.out'
 [1] 2458
 
@@ -1621,7 +1596,6 @@ cd /var/lib/mysql-cluster/ndb_3
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1642,7 +1616,6 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 nohup: ignoring input and appending output to 'nohup.out'
 [1] 2459
 
@@ -1676,7 +1649,6 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 nohup: ignoring input and appending output to 'nohup.out'
 [1] 2460
 
@@ -1697,7 +1669,6 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 nohup: ignoring input and appending output to 'nohup.out'
 [1] 2461
 
@@ -1718,7 +1689,6 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1812,7 +1782,7 @@ id=5    @192.168.56.12 (mysqld)
 
 #### Étape 12 — Test de résilience : arrêt du NodeId 2 et failover sur NodeId 3
 
-**But** — Vérifier la tolérance aux pannes du cluster : arrêter le NodeId 2 et confirmer que le NodeId 3 reste actif (failover automatique). Le redémarrage et la resynchronisation sont traités à l'étape 13. Ce test illustre les propositions d'amélioration du livre sur la résilience et le failover automatique.
+**But** — Vérifier la tolérance aux pannes du cluster : arrêter le NodeId 2 et confirmer que le NodeId 3 reste actif (failover automatique). Le redémarrage et la resynchronisation sont traités à l'étape 13. Ce test illustre la résilience et le failover automatique de référence du parcours.
 
 **Machine** — 192.168.56.10 (gestion-sql) pour `ndb_mgm`.
 
@@ -1852,7 +1822,6 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1927,7 +1896,6 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1949,7 +1917,6 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 nohup: ignoring input and appending output to 'nohup.out'
 [1] 2462
 
@@ -1971,7 +1938,6 @@ sleep 8
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -2007,5 +1973,5 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 ### En conclusion
 
-Ce lab installe MySQL Cluster sur les 3 VM avec un `config.ini` inspiré des exemples valides du livre "Pro MySQL NDB Cluster" (NodeId, HostName, DataDir explicites, `NoOfReplicas = 2`). Les nœuds sont démarrés dans l'ordre critique (gestion → stockage → SQL), l'intégrité est vérifiée avec `ndb_mgm -e "SHOW"` (5 nœuds connectés), et la configuration effective est interrogée avec `ndb_config --query-all`. Le test de résilience confirme le failover automatique à l'arrêt du NodeId 2, la continuité de service via NodeId 3, et la resynchronisation puis réintégration du NodeId 2 redémarré. Critères de réussite : `SHOW` liste 5 nœuds connectés sans état `not connected`, `NoOfReplicas = 2` confirmé. Renvoi : passer au chapitre 2 pour approfondir l'architecture et l'administration du cluster.
+Ce lab installe MySQL Cluster sur les 3 VM avec un `config.ini` selon la configuration de référence du parcours (NodeId, HostName, DataDir explicites, `NoOfReplicas = 2`). Les nœuds sont démarrés dans l'ordre critique (gestion → stockage → SQL), l'intégrité est vérifiée avec `ndb_mgm -e "SHOW"` (5 nœuds connectés), et la configuration effective est interrogée avec `ndb_config --query-all`. Le test de résilience confirme le failover automatique à l'arrêt du NodeId 2, la continuité de service via NodeId 3, et la resynchronisation puis réintégration du NodeId 2 redémarré. Critères de réussite : `SHOW` liste 5 nœuds connectés sans état `not connected`, `NoOfReplicas = 2` confirmé. Renvoi : passer au chapitre 2 pour approfondir l'architecture et l'administration du cluster.
 

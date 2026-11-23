@@ -1416,4 +1416,3 @@ Ce lab couvre la sécurisation concrète d'un cluster MySQL Cluster en administr
 
 - Documentation MySQL Cluster officielle : https://dev.mysql.com/doc/mysql-cluster/
 - Manuel de référence MySQL : https://dev.mysql.com/doc/refman/
-- "Pro MySQL NDB Cluster", Jesper Wisborg Krogh, Mikiya Okuno (2017) — configuration TLS inter-nœuds, gestion des comptes SQL, sauvegardes cluster

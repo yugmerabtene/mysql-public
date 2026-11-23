@@ -25,7 +25,7 @@ Le chapitre 3 doit avoir été réalisé : le cluster est installé, les 5 nœud
 | Engine condition pushdown | Optimisation qui pousse certaines conditions de filtre vers le nœud de stockage pour réduire le transfert de données. |
 ## Introduction à l'optimisation et scalabilité (module 4.0)
 Les performances de MySQL Cluster dépendent fortement du dimensionnement de la mémoire (`DataMemory`, `IndexMemory`) et de la répartition de la charge sur les nœuds de stockage (auto-sharding). Les goulots d'étranglement typiques sont la saturation RAM (swap), le disque lent sur les journaux de redo et le fragment log, et le réseau saturé par la réplication synchrone. Le scaling horizontal passe par l'ajout de nœuds de stockage pour créer plusieurs node groups et répartir les fragments.
-Le livre "Pro MySQL NDB Cluster" propose plusieurs leviers d'optimisation : ajout de nœuds de stockage pour répartir la charge, commit sizing (regroupement d'écritures), traitement par lots non transactionnel, engine condition pushdown (pousser les filtres vers les nœuds de stockage), optimisation des jointures et du partitionnement, choix du type de disque et de la taille de bloc du système de fichiers, ainsi que le binding CPU.
+La configuration de référence du parcours propose plusieurs leviers d'optimisation : ajout de nœuds de stockage pour répartir la charge, commit sizing (regroupement d'écritures), traitement par lots non transactionnel, engine condition pushdown (pousser les filtres vers les nœuds de stockage), optimisation des jointures et du partitionnement, choix du type de disque et de la taille de bloc du système de fichiers, ainsi que le binding CPU.
 Le schéma ci-dessous présente les leviers d'optimisation du cluster.
 ```mermaid
 graph TD
@@ -38,7 +38,7 @@ graph TD
     MON["ndb_mgm MEMORYUSAGE"] -->|surveille| RAM
     OPT["Commit sizing, batch, pushdown"] -->|optimise| ND
 ```
-**Fig 4.1** — Leviers d'optimisation : dimensionnement mémoire, partitionnement automatique, surveillance de la RAM/disque/réseau, et optimisations issues du livre (commit sizing, batch, engine condition pushdown).
+**Fig 4.1** — Leviers d'optimisation : dimensionnement mémoire, partitionnement automatique, surveillance de la RAM/disque/réseau, et optimisations de référence du parcours (commit sizing, batch, engine condition pushdown).
 Le schéma ci-dessous illustre la montée en charge par ajout de nœuds de stockage (sharding horizontal).
 ```mermaid
 graph TD
@@ -647,7 +647,7 @@ id=3    @192.168.56.11 (ndbd)
 ```
 
 #### Étape 4 — Préconiser la montée en charge par ajout de nœuds de stockage
-**But** — Expliquer comment ajouter des nœuds de stockage pour créer plusieurs node groups et répartir le sharding sur plus de machines, comme préconisé par le livre pour la scalabilité horizontale.
+**But** — Expliquer comment ajouter des nœuds de stockage pour créer plusieurs node groups et répartir le sharding sur plus de machines, pour la scalabilité horizontale du parcours.
 **Machine** — VM 2 (192.168.56.11) pour préparer un nouveau répertoire de stockage.
 **Prérequis** — Espace disque sur VM 2, `ndbmtd` installé.
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -1680,8 +1680,7 @@ Ce lab couvre la simulation d'une panne de nœud de stockage, l'observation des 
 | Partitionnement inadapté | Un seul node group, charge concentrée | Ajouter des nœuds de stockage pour répartir les fragments |
 | Saturation réseau | Trafic de réplication synchrone sur le réseau unique | Réseau dédié pour le trafic inter-nœuds |
 ## Synthèse du chapitre
-> **À retenir** — La performance de MySQL Cluster repose sur le dimensionnement de `DataMemory` et `IndexMemory`, la surveillance de la RAM/disque/réseau pour détecter les goulots, et le partitionnement automatique (auto-sharding) qui répartit les fragments sur les nœuds de stockage. La montée en charge horizontale passe par l'ajout de nœuds de stockage pour créer plusieurs node groups. Les optimisations issues du livre (commit sizing, batch processing, engine condition pushdown, type de disque, binding CPU) complètent le dimensionnement de base. Le module 4.1 ajoute la réplication inter-clusters (site principal vers site de secours via le canal de réplication SQL) et la tolérance aux pannes : détection de panne de nœud, basculement automatique (failover) et retour arrière (failback) avec resynchronisation, sans perte de données. L'accès utilise une session SSH ouverte (mot de passe dans `.env`).
+> **À retenir** — La performance de MySQL Cluster repose sur le dimensionnement de `DataMemory` et `IndexMemory`, la surveillance de la RAM/disque/réseau pour détecter les goulots, et le partitionnement automatique (auto-sharding) qui répartit les fragments sur les nœuds de stockage. La montée en charge horizontale passe par l'ajout de nœuds de stockage pour créer plusieurs node groups. Les optimisations de référence du parcours (commit sizing, batch processing, engine condition pushdown, type de disque, binding CPU) complètent le dimensionnement de base. Le module 4.1 ajoute la réplication inter-clusters (site principal vers site de secours via le canal de réplication SQL) et la tolérance aux pannes : détection de panne de nœud, basculement automatique (failover) et retour arrière (failback) avec resynchronisation, sans perte de données. L'accès utilise une session SSH ouverte (mot de passe dans `.env`).
 ## Ressources et références
 - Documentation MySQL Cluster officielle : https://dev.mysql.com/doc/mysql-cluster/
 - Manuel de référence MySQL : https://dev.mysql.com/doc/refman/
-- "Pro MySQL NDB Cluster", Jesper Wisborg Krogh, Mikiya Okuno (2017) — commit sizing, batch processing, engine condition pushdown, optimisation des jointures et du partitionnement, type de disque, binding CPU

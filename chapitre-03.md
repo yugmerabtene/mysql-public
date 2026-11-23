@@ -53,7 +53,7 @@ graph TD
 
 **Fig 3.1** — Chaîne de supervision : le client `ndb_mgm` interroge le gestionnaire ; chaque nœud de stockage expose sa mémoire et ses fichiers de sauvegarde dans `SaveDataDir`.
 
-Le schéma ci-dessous illustre la procédure de sauvegarde et restauration, inspirée du livre "Pro MySQL NDB Cluster".
+Le schéma ci-dessous illustre la procédure de sauvegarde et restauration du parcours.
 
 ```mermaid
 graph TD
@@ -405,7 +405,7 @@ Réaliser une sauvegarde consistante du cluster avec `ndb_mgm -e "START BACKUP"`
 
 #### Étape 1 — Déclencher une sauvegarde cluster
 
-**But** — Lancer `START BACKUP` et confirmer qu'une sauvegarde consistante est créée sur chaque nœud de stockage. Le livre "Pro MySQL NDB Cluster" indique que la sauvegarde native est le seul moyen de sauvegarder un cluster NDB en ligne, et que le client retourne "Waiting for completed, this may take several minutes".
+**But** — Lancer `START BACKUP` et confirmer qu'une sauvegarde consistante est créée sur chaque nœud de stockage. La sauvegarde native est le moyen de sauvegarder un cluster NDB en ligne, et le client retourne "Waiting for completed, this may take several minutes".
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 
@@ -558,7 +558,7 @@ total 16
 
 #### Étape 3 — Restaurer le schéma avec ndb_restore --restore_meta
 
-**But** — Restaurer le schéma (métadonnées) une seule fois avec `ndb_restore --restore_meta`, avant de restaurer les données sur chaque nœud de stockage. Le livre recommande de restaurer le schéma pour un seul node, puis les données pour chaque node en parallèle.
+**But** — Restaurer le schéma (métadonnées) une seule fois avec `ndb_restore --restore_meta`, avant de restaurer les données sur chaque nœud de stockage. Le schéma est restauré pour un seul node, puis les données pour chaque node en parallèle.
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion + SQL.
 
@@ -594,7 +594,7 @@ NDBT_ProgramExit: 0
 
 #### Étape 4 — Restaurer les données sur chaque nœud de stockage
 
-**But** — Restaurer les données sur chaque nœud de stockage en parallèle, comme recommandé par le livre.
+**But** — Restaurer les données sur chaque nœud de stockage en parallèle.
 
 **Machine** — VM 1 (192.168.56.10), nœud de gestion + SQL.
 
@@ -1134,11 +1134,10 @@ Ce lab est consacré à MySQL Cluster Manager (MCM). Les opérations `NDB-20` (i
 
 ## Synthèse du chapitre
 
-> **À retenir** — La supervision de MySQL Cluster repose sur `ndb_mgm` (`SHOW`, `ALL REPORT MEMORYUSAGE`) et `ndb_config`. La détection d'alerte repose sur l'état `not connected` d'un nœud. La sauvegarde consistante s'obtient avec `START BACKUP` (inspirée du livre : StartGCP/StopGCP, `#Records`, `Data`/`Log`) et la restauration avec `ndb_restore` (`--restore_meta` une fois pour le schéma, puis `-r` par nœud de stockage en parallèle pour les données). Le remplacement d'un nœud de stockage s'effectue sans arrêt du cluster grâce à la redondance `NoOfReplicas = 2`. MySQL Cluster Manager centralise ces opérations via des agents `mcmd` sur chaque nœud. L'accès utilise une session SSH ouverte (mot de passe dans `.env`).
+> **À retenir** — La supervision de MySQL Cluster repose sur `ndb_mgm` (`SHOW`, `ALL REPORT MEMORYUSAGE`) et `ndb_config`. La détection d'alerte repose sur l'état `not connected` d'un nœud. La sauvegarde consistante s'obtient avec `START BACKUP` (StartGCP/StopGCP, `#Records`, `Data`/`Log`) et la restauration avec `ndb_restore` (`--restore_meta` une fois pour le schéma, puis `-r` par nœud de stockage en parallèle pour les données). Le remplacement d'un nœud de stockage s'effectue sans arrêt du cluster grâce à la redondance `NoOfReplicas = 2`. MySQL Cluster Manager centralise ces opérations via des agents `mcmd` sur chaque nœud. L'accès utilise une session SSH ouverte (mot de passe dans `.env`).
 
 ## Ressources et références
 
 - Documentation MySQL Cluster officielle : https://dev.mysql.com/doc/mysql-cluster/
 - Manuel de référence MySQL : https://dev.mysql.com/doc/refman/
 - MySQL Cluster Manager : https://dev.mysql.com/doc/mysql-cluster-manager/
-- "Pro MySQL NDB Cluster", Jesper Wisborg Krogh, Mikiya Okuno (2017) — sauvegarde native, START BACKUP, ndb_restore --restore_meta

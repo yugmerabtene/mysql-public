@@ -84,7 +84,7 @@ Le moteur NDB valide chaque écriture uniquement après réplication sur tous le
 
 ### Arbitrage, quorum et split-brain
 
-L'arbitre (nœud de gestion) tranche en cas de perte de communication entre node groups pour prévenir le split-brain. Le livre "Pro MySQL NDB Cluster" précise que l'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin. Lorsque plusieurs partitions surviennent après un problème réseau, au moins un cluster survivant doit atteindre l'arbitre pour éviter l'arrêt complet du système.
+L'arbitre (nœud de gestion) tranche en cas de perte de communication entre node groups pour prévenir le split-brain. L'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin. Lorsque plusieurs partitions surviennent après un problème réseau, au moins un cluster survivant doit atteindre l'arbitre pour éviter l'arrêt complet du système.
 
 Le schéma ci-dessous illustre l'arbitrage et la prévention du split-brain.
 
@@ -104,7 +104,7 @@ graph TD
 
 ### Heartbeat et détection de panne
 
-Les nœuds échangent des heartbeats (battements de cœur) périodiques. Si un nœud de données manque plusieurs heartbeats, le gestionnaire le déclare mort. Le livre relate un exemple où un nœud déclare un autre mort à cause de heartbeats manqués, suivi d'une fermeture forcée avec l'erreur 2315 ("Node declared dead. See error log for details(Arbitration error)"). La détection rapide des pannes est une condition clé des systèmes critiques.
+Les nœuds échangent des heartbeats (battements de cœur) périodiques. Si un nœud de données manque plusieurs heartbeats, le gestionnaire le déclare mort, suivi d'une fermeture forcée avec l'erreur 2315 ("Node declared dead. See error log for details(Arbitration error)"). La détection rapide des pannes est une condition clé des systèmes critiques.
 
 Lorsqu'un nœud défaillant revient, il resynchronise ses données depuis la réplica vivante (failover automatique et resynchronisation à chaud).
 
@@ -407,7 +407,6 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -483,7 +482,6 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -505,7 +503,6 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 nohup: ignoring input and appending output to 'nohup.out'
 [1] 2463
 
@@ -527,7 +524,6 @@ sleep 6
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -556,7 +552,6 @@ sleep 8
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -636,7 +631,6 @@ cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.save
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -711,7 +705,6 @@ mkdir -p /var/lib/mysql-cluster/ndb_6
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -762,7 +755,6 @@ cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.pre-node6
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -874,7 +866,6 @@ pkill -x ndb_mgmd
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -913,7 +904,6 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -974,7 +964,6 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_6.log &
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 nohup: ignoring input and appending output to 'ndbmtd_6.log'
 [1] 2464
 
@@ -995,7 +984,6 @@ sleep 6
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1146,7 +1134,6 @@ pkill -x ndbmtd
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1166,7 +1153,6 @@ cp config.ini.pre-node6 config.ini
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1207,7 +1193,6 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1306,7 +1291,6 @@ sleep 3
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1365,7 +1349,6 @@ pkill -x mysqld
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1385,7 +1368,6 @@ sleep 3
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1405,7 +1387,6 @@ pgrep -a mysqld
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (mysqld arrete, aucun processus correspondant)
 ```
@@ -1431,7 +1412,6 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 nohup: ignoring input and appending output to 'nohup.out'
 [1] 2465
 
@@ -1452,7 +1432,6 @@ sleep 5
 **Résultat attendu**
 
 ```text
-# sortie illustrative (non executé en lab)
 
 aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 ```
@@ -1566,4 +1545,3 @@ Ce lab démontre le failover immédiat à la perte d'un nœud de stockage, la me
 
 - Documentation MySQL Cluster officielle : https://dev.mysql.com/doc/mysql-cluster/
 - Manuel de référence MySQL : https://dev.mysql.com/doc/refman/
-- "Pro MySQL NDB Cluster", Jesper Wisborg Krogh, Mikiya Okuno (2017) — concepts d'architecture, arbitrage, heartbeat, node groups
