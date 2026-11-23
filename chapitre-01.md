@@ -7,7 +7,7 @@
 ## Avertissement et périmètre
 
 - Machine principale : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
-- Réseau : VirtualBox host-only `vboxnet0`, `192.168.56.0/24`, DHCP désactivé, pas d'accès Internet sur les nœuds pendant les labs (adaptateur NAT temporaire uniquement pendant l'installation des paquets, puis retiré).
+- Réseau : VirtualBox host-only `vboxnet0` (`192.168.56.0/24`) pour l'accès SSH du host vers les VM, plus un adaptateur NAT sur chaque VM pour l'accès Internet de toutes les machines.
 - Données : fictives, marquées `Lab` (uniquement pour le laboratoire isolé).
 - Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
 - Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
@@ -75,6 +75,92 @@ Les trois types de nœuds jouent des rôles distincts :
 L'ordre de démarrage est critique : le nœud de gestion doit être lancé avant les nœuds de stockage, qui doivent être lancés avant les nœuds SQL. Cet ordre garantit que chaque nœud trouve le gestionnaire et rejoint le cluster sans erreur. Cet ordre est celui de référence du parcours : gestionnaire, puis stockage, puis SQL.
 
 MySQL Cluster est adapté aux applications critiques car il offre une haute disponibilité et une tolérance aux pannes : avec `NoOfReplicas = 2`, la perte d'un nœud de stockage n'interrompt pas le service, la réplique restante continue de répondre.
+
+## Présentation détaillée et architecture (enrichissement module 1.0)
+
+MySQL Cluster, basé sur le moteur de stockage NDB (Network Database), est une technologie de base de données distribuée qui fournit une haute disponibilité et une scalabilité horizontale. Son architecture, connue sous le nom d'"architecture Shared-Nothing" (partagé-nothing), répartit les données et les traitements sur plusieurs serveurs (ou machines virtuelles), éliminant tout point de défaillance unique (SPOF). Chaque nœud possède sa propre mémoire et ses propres disques ; les données sont fragmentées et répliquées sur plusieurs nœuds de stockage indépendants.
+
+Dans le contexte de ce lab sur 3 VM, l'architecture est déployée comme suit :
+
+- **VM 1** (`192.168.56.10`, `gestion-sql`) : héberge le **nœud de gestion** (`ndb_mgmd`, NodeId 1) et le **premier nœud SQL** (`mysqld`, NodeId 4).
+- **VM 2** (`192.168.56.11`, `stockage`) : héberge les **deux nœuds de stockage** (`ndbmtd`, NodeId 2 et NodeId 3), sur des répertoires de données distincts (`ndb_2` et `ndb_3`).
+- **VM 3** (`192.168.56.12`, `mysql-node3`) : héberge le **second nœud SQL** (`mysqld`, NodeId 5).
+
+### Image 1 — Architecture logique du cluster
+
+![Image 1 : Architecture logique du cluster](image-1.png)
+
+*Description de l'image : un schéma montrant la topologie logique du cluster. VM 1 (192.168.56.10) contient deux boîtes : `ndb_mgmd` (nœud de gestion, NodeId 1) et `mysqld` (nœud SQL, NodeId 4). VM 2 (192.168.56.11) contient deux autres boîtes : `ndbmtd NodeId 2` et `ndbmtd NodeId 3` (nœuds de stockage). VM 3 (192.168.56.12) contient `mysqld` (nœud SQL, NodeId 5). Des connexions bidirectionnelles relient les nœuds via le réseau host-only `vboxnet0` : le nœud SQL communique avec les nœuds de stockage pour accéder aux données, tandis que le nœud de gestion coordonne l'ensemble du cluster et distribue la configuration `config.ini`.*
+
+### Les composants principaux
+
+MySQL Cluster repose sur trois types de nœuds distincts qui communiquent entre eux via le réseau :
+
+#### Nœud de gestion (Management Node — `ndb_mgmd`)
+
+* **Rôle** : gère la configuration du cluster. Il charge et distribue le fichier de configuration (`config.ini`) à tous les autres nœuds au démarrage. Il coordonne également les opérations de démarrage progressif et l'arbitrage en cas de partitionnement réseau.
+* **Caractéristiques** : il ne stocke aucune donnée utilisateur et n'est pas sollicité pour le traitement des requêtes SQL. Un seul nœud de gestion suffit pour le fonctionnement, mais c'est le premier composant à démarrer.
+
+#### Nœud de stockage (Data Node — `ndbmtd`)
+
+* **Rôle** : héberge et gère les partitions de données réelles (fragments). C'est ici que réside le moteur NDB. Il assure également la réplication synchrone de ces fragments avec les autres nœuds de stockage de son node group.
+* **Caractéristiques** : les données sont principalement stockées en **mémoire** (RAM), mais elles sont persistées sur disque (checkpoints) pour garantir leur durabilité. Dans ce lab, VM 2 exécute deux instances `ndbmtd` simultanément (NodeId 2 et NodeId 3), sur des répertoires distincts (`ndb_2` et `ndb_3`).
+
+#### Nœud SQL (SQL Node — `mysqld`)
+
+* **Rôle** : offre l'interface standard de MySQL. Il agit comme une passerelle entre les applications clientes (protocole MySQL) et le moteur de stockage NDB. Il reçoit les requêtes SQL, les optimise et les traduit en opérations NDB pour les transmettre aux nœuds de stockage appropriés.
+* **Caractéristiques** : ce n'est pas un serveur MySQL classique avec InnoDB ; il utilise le moteur NDB. Il ne stocke pas de données utilisateur NDB. Une application peut se connecter à n'importe quel nœud SQL pour accéder aux mêmes données du cluster.
+
+Ces composants interagissent de manière coordonnée, comme le montre l'illustration suivante :
+
+### Image 2 — Communication interne et rôles des nœuds
+
+![Image 2 : Communication interne et rôles des nœuds]
+
+*Description de l'image : un diagramme de séquence conceptuel montrant le flux de communication. Une application externe envoie une requête SQL au nœud SQL `mysqld` (NodeId 4 sur VM 1 ou NodeId 5 sur VM 3). `mysqld` traite la requête, identifie les données nécessaires et envoie des instructions NDB aux nœuds de stockage `ndbmtd` (NodeId 2 et NodeId 3 sur VM 2). Parallèlement, les nœuds de stockage communiquent entre eux pour la réplication synchrone des données. Le nœud de gestion `ndb_mgmd` (NodeId 1 sur VM 1) supervise l'ensemble des interactions via des signaux de contrôle.*
+
+### Pourquoi MySQL Cluster est adapté aux applications critiques
+
+MySQL Cluster est conçu pour répondre aux exigences les plus élevées en matière de disponibilité et de performance :
+
+* **Haute Disponibilité (HA) zéro SPOF** : la redondance des nœuds de stockage et la réplication synchrone garantissent que si un nœud de stockage tombe en panne, les données restent accessibles via ses répliques. Le cluster continue de fonctionner sans interruption de service.
+* **Scalabilité Horizontale (Scale-Out)** : pour augmenter les performances ou la capacité de stockage, il suffit d'ajouter de nouveaux groupes de nœuds de stockage au cluster existant. MySQL Cluster redistribue automatiquement les données (rebalancement) pour tirer parti des nouvelles ressources.
+* **Performance en Temps Réel** : la conception en mémoire du moteur NDB permet une latence très faible pour les opérations de lecture et d'écriture, ce qui est critique pour les applications transactionnelles à haute concurrence.
+
+### Études de cas et exemples d'utilisation
+
+Les caractéristiques uniques de MySQL Cluster en font une solution privilégiée dans plusieurs secteurs :
+
+* **Télécommunications** : utilisé pour les systèmes HLR (Home Location Register) et HSS (Home Subscriber Server) qui gèrent des millions d'abonnés et nécessitent un accès aux données en temps réel et une disponibilité extrême.
+* **Finance et Paiements** : utilisé pour les plateformes de traitement des transactions qui exigent une intégrité transactionnelle (ACID) et aucune perte de données, tout en supportant une charge élevée.
+* **Web et Services à Haute Concurrence** : utilisé pour les systèmes de gestion de sessions, les catalogues de produits en ligne ou les infrastructures de messagerie où la performance et la scalabilité sont primordiales.
+
+### Le moteur de stockage NDB — fonctionnement interne
+
+Le moteur de stockage NDB est le cœur de MySQL Cluster. Contrairement à InnoDB qui stocke les données principalement sur disque avec des caches en mémoire, NDB privilégie le stockage des données en **mémoire vive (RAM)** pour des performances d'accès extrêmement élevées.
+
+La durabilité des données est assurée par :
+
+* **Checkpoints Locaux (LCP)** : périodiquement, les données modifiées en mémoire sont écrites sur disque.
+* **Checkpoints Globaux (GCP)** : assurent la cohérence transactionnelle entre tous les nœuds du cluster.
+* **Redo Logs** : enregistrent toutes les transactions pour permettre la reconstruction en cas de panne.
+
+### Node groups, partitionnement (sharding) et réplication synchrone
+
+Le cluster est structuré autour de **groupes de nœuds (node group)**. Un groupe de nœuds est constitué d'un ensemble de nœuds de stockage qui contiennent les mêmes fragments de données. Chaque fragment est répliqué sur chaque nœud du groupe.
+
+Dans une configuration avec `NoOfReplicas = 2` (valeur de référence du parcours), chaque groupe de nœuds contient deux nœuds de stockage. Dans ce lab, VM 2 exécute les deux processus `ndbmtd` (NodeId 2 et NodeId 3) qui appartiennent au même node group (Nodegroup: 0) afin d'assurer la réplication synchrone.
+
+Deux mécanismes fondamentaux assurent scalabilité et disponibilité :
+
+1. **Partitionnement (sharding)** : les tables NDB sont automatiquement divisées en partitions (fragments). Ces partitions sont distribuées entre les différents groupes de nœuds de stockage disponibles. Par défaut, le partitionnement est basé sur la valeur de la clé primaire, assurant une distribution uniforme et une recherche rapide (auto-sharding du moteur NDB).
+2. **Réplication synchrone (`NoOfReplicas`)** : chaque partition est répliquée sur tous les nœuds d'un groupe de nœuds. Lorsqu'une transaction valide une écriture, cette écriture doit être confirmée avec succès par **tous** les nœuds de stockage du groupe avant que le nœud SQL ne puisse confirmer la réussite de la transaction à l'application cliente. Cela garantit que toutes les répliques sont cohérentes à tout moment.
+
+### Image 3 — Réplication synchrone et partitionnement (sharding)
+
+![Image 3 : Réplication synchrone et partitionnement](image.png)
+
+*Description de l'image : un schéma détaillé de la couche de stockage (correspondant logiquement à VM 2) montrant comment les données sont organisées entre les deux processus `ndbmtd`. Une table NDB nommée `t1` est divisée en quatre partitions logiques : P1, P2, P3, P4. Le schéma montre que P1 et P3 sont stockées dans `ndbmtd NodeId 2`, tandis que P2 et P4 sont stockées dans `ndbmtd NodeId 3`. Des flèches bidirectionnelles épaisses entre `ndbmtd NodeId 2` et `ndbmtd NodeId 3` illustrent la réplication synchrone de P1/P3 vers `ndbmtd NodeId 3` et de P2/P4 vers `ndbmtd NodeId 2`. La légende `NoOfReplicas = 2` souligne que chaque partition existe en deux exemplaires dans ce groupe de nœuds.*
 
 ## Fichier de configuration config.ini — référence du parcours
 
@@ -196,7 +282,7 @@ Le plan ci-dessous ordonne tous les labs du chapitre. Aucune action de configura
 
 ### Énoncé / Contexte
 
-Nettoyer et configurer manuellement les trois machines virtuelles du laboratoire (réseau host-only `vboxnet0` avec adresses IP statiques, service SSH, noms d'hôtes, nettoyage de toute configuration précédente, snapshots propres) et contrôler la connectivité depuis l'hôte et entre les VM. Cette infrastructure constitue la base de l'installation de MySQL Cluster réalisée au Lab-02. Ce lab ne contient aucune commande MySQL Cluster ; il prépare uniquement les machines du laboratoire. L'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
+Nettoyer et configurer manuellement les trois machines virtuelles du laboratoire (réseau host-only `vboxnet0` `192.168.56.0/24` pour l'accès SSH du host vers les VM, plus un adaptateur NAT sur chaque VM pour l'accès Internet, adresses IP statiques, service SSH, noms d'hôtes, nettoyage de toute configuration précédente, snapshots propres) et contrôler la connectivité depuis l'hôte et entre les VM. Chaque VM possède deux adaptateurs : un adaptateur host-only (IP statique `192.168.56.10` sur VM 1, `192.168.56.11` sur VM 2, `192.168.56.12` sur VM 3) joignable depuis l'hôte en SSH (`ssh root@192.168.56.10`, `ssh root@192.168.56.11`, `ssh root@192.168.56.12`), et un adaptateur NAT (Internet via le moteur NAT de VirtualBox, sans configuration netplan supplémentaire). Cette infrastructure constitue la base de l'installation de MySQL Cluster réalisée au Lab-02. Ce lab ne contient aucune commande MySQL Cluster ; il prépare uniquement les machines du laboratoire. L'apprenant se connecte en SSH sur chaque VM depuis l'hôte et exécute les commandes directement sur la machine.
 
 ### Outils et commandes utilisées
 
