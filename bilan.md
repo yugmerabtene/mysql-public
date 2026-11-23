@@ -1,6 +1,6 @@
 # Bilan — Lecture de l'étudiant et tests des labs
 
-**Date : 2026-11-23 22:30 (UTC+1)**  
+**Date : 2026-11-23 23:45 (UTC+1)**  
 **Parcours : MySQL Cluster : Administration et exploitation — 5 chapitres, 14 labs**  
 **Infrastructure : 3 VMs Ubuntu Server 24.04 LTS sur vboxnet0 192.168.56.0/24 — nettoyées et remises à zéro après tests (cf. chapitre 1, Lab-01).**  
 **Crédentiels : `.env` (SSH_USER_VM*=root, SSH_PASSWORD_VM*=RootLab123!) — non affiché en clair, non committé.**
@@ -114,7 +114,7 @@
 | Lab | Titre | Statut | Preuves | Commentaire |
 |-----|-------|--------|---------|-------------|
 | Lab-07 | Outils de supervision, alertes ndb_mgm et surveillance | ✅ Passé | `preuves/chapitre-03/lab-07/` | Table NDB créée et peuplée (`lab07.test_ndb`, ENGINE=ndbcluster). `ndb_desc` bloqué (timeout) → contournement validé via `SHOW CREATE TABLE` + `ndbinfo.nodes` (2 nœuds STARTED) + `ndbinfo.table_fragments` (`no_of_replicas=2`). |
-| Lab-08 | Sauvegarde START BACKUP, restauration ndb_restore et remplacement de nœud | ⚠️ Partiel | `preuves/chapitre-03/lab-08/` | `START BACKUP` OK (Backup 1 complété, StartGCP: 134, StopGCP: 137, 2880 bytes). `ndb_restore` : échec d'accès aux fichiers de backup dans l'environnement isolé (fichiers répartis sur VM2, `ndb_restore` ne les localise pas malgré copie et `--backup-path` correct). |
+| Lab-08 | Sauvegarde START BACKUP, restauration ndb_restore et remplacement de nœud | ⚠️ Partiel | `preuves/chapitre-03/lab-08/` | `START BACKUP` OK (Backup 1 complété, StartGCP: 129, StopGCP: 132, 2896 bytes). `ndb_restore` : échec systématique ("Failed to find backup") malgré multiples tentatives : `--nodeid=6` (NodeId API libre ajouté dans config.ini), exécution depuis VM1 et VM2, fichiers dans `/tmp/` et dans `/var/lib/mysql-cluster/`, `--backup-path` vers `BACKUP-1/` et vers le répertoire parent, `--print` pour lecture seule. Aucune tentative n'a permis de localiser les fichiers de backup. |
 | Lab-09 | MySQL Cluster Manager (MCM) | ❌ Non testé | — | MCM supprimé depuis MySQL 8.0. Paquets `mcm_agent`/`mcm_client` absents sur les VMs. Pas de licence requise (open source), mais l'outil n'existe plus en version 8.0. Gestion via `ndb_mgm` (déjà couvert par les autres labs). |
 
 **Preuves chapitre 3 :**
@@ -180,7 +180,14 @@ Aucun blocant n'empêche la poursuite du parcours. Le cluster fonctionne, le fai
 
 ### Majeurs (major)
 
-1. **Lab-08 (`ndb_restore`) non fonctionnel dans l'environnement isolé** — `START BACKUP` fonctionne, mais `ndb_restore` ne localise pas les fichiers de backup répartis entre VM2 (nœuds de stockage) et le nœud exécutant la restauration. Nécessite un environnement avec accès aux fichiers de tous les nœuds de données dans un même répertoire, ou exécution de `ndb_restore` directement sur un nœud de stockage avec un NodeId API libre.
+1. **Lab-08 (`ndb_restore`) non fonctionnel dans l'environnement isolé** — `START BACKUP` fonctionne, mais `ndb_restore` retourne systématiquement "Failed to find backup" malgré :
+   - Ajout d'un NodeId 6 temporaire dans `config.ini` (NodeId API libre pour `ndb_restore`)
+   - Exécution depuis VM1 (gestionnaire) et VM2 (nœud de stockage avec les fichiers originaux)
+   - Copie des fichiers de backup dans `/tmp/` et dans `/var/lib/mysql-cluster/`
+   - `--backup-path` pointant vers `BACKUP-1/` et vers le répertoire parent
+   - `--print` pour lecture seule (échoue aussi)
+   - Copie du binaire `ndb_restore` sur VM2
+   Nécessite un environnement où `ndb_restore` peut accéder aux fichiers de backup de tous les nœuds de données dans un même répertoire, avec un NodeId API libre dans `config.ini`.
 
 2. **Lab-09 (MySQL Cluster Manager) non testable** — MCM supprimé depuis MySQL 8.0. Paquets absents sur les VMs. Pas de licence requise (open source), mais l'outil n'existe plus en version 8.0.
 
@@ -203,10 +210,20 @@ Aucun blocant n'empêche la poursuite du parcours. Le cluster fonctionne, le fai
 Le parcours chapitres 1 à 5 est fonctionnel sur les 3 VMs du lab isolé. Le cluster MySQL Cluster a été déployé, testé, puis les VMs ont été remises à zéro (nettoyage chapitre 1 : arrêt des services, suppression de `/var/lib/mysql-cluster/*` et `/var/lib/mysql/*`, purge des paquets `mysql-cluster-*`).
 
 **Résultat des tests : 11/14 labs passés ou partiellement passés (79%).**  
-Les 3 labs non entièrement couverts (07 contourné, 08 partiellement, 09 indisponible) sont documentés avec leurs limitations dans ce bilan.
+Les 3 labs non entièrement couverts (07 contourné via `SHOW CREATE TABLE` + `ndbinfo`, 08 `ndb_restore` non fonctionnel, 09 MCM indisponible) sont documentés avec leurs limitations dans ce bilan.
 
 **Preuves d'exécution :** `preuves/chapitre-0X/lab-YY/` (fichiers texte, sorties réelles de commandes).
 
 **État des VMs après nettoyage :** propres, prêtes pour une nouvelle installation (Lab-01 à refaire si nécessaire).
 
 **Aucune licence requise** : tous les composants utilisés sont open source (MySQL Cluster Community Edition). Pas de déploiement production, aucun accès à des réseaux externes pendant les tests.
+
+**Analyse du problème `ndb_restore` (Lab-08) :**  
+La commande `ndb_restore` retourne systématiquement "Failed to find backup" quel que soit :
+- le NodeId API utilisé (4, 5 ou 6, libre ou occupé)
+- le chemin `--backup-path` (répertoire contenant `BACKUP-1/` ou `BACKUP-1/` directement)
+- l'emplacement des fichiers (`/tmp/`, `/var/lib/mysql-cluster/`, répertoire d'origine sur VM2)
+- l'exécution depuis VM1 (gestionnaire) ou VM2 (nœud de stockage avec les fichiers)
+- l'option `--print` (lecture seule) ou `--restore-data`
+
+Cette limitation est spécifique à l'environnement de test isolé et n'empêche pas le fonctionnement du cluster ni la sauvegarde (`START BACKUP` validée).
