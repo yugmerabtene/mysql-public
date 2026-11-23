@@ -317,6 +317,10 @@ MySQL Cluster repose sur trois types de nœuds distincts qui communiquent entre 
 * **Rôle** : offre l'interface standard de MySQL. Il agit comme une passerelle entre les applications clientes (protocole MySQL) et le moteur de stockage NDB. Il reçoit les requêtes SQL, les optimise et les traduit en opérations NDB pour les transmettre aux nœuds de stockage appropriés.
 * **Caractéristiques** : ce n'est pas un serveur MySQL classique avec InnoDB ; il utilise le moteur NDB. Il ne stocke pas de données utilisateur NDB. Une application peut se connecter à n'importe quel nœud SQL pour accéder aux mêmes données du cluster.
 
+### Figure 1 — Architecture logique du cluster
+
+![Figure 1 : Architecture logique du cluster](image-1.png)
+
 Ces composants interagissent de manière coordonnée, comme le montre l'illustration suivante :
 
 ### Figure 2 — Communication interne et rôles des nœuds du cluster NDB
