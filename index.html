@@ -413,8 +413,6 @@ Le split-brain est prévenu par l'arbitrage : le nœud de gestion agit comme arb
 
 ### Figure 6 — Topologie région unique vs multi-région (illustration du quorum et du split-brain)
 
-![Figure 6 : Topologie région unique vs multi-région](image-16.png)
-
 ```mermaid
 graph TD
     GM["Nœud de gestion (arbitre, NodeId 1)"] <==> DS1["Nœud de stockage NodeId 2"]
@@ -439,8 +437,6 @@ graph TD
 ```
 
 ### Figure 7 — Topologie multi-région 3 sites (Régions A, B, C)
-
-![Figure 7 : Topologie multi-région 3 sites (Régions A, B, C)](image-17.png)
 
 ```mermaid
 graph TD
@@ -470,8 +466,6 @@ graph TD
 **Failover automatique** : lorsqu'un nœud de stockage défaillant est détecté, le nœud de gestion le marque `not connected` et les opérations SQL basculent automatiquement sur la réplica restante. Lorsqu'un nœud est rajouté ou redémarré, il resynchronise ses données depuis la réplica vivante et réintègre le cluster. Ce mécanisme est au cœur de la haute disponibilité visée par les systèmes critiques.
 
 ### Figure 8 — Cycle de failover et réintégration d'un nœud de stockage
-
-![Figure 8 : Cycle de failover — détection, basculement, resynchronisation, réintégration](image-15.png)
 
 ```mermaid
 stateDiagram-v2
