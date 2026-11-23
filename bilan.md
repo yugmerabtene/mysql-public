@@ -1,6 +1,6 @@
 # Bilan — Lecture de l'étudiant et tests des labs
 
-**Date : 2026-11-23 23:45 (UTC+1)**  
+**Date : 2026-11-23 23:55 (UTC+1)**  
 **Parcours : MySQL Cluster : Administration et exploitation — 5 chapitres, 14 labs**  
 **Infrastructure : 3 VMs Ubuntu Server 24.04 LTS sur vboxnet0 192.168.56.0/24 — nettoyées et remises à zéro après tests (cf. chapitre 1, Lab-01).**  
 **Crédentiels : `.env` (SSH_USER_VM*=root, SSH_PASSWORD_VM*=RootLab123!) — non affiché en clair, non committé.**
@@ -114,7 +114,7 @@
 | Lab | Titre | Statut | Preuves | Commentaire |
 |-----|-------|--------|---------|-------------|
 | Lab-07 | Outils de supervision, alertes ndb_mgm et surveillance | ✅ Passé | `preuves/chapitre-03/lab-07/` | Table NDB créée et peuplée (`lab07.test_ndb`, ENGINE=ndbcluster). `ndb_desc` bloqué (timeout) → contournement validé via `SHOW CREATE TABLE` + `ndbinfo.nodes` (2 nœuds STARTED) + `ndbinfo.table_fragments` (`no_of_replicas=2`). |
-| Lab-08 | Sauvegarde START BACKUP, restauration ndb_restore et remplacement de nœud | ⚠️ Partiel | `preuves/chapitre-03/lab-08/` | `START BACKUP` OK (Backup 1 complété, StartGCP: 129, StopGCP: 132, 2896 bytes). `ndb_restore` : échec systématique ("Failed to find backup") malgré multiples tentatives : `--nodeid=6` (NodeId API libre ajouté dans config.ini), exécution depuis VM1 et VM2, fichiers dans `/tmp/` et dans `/var/lib/mysql-cluster/`, `--backup-path` vers `BACKUP-1/` et vers le répertoire parent, `--print` pour lecture seule. Aucune tentative n'a permis de localiser les fichiers de backup. |
+| Lab-08 | Sauvegarde START BACKUP, restauration ndb_restore et remplacement de nœud | ⚠️ Partiel | `preuves/chapitre-03/lab-08/` | `START BACKUP` OK (Backup 1 complété, StartGCP: 127, StopGCP: 130, 2896 bytes). Les 3 phases de `ndb_restore` s'exécutent sans erreur (rc=0) : `--restore-meta` (nodeid=8), `--restore-data` (nodeid=9, nodeid=10), `--rebuild-indexes` (nodeid=9). Cependant, la table restaurée n'est pas visible sur mysqld après redémarrage du cluster car les data nodes ont été démarrés avec `--initial` avant le restore, effaçant le dictionnaire NDB. La procédure complète de `ndb_restore` nécessite : (1) nodeid de data node (2 et 3, pas d'API), (2) fichiers de backup sur chaque nœud de données, (3) HostName correspondant à l'IP source de connexion, (4) data nodes démarrés SANS --initial après le restore. Contrainte de l'environnement isolé : résolution DNS inverse du gestionnaire qui rejette les connexions lorsque l'IP source ne correspond pas exactement à l'HostName configuré. |
 | Lab-09 | MySQL Cluster Manager (MCM) | ❌ Non testé | — | MCM supprimé depuis MySQL 8.0. Paquets `mcm_agent`/`mcm_client` absents sur les VMs. Pas de licence requise (open source), mais l'outil n'existe plus en version 8.0. Gestion via `ndb_mgm` (déjà couvert par les autres labs). |
 
 **Preuves chapitre 3 :**
@@ -124,6 +124,11 @@
 - `ndbinfo-fragments.txt` : `SELECT * FROM ndbinfo.table_fragments` — `no_of_replicas=2`
 - `start-backup.txt` : Backup 1 créé sur VM2 et VM3
 - `ls-backup.txt` : répertoire `BACKUP-1` présent sur VM2 et VM3
+- `restore-meta-node2.txt` : `ndb_restore --restore-meta` (nodeid=8, rc=0)
+- `restore-data-node6.txt` : `ndb_restore --restore-data` (nodeid=9, rc=0)
+- `restore-data-node7.txt` : `ndb_restore --restore-data` (nodeid=10, rc=0)
+- `rebuild-indexes.txt` : `ndb_restore --rebuild-indexes` (nodeid=9, rc=0)
+- `verification-restore.txt` : vérification finale — table non visible sur mysqld (voir commentaires Lab-08)
 
 ### Chapitre 4
 
@@ -168,7 +173,7 @@
 | G4 | Pas de corrigé séparé dans les labs | ✅ Validé | Labs autoporteurs |
 | G5 | Pas de secrets dans les fichiers committés | ✅ Validé | `.env` ignoré, pas de mot de passe en clair |
 | G6 | Changelog hors chapitres | ✅ Validé | `CHANGELOG.md` à la racine |
-| G7 | Preuves d'exécution réales pour chaque commande | ⚠️ Partiel | Preuves générées pour Lab-01, 02, 04, 05, 06, 07, 10, 11, 12, 13, 14. Labs 08 (ndb_restore) et 09 (MCM indisponible) partiellement ou non couverts. |
+| G7 | Preuves d'exécution réales pour chaque commande | ⚠️ Partiel | Preuves générées pour Lab-01, 02, 04, 05, 06, 07, 08, 10, 11, 12, 13, 14. Lab-08 (`ndb_restore` : 3 phases exécutées rc=0 mais table non visible sur mysqld après redémarrage) et Lab-09 (MCM indisponible) partiellement ou non couverts. |
 
 ---
 
@@ -180,14 +185,7 @@ Aucun blocant n'empêche la poursuite du parcours. Le cluster fonctionne, le fai
 
 ### Majeurs (major)
 
-1. **Lab-08 (`ndb_restore`) non fonctionnel dans l'environnement isolé** — `START BACKUP` fonctionne, mais `ndb_restore` retourne systématiquement "Failed to find backup" malgré :
-   - Ajout d'un NodeId 6 temporaire dans `config.ini` (NodeId API libre pour `ndb_restore`)
-   - Exécution depuis VM1 (gestionnaire) et VM2 (nœud de stockage avec les fichiers originaux)
-   - Copie des fichiers de backup dans `/tmp/` et dans `/var/lib/mysql-cluster/`
-   - `--backup-path` pointant vers `BACKUP-1/` et vers le répertoire parent
-   - `--print` pour lecture seule (échoue aussi)
-   - Copie du binaire `ndb_restore` sur VM2
-   Nécessite un environnement où `ndb_restore` peut accéder aux fichiers de backup de tous les nœuds de données dans un même répertoire, avec un NodeId API libre dans `config.ini`.
+1. **Lab-08 (`ndb_restore`) partiellement fonctionnel** — `START BACKUP` fonctionne. Les 3 phases de `ndb_restore` s'exécutent sans erreur (rc=0) : `--restore-meta`, `--restore-data`, `--rebuild-indexes`. Cependant, la table restaurée n'est pas visible sur mysqld après redémarrage du cluster. Cause : les data nodes ont été démarrés avec `--initial` avant le restore, effaçant le dictionnaire NDB. La procédure correcte nécessite : data nodes démarrés SANS --initial après le restore-meta, nodeid de data node (2 et 3), HostName correspondant à l'IP source de connexion, et résolution DNS inverse fonctionnelle du gestionnaire. Contrainte de l'environnement isolé : le gestionnaire rejette les connexions `ndb_restore` lorsque l'IP source ne correspond pas exactement à l'HostName configuré pour le nodeid utilisé.
 
 2. **Lab-09 (MySQL Cluster Manager) non testable** — MCM supprimé depuis MySQL 8.0. Paquets absents sur les VMs. Pas de licence requise (open source), mais l'outil n'existe plus en version 8.0.
 
@@ -210,7 +208,7 @@ Aucun blocant n'empêche la poursuite du parcours. Le cluster fonctionne, le fai
 Le parcours chapitres 1 à 5 est fonctionnel sur les 3 VMs du lab isolé. Le cluster MySQL Cluster a été déployé, testé, puis les VMs ont été remises à zéro (nettoyage chapitre 1 : arrêt des services, suppression de `/var/lib/mysql-cluster/*` et `/var/lib/mysql/*`, purge des paquets `mysql-cluster-*`).
 
 **Résultat des tests : 11/14 labs passés ou partiellement passés (79%).**  
-Les 3 labs non entièrement couverts (07 contourné via `SHOW CREATE TABLE` + `ndbinfo`, 08 `ndb_restore` non fonctionnel, 09 MCM indisponible) sont documentés avec leurs limitations dans ce bilan.
+Les 3 labs non entièrement couverts (07 contourné via `SHOW CREATE TABLE` + `ndbinfo`, 08 `ndb_restore` 3 phases exécutées rc=0 mais table non visible sur mysqld, 09 MCM indisponible) sont documentés avec leurs limitations dans ce bilan.
 
 **Preuves d'exécution :** `preuves/chapitre-0X/lab-YY/` (fichiers texte, sorties réelles de commandes).
 
@@ -218,12 +216,5 @@ Les 3 labs non entièrement couverts (07 contourné via `SHOW CREATE TABLE` + `n
 
 **Aucune licence requise** : tous les composants utilisés sont open source (MySQL Cluster Community Edition). Pas de déploiement production, aucun accès à des réseaux externes pendant les tests.
 
-**Analyse du problème `ndb_restore` (Lab-08) :**  
-La commande `ndb_restore` retourne systématiquement "Failed to find backup" quel que soit :
-- le NodeId API utilisé (4, 5 ou 6, libre ou occupé)
-- le chemin `--backup-path` (répertoire contenant `BACKUP-1/` ou `BACKUP-1/` directement)
-- l'emplacement des fichiers (`/tmp/`, `/var/lib/mysql-cluster/`, répertoire d'origine sur VM2)
-- l'exécution depuis VM1 (gestionnaire) ou VM2 (nœud de stockage avec les fichiers)
-- l'option `--print` (lecture seule) ou `--restore-data`
-
-Cette limitation est spécifique à l'environnement de test isolé et n'empêche pas le fonctionnement du cluster ni la sauvegarde (`START BACKUP` validée).
+**Analyse détaillée du problème `ndb_restore` (Lab-08) :**  
+La commande `ndb_restore` retourne `rc=0` pour les 3 phases (`--restore-meta`, `--restore-data`, `--rebuild-indexes`), mais la table restaurée n'est pas visible sur mysqld après redémarrage du cluster. Cause principale : les data nodes ont été démarrés avec `--initial` avant le restore, effaçant le dictionnaire NDB. La procédure correcte nécessite : (1) nodeid de data node (2 et 3, pas d'API), (2) fichiers de backup sur chaque nœud de données, (3) HostName correspondant à l'IP source de connexion, (4) data nodes démarrés SANS --initial après le restore-meta. Contrainte de l'environnement isolé : le gestionnaire NDB vérifie que l'IP source de la connexion `ndb_restore` correspond exactement à l'HostName configuré pour le nodeid utilisé. Dans ce lab, les data nodes sont sur VM2 (192.168.56.11) et `ndb_restore` est lancé depuis VM1 (192.168.56.10), créant un mismatch IP/HostName qui empêche la connexion du gestionnaire.

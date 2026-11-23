@@ -1,0 +1,3 @@
+Nodeid = 7
+Backup Id = 1
+backup path = /tmp/ndb_backup_restore/BACKUP-1/

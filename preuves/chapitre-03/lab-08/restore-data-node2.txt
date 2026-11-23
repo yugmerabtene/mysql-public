@@ -1,0 +1,4 @@
+Nodeid = 2
+Backup Id = 1
+backup path = /var/lib/mysql-cluster/ndb_2/BACKUP/BACKUP-1/
+Could not connect to cluster: '1103 - Error: Could not alloc node id at 192.168.56.10:1186: Connection done from host ip 192.168.56.11, not matching any (resolved) configured address.'
