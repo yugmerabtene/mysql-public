@@ -56,9 +56,9 @@ graph TD
     S -->|TLS| ND3["ndbmtd NodeId=3"]
     G -->|TLS + SQL| SQL1["mysqld NodeId=4"]
     T -->|TLS + SQL| SQL2["mysqld NodeId=5"]
-    MGM <-->|TLS gere| ND2
-    MGM <-->|TLS gere| ND3
-    ND2 <-->|TLS replique| ND3
+    MGM <-->|TLS gère| ND2
+    MGM <-->|TLS gère| ND3
+    ND2 <-->|TLS réplique| ND3
 ```
 
 **Fig 5.1** — Flux de communication à sécuriser : SSH d'administration depuis l'hôte, TLS entre tous les nœuds du cluster (gestion, stockage, SQL) et réplication TLS entre les nœuds de stockage.
@@ -583,18 +583,33 @@ pkill -x mysqld
 **Exemple de commande**
 
 ```bash
-pkill -x ndbmtd
+pgrep -a ndbmtd
 ```
 
 **Explication de la commande**
 
-- `pkill -x ndbmtd` : arrête les deux nœuds de stockage NodeId 2 et 3 sur VM 2.
+- `pgrep -a ndbmtd` : liste tous les processus `ndbmtd` en cours avec leur ligne de commande complète. Cela permet d'identifier les PID des nodes 2 et 3 pour les arrêter spécifiquement.
+- **Piège** : ne pas utiliser `pkill -x ndbmtd` sans ciblage car cela arrêterait tous les nœuds de stockage simultanément, coupant le service du cluster.
 
 **Résultat attendu**
 
 ```text
-
+21811 ndbmtd --ndb-connectstring=192.168.56.10
+21812 ndbmtd --ndb-connectstring=192.168.56.10
 ```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
+
+**Exemple de commande**
+
+```bash
+kill <PID_ndbmtd_2> <PID_ndbmtd_3>
+```
+
+**Explication de la commande**
+
+- `kill <PID_ndbmtd_2> <PID_ndbmtd_3>` : arrête les deux nœuds de stockage NodeId 2 et NodeId 3 en ciblant leurs PID respectifs identifiés à l'étape précédente.
+- **Piège** : vérifier que les PID correspondent bien aux processus `ndbmtd` avant de tuer, afin de ne pas arrêter d'autres processus par erreur.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 

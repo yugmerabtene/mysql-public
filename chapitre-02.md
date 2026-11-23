@@ -51,13 +51,13 @@ NDB expose un système d'événements (`ndb_event`) qui permet de superviser l'�
 
 ```mermaid
 flowchart TD
-    Event[Événement NDB] --> Log[Log du nœud (ndb_mgmd/ndbmtd/mysqld)]
-    Event --> MGM[ndb_mgmd : arbitre + collecte]
-    MGM --> SHOW[ndb_mgm SHOW / ALL REPORT MEMORYUSAGE]
-    MGM --> Stat[ndb_stat : stats par nœud]
-    MGM --> Top[ndb_top : activité CPU/thread temps réel]
-    Log --> Alerte[Alerte si not connected ou mémoire > 80%]
-    SHOW --> Action[Action admin : redémarrage, ajout nœud, tuning]
+    A[Evenement NDB] --> B[Log du nœud]
+    A --> C[ndb_mgmd arbitre collecte]
+    C --> D[ndb_mgm SHOW MEMORYUSAGE]
+    C --> E[ndb_stat stats nœud]
+    C --> F[ndb_top activité CPU thread]
+    B --> G[Alerte not connected mémoire 80%]
+    D --> H[Action admin redémarrage ajout nœud tuning]
 ```
 
 **Surveillance recommandée** : vérifier `ndb_mgm -e "SHOW"` quotidiennement, surveiller l'usage `DataMemory`/`IndexMemory` via `ALL REPORT MEMORYUSAGE`, et consulter les logs du cluster en cas d'erreur 2315 (nœud déclaré mort) ou d'échec d'arbitrage.
@@ -472,15 +472,30 @@ sleep 6
 
 **Explication de la commande**
 
-- `sleep 6` : laisse le temps à la resynchronisation et à la réintégration.
-- **Piège** : `ndb_mgm -e '2 START'` ne peut pas redémarrer un node lancé manuellement ; il faut le relancer directement avec `ndbmtd`.
+- `pgrep -a ndbmtd` : liste tous les processus `ndbmtd` en cours avec leur ligne de commande complète. Cela permet d'identifier le PID du NodeId 6 (celui lancé depuis le répertoire `ndb_6` avec l'option `--initial`) pour l'arrêter spécifiquement, sans toucher aux nodes 2 et 3 du node group 0.
+- **Piège** : ne pas utiliser `pkill -x ndbmtd` qui arrêterait simultanément les deux nœuds de stockage du node group 0 (NodeId 2 et NodeId 3), coupant le service du cluster.
 
 **Résultat attendu**
 
 ```text
-
-aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
+21811 ndbmtd --ndb-connectstring=192.168.56.10 --initial
+21812 ndbmtd --ndb-connectstring=192.168.56.10 --initial
+22284 ndbmtd --ndb-connectstring=192.168.56.10
+22285 ndbmtd --ndb-connectstring=192.168.56.10
 ```
+
+> **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
+
+**Exemple de commande**
+
+```bash
+kill <PID_du_node_6>
+```
+
+**Explication de la commande**
+
+- `kill <PID_du_node_6>` : arrête uniquement le processus `ndbmtd` du NodeId 6, dont le PID a été identifié à l'étape précédente. Remplacer `<PID_du_node_6>` par le numéro de PID réel (par exemple `22284` ou `22285` selon l'ordre d'affichage de `pgrep`).
+- **Piège** : vérifier que le PID correspond bien au NodeId 6 (processus lancé depuis `/var/lib/mysql-cluster/ndb_6`) avant de tuer, afin de ne pas arrêter par erreur un nœud du node group 0.
 
 
 #### Étape 4 — Confirmer le retour à l'état nominal
@@ -1077,12 +1092,12 @@ Node 6: Index usage is 0%(6 32K pages of total 12285)
 **Exemple de commande**
 
 ```bash
-pkill -x ndbmtd
+pgrep -a ndbmtd
 ```
 
 **Explication de la commande**
 
-- `pkill -x ndbmtd` : arrête les processus de stockage présents. Ici, sur le lab, les nodes 2 et 3 tournent également sur VM 2 ; pour ne retirer que le NodeId 6, arrêter uniquement son processus par PID (`pgrep -a ndbmtd` puis `kill <pid du node 6>`), puis confirmer son retrait dans `SHOW`.
+- `pgrep -a ndbmtd` : arrête les processus de stockage présents. Ici, sur le lab, les nodes 2 et 3 tournent également sur VM 2 ; pour ne retirer que le NodeId 6, arrêter uniquement son processus par PID (`pgrep -a ndbmtd` puis `kill <pid du node 6>`), puis confirmer son retrait dans `SHOW`.
 - **Piège** : ne pas arrêter les deux nœuds de stockage du node group 0 simultanément, ce qui couperait le service.
 
 **Résultat attendu**

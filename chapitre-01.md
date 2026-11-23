@@ -182,23 +182,15 @@ Le split-brain est prévenu par l'arbitrage : le nœud de gestion agit comme arb
 
 **Lien avec le concept** : illustration du quorum (N/2 + 1) et du split-brain à l'échelle multi-région, concepts fondements de la résilience des clusters distribués.
 
-**Failover automatique** : lorsqu'un nœud de stockage défaillant est détecté, le nœud de gestion marque ce node comme `not connected` et les opérations SQL basculent automatiquement sur la réplica restante. Lorsqu'un nœud est rajouté ou redémarré, il resynchronise ses données depuis la réplica vivante et réintègre le cluster. Ce mécanisme de failover automatique est au cœur de la haute disponibilité visée par les systèmes critiques.
+**Failover automatique** : lorsqu'un nœud de stockage défaillant est détecté, le nœud de gestion le marque `not connected` et les opérations SQL basculent automatiquement sur la réplica restante. Lorsqu'un nœud est rajouté ou redémarré, il resynchronise ses données depuis la réplica vivante et réintègre le cluster. Ce mécanisme est au cœur de la haute disponibilité visée par les systèmes critiques.
 
-```mermaid
-flowchart TD
-    A[État normal : NodeId 2 et NodeId 3 actifs] --> B[PanNodeId 2 : nœud de stockage hors service]
-    B --> C[ndb_mgmd détecte not connected (heartbeat)]
-    C --> D[Basculement automatique sur NodeId 3]
-    D --> E[Opérations SQL basculent sur réplica NodeId 3]
-    E --> F[NodeId 2 redémarré]
-    F --> G[Resynchronisation depuis NodeId 3]
-    G --> H[NodeId 2 réintègre le cluster]
-    style B fill:#f96,stroke:#333
-    style E fill:#9f6,stroke:#333
-    style H fill:#9f6,stroke:#333
-```
+### Figure 8 — Cycle de failover et réintégration d'un nœud de stockage
 
-**Cycle de failover** : détection de panne par heartbeat → basculement sur la réplica vivante → resynchronisation à chaud du nœud redémarré → réintégration dans le cluster, sans interruption de service.
+![Figure 8 : Cycle de failover — détection, basculement, resynchronisation, réintégration](image-16.png)
+
+*Figure 8 : illustration du cycle de failover. À gauche, l'état normal avec les deux nœuds de stockage actifs. Au centre, la panne d'un nœud détectée par le nœud de gestion via heartbeat. À droite, le basculement automatique sur la réplica restante, puis la resynchronisation à chaud du nœud redémarré et sa réintégration dans le cluster, sans interruption de service.*
+
+**Lien avec le concept** : le failover automatique, le quorum (N/2 + 1) et l'arbitrage par le nœud de gestion sont les fondements de la résilience du cluster NDB.
 
 ### Partitionnement (sharding / auto-sharding) et contraintes des gros volumes
 
@@ -414,40 +406,6 @@ Remarques de référence du parcours :
 - `HostName` : si non spécifié, le nœud de gestion peut être contacté depuis n'importe quel hôte ; le définir explicitement restreint et sécurise la connectivité.
 - `DataDir` : répertoire de travail de chaque node ; les deux nœuds de stockage collocés sur VM 2 utilisent des répertoires distincts (`ndb_2` et `ndb_3`) pour éviter les collisions de fichiers.
 - `NoOfReplicas = 2` : chaque fragment de données existe en deux exemplaires, sur deux nœuds de stockage distincts.
-
-## Risques et résilience du clustering NDB
-
-### Réplication synchrone et NoOfReplicas = 2
-
-Dans NDB, chaque écriture est validée uniquement après avoir été répliquée sur tous les nœuds d'un node group. Le paramètre `NoOfReplicas = 2` signifie que chaque fragment de données existe en deux exemplaires, sur deux nœuds de stockage distincts. Si un nœud de stockage tombe, la réplique sur l'autre nœud reste disponible immédiatement, sans interruption de service.
-
-### Node groups
-
-Avec deux nœuds de stockage et `NoOfReplicas = 2`, le cluster forme un seul node group (Nodegroup: 0) contenant les deux copies de chaque fragment. Les deux nœuds de stockage sont collocés sur VM 2 (`192.168.56.11`) dans ce lab, avec des répertoires de données distincts (`ndb_2` et `ndb_3`) pour éviter toute collision de fichiers.
-
-### Quorum et split-brain
-
-Le quorum est la règle par laquelle une décision de cluster nécessite l'accord de la majorité des nœuds participants. Dans ce lab à 3 VM avec un seul nœud de gestion et deux nœuds de stockage dans un même node group, la perte d'un nœud de stockage ne rompt pas le quorum car le nœud de gestion et le nœud de stockage restant conservent la majorité. Le split-brain (partition du cluster en deux groupes incapables de communiquer) est prévenu par l'arbitrage : le nœud de gestion agit comme arbitre et tranche quel node group reste actif. L'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin.
-
-### Failover automatique
-
-Lorsqu'un nœud de stockage défaillant est détecté, le nœud de gestion marque le node concerné comme `not connected` et les opérations SQL basculent automatiquement sur la réplica restante. Lorsqu'un nœud est rajouté ou redémarré, il resynchronise ses données depuis la réplique vivante et réintègre le cluster. Ce mécanisme de failover automatique est au cœur de la haute disponibilité visée par les systèmes critiques.
-
-Le schéma ci-dessous illustre le comportement de résilience.
-
-```mermaid
-graph TD
-    MGM["ndb_mgmd NodeId=1"] -->|arbitrage| NG["Nodegroup 0: NodeId 2 + NodeId 3"]
-    NG -->|réplication synchrone| R1["Réplica A NodeId 2"]
-    NG -->|réplication synchrone| R2["Réplica B NodeId 3"]
-    SQL1["mysqld NodeId=4"] -->|lecture/écriture| NG
-    SQL2["mysqld NodeId=5"] -->|lecture/écriture| NG
-    P["Perte NodeId 2"] -->|failover auto| R2
-    R2 -->|service continu| SQL1
-    R2 -->|service continu| SQL2
-```
-
-**Fig 1.2** — Résilience du clustering NDB : node group unique, réplication synchrone, arbitrage par le nœud de gestion, failover automatique sur la réplica restante.
 
 ## Haute disponibilité des systèmes critiques
 

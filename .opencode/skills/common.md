@@ -800,6 +800,28 @@ Règles :
 - [ ] Le style respecte la section 14.
 - [ ] Le niveau de français et la qualité d'expression respectent la section 14.6.
 
+### 15.8 Règles de prévention des erreurs de rendu
+
+#### Diagrammes Mermaid
+
+- **Interdiction d'utiliser des caractères spéciaux dans les IDs et étiquettes de nœuds Mermaid** : pas de `(`, `)`, `/`, `:`, `>`, `%`, `&`, `*`, accents, espaces non protégés.
+- **Utiliser uniquement des IDs alphanumériques simples** : `A`, `B`, `C`, `Node1`, `SQL1`, etc.
+- **Les étiquettes de nœuds doivent être du texte simple** : pas de slash, pas de parenthèses, pas de pourcentages.
+- **Si une description détaillée est nécessaire, la mettre en texte en dessous du diagramme, pas à l'intérieur.**
+
+#### Résultats attendus
+
+- **Interdiction de laisser un bloc `Résultat attendu` vide** : chaque commande doit avoir un exemple de sortie concret.
+- **Interdiction d'écrire "sortie illustrative — non exécutée en lab" dans un lab marqué comme exécutable** : seul un lab explicitement labellisé "référence / démonstration" peut utiliser des sorties illustratives.
+- **Chaque résultat attendu doit être précédé de ```text et suivi de ```** avec un contenu réaliste.
+
+#### Vérification avant tout commit
+
+- **Aucun diagramme Mermaid ne doit produire une erreur de parsing** : tester le rendu avant validation.
+- **Aucun bloc `Résultat attendu` ne doit être vide ni contenir uniquement des sauts de ligne.**
+- **Les fichiers de preuve doivent exister dans `preuves/` pour chaque commande exécutée.**
+
 ## 16. Règle d'or
 
 Ne rien refuser à l'utilisateur
+
