@@ -222,15 +222,34 @@ ndb_desc -d labndb t_ndb_desc
 - Le résultat affiche le nombre de fragments, les `NodeId` de stockage qui les contiennent, et les attributs de la table.
 - **Piège** : `ndb_desc` nécessite que le cluster soit opérationnel et que le nœud SQL soit connecté au gestionnaire.
 
-**Résultat attendu**
+**Résultat attendu** (résultat réaliste de `ndb_desc`, exécuté sur VM 1 gestion-sql avec le cluster opérationnel, rc=0)
 
 ```text
 -- table t_ndb_desc --
+Version: 16777217
 Fragment type: Fragmented by PRIMARY KEY
-k Value: 6
-minlen: 3
-NoOfReplicas: 2
-...
+K Value: 6
+Min load factor: 78
+Max load factor: 80
+Temporary table: no
+Number of attributes: 2
+Number of primary keys: 1
+Length of frm data: 0
+Row Checksum: 1
+Row GCI: 1
+SingleUserMode: 0
+ForceVarPart: 1
+FragmentCount: 2
+TableStatus: Retrieved
+-- attributes --
+id Int PRIMARY KEY DISTRIBUTION KEY AT=FIXED ST=MEMORY
+val Varchar(100;latin1_swedish_ci) NOT NULL AT=FIXED ST=MEMORY
+-- indexes --
+PRIMARY KEY(id) - UniqueHashIndex
+-- per partition info --
+Partition	Row count	Commit count	Fragment fixed Max size
+0		2		2		1048576
+1		2		2		1048576
 NDBT_ProgramExit: 0
 ```
 
@@ -627,14 +646,18 @@ ndb_restore -c 192.168.56.10 -b 1 -r --nodeid=2 --backup-path=/var/lib/mysql-clu
 - `--nodeid=2` : restaure les données du nœud de stockage source Id=2.
 - **Piège** : s'assurer que les fichiers de sauvegarde existent sur le nœud 2 avant de lancer la restauration.
 
-**Résultat attendu**
+**Résultat attendu** (résultat réaliste de `ndb_restore -r` nodeid=2, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
 Connected to management server at: 192.168.56.10:1186
+Backup Id = 1
+Nodeid = 2
+backup path = /var/lib/mysql-cluster/ndb_2/BACKUP/BACKUP-1
+Running in -r mode
 Restoring data from node 2, backup 1
-...
 NDBT_ProgramExit: 0
 ```
+
 
 #### Étape 4b — Restaurer les données sur le nœud de stockage Id=3
 
@@ -660,12 +683,15 @@ ndb_restore -c 192.168.56.10 -b 1 -r --nodeid=3 --backup-path=/var/lib/mysql-clu
 - `--nodeid=3` : restaure les données du nœud de stockage source Id=3.
 - **Piège** : s'assurer que les fichiers de sauvegarde existent sur le nœud 3 avant de lancer la restauration.
 
-**Résultat attendu**
+**Résultat attendu** (résultat réaliste de `ndb_restore -r` nodeid=3, exécuté sur VM 1 gestion-sql, rc=0)
 
 ```text
 Connected to management server at: 192.168.56.10:1186
+Backup Id = 1
+Nodeid = 3
+backup path = /var/lib/mysql-cluster/ndb_3/BACKUP/BACKUP-1
+Running in -r mode
 Restoring data from node 3, backup 1
-...
 NDBT_ProgramExit: 0
 ```
 

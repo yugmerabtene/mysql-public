@@ -721,11 +721,11 @@ ls -ld /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
 
 - `ls -ld …/ndb_7 …/ndb_8` : affiche les détails des répertoires créés pour confirmer leur existence.
 
-**Résultat attendu**
+**Résultat attendu** (résultat réel, exécuté sur VM 2 stockage, rc=0)
 
 ```text
-drwxr-xr-x 2 root root 4096 … ndb_7
-drwxr-xr-x 2 root root 4096 … ndb_8
+drwxr-xr-x 2 root root 4096 nov. 22 11:09 ndb_7
+drwxr-xr-x 2 root root 4096 nov. 22 11:09 ndb_8
 ```
 
 > **Note** — Les répertoires `ndb_7` et `ndb_8` sont préparés pour une montée en charge ultérieure. Leur démarrage effectif (création de deux nouveaux node groups avec `NoOfReplicas = 2`) nécessiterait d'ajouter les entrées `[ndbd] NodeId = 7` et `NodeId = 8` dans `config.ini`, de redémarrer le gestionnaire, puis de lancer les deux nouveaux `ndbmtd`. Cette extension est présentée à titre de préparation ; le lab se concentre sur l'auto-sharding déjà effectif sur le node group existant (démontré aux étapes 1 et 2 avec `ndb_desc`).
@@ -1247,14 +1247,10 @@ mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "SHOW SLAVE STATUS\G"
 - `SHOW SLAVE STATUS\G` : affiche l'état du canal (`Slave_IO_Running`, `Slave_SQL_Running`, `Seconds_Behind_Master`).
 - **Piège** : si `Slave_IO_Running` ou `Slave_SQL_Running` vaut `No`, vérifier les journaux d'erreur du replica.
 
-**Résultat attendu**
+**Résultat attendu** (résultat réaliste : le port 3307 n'est pas ouvert car le cluster de secours Cluster B est théorique uniquement, aucune commande n'est exécutable sur VM 3 pour ce cluster — voir note étape 4)
 
 ```text
-*************************** 1. row ***************************
-               Slave_IO_Running: Yes
-              Slave_SQL_Running: Yes
-                Seconds_Behind_Master: 0
-...
+ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:3307' (111 "Connection refused")
 ```
 #### Étape 6 — Insérer des données sur le site principal et vérifier la propagation
 **But** — Créer une table identique sur les deux clusters, insérer des données sur le site principal, et confirmer qu'elles apparaissent sur le site de secours.
