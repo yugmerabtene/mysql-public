@@ -54,16 +54,6 @@ Dans le contexte de ce lab sur 3 VM, l'architecture est déployée comme suit :
 - **VM 2** (`192.168.56.11`, `stockage`) : héberge les **deux nœuds de stockage** (`ndbmtd`, NodeId 2 et NodeId 3), sur des répertoires de données distincts (`ndb_2` et `ndb_3`).
 - **VM 3** (`192.168.56.12`, `mysql-node3`) : héberge le **second nœud SQL** (`mysqld`, NodeId 5).
 
-### Figure 1 — Architecture logique du cluster
-
-![Figure 1 : Architecture logique du cluster](image-1.png)
-
-*Figure 1 : un schéma montrant la topologie logique du cluster. VM 1 (192.168.56.10) contient deux boîtes : `ndb_mgmd` (nœud de gestion, NodeId 1) et `mysqld` (nœud SQL, NodeId 4). VM 2 (192.168.56.11) contient deux autres boîtes : `ndbmtd NodeId 2` et `ndbmtd NodeId 3` (nœuds de stockage). VM 3 (192.168.56.12) contient `mysqld` (nœud SQL, NodeId 5). Des connexions bidirectionnelles relient les nœuds via le réseau host-only `vboxnet0` : le nœud SQL communique avec les nœuds de stockage pour accéder aux données, tandis que le nœud de gestion coordonne l'ensemble du cluster et distribue la configuration `config.ini`.*
-
-**Adaptation au lab** : l'image correspond exactement à la topologie canonique du parcours (gestion=1, stockage=2 et 3, SQL=4 et 5, adresses `192.168.56.10/11/12`). Aucun changement d'IP n'est nécessaire ; les NodeId affichés sont ceux du fichier `config.ini` de référence.
-
-**Lien avec le concept** : illustration de l'architecture partagé-nothing et de la séparation des rôles (gestion, stockage, SQL) qui structure tout le chapitre.
-
 ### Les trois types de nœuds et leurs rôles
 
 MySQL Cluster repose sur trois types de nœuds distincts qui communiquent entre eux via le réseau :
