@@ -1,29 +1,7 @@
-# Chapitre 1 — Introduction et installation de MySQL Cluster
-
 ## Objectif du chapitre
 
 À la fin de ce chapitre, l'apprenant sait décrire l'architecture de MySQL Cluster (moteur NDB, nœuds de gestion, de stockage et SQL), installer et configurer les trois VM du laboratoire (réseau vboxnet0, adresses IP statiques, SSH, nettoyage, snapshots), installer les composants MySQL Cluster sur chaque VM, rédiger le fichier `config.ini` de référence du parcours avec `NoOfReplicas = 2`, démarrer les nœuds dans l'ordre critique (gestion, puis stockage, puis SQL), vérifier l'intégrité du cluster avec `ndb_mgm -e "SHOW"`, et analyser la résilience (node groups, quorum, split-brain, failover automatique) ainsi que les contraintes des gros volumes de données (DataMemory, IndexMemory, partitionnement, auto-sharding).
 
-## Avertissement et périmètre
-
-- Machine principale : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
-- Réseau : VirtualBox host-only `vboxnet0` (`192.168.56.0/24`) pour l'accès SSH du host vers les VM, plus un adaptateur NAT sur chaque VM pour l'accès Internet de toutes les machines.
-- Données : fictives, marquées `Lab` (uniquement pour le laboratoire isolé).
-- Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
-- Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
-- Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
-- **Note sur les NodeId** : la numérotation canonique du parcours est `NodeId 1` pour le nœud de gestion (VM 1), `NodeId 2 et 3` pour les deux nœuds de stockage (VM 2), et `NodeId 4 et 5` pour les nœuds SQL (VM 1 et VM 3). Les `config.ini`, schémas et résultats `SHOW` attendus des chapitres suivent cette numérotation (gestion=1, stockage=2 et 3, SQL=4 et 5). Cette numérotation est celle de l'infrastructure déployée et validée en laboratoire.
-
-## Prérequis
-
-| Élément | Détail | Vérification |
-|---|---|---|
-| Hôte | VirtualBox, réseau host-only vboxnet0 192.168.56.0/24 | `VBoxManage list hostonlyifs` liste vboxnet0 |
-| VM 1 | Ubuntu Server 24.04 LTS, 1 vCPU, 1 Go RAM, 15 Go disque, IP `192.168.56.10`, hostname `gestion-sql` | `ping 192.168.56.10` depuis l'hôte |
-| VM 2 | Ubuntu Server 24.04 LTS, 1 vCPU, 1 Go RAM, 15 Go disque, IP `192.168.56.11`, hostname `stockage` | `ping 192.168.56.11` depuis l'hôte |
-| VM 3 | Ubuntu Server 24.04 LTS, 1 vCPU, 1 Go RAM, 15 Go disque, IP `192.168.56.12`, hostname `mysql-node3` | `ping 192.168.56.12` depuis l'hôte |
-| SSH | Accès `root` sur les trois VM (mot de passe dans `.env`) | session SSH ouverte sur chaque VM |
-| Snapshot | `propre-avant-lab` présent sur chaque VM | `VBoxManage snapshot <vm> list` |
 
 ## Vocabulaire
 
@@ -41,6 +19,7 @@
 | Connect-string | Adresse du nœud de gestion donnée à chaque node pour rejoindre le cluster (ex. `192.168.56.10`). |
 | Lab | Mot de passe factice (uniquement pour le laboratoire) |
 | Auto-sharding | Répartition automatique des fragments de données sur les nœuds de stockage par le moteur NDB. |
+
 
 ## Introduction à MySQL et au clustering (module 1.0)
 
@@ -372,6 +351,30 @@ Une écriture suit le même chemin qu'une lecture pour localiser la partition, p
 Outre MySQL Cluster NDB (le moteur partagé-nothing étudié dans ce lab), MySQL propose d'autres solutions de haute disponibilité fondées sur le moteur InnoDB (InnoDB Cluster, InnoDB ReplicaSet, InnoDB ClusterSet, MySQL Router). Ces approches utilisent la réplication asynchrone Source/Replica ou Group Replication quasi-synchrone, et sont **distinctes de NDB Cluster**, qui est le cœur de ce parcours. Elles ne sont ni installées ni mises en œuvre dans les Labs 1 et 2 ; cette introduction se concentre exclusivement sur le cluster NDB partagé-nothing avec `NoOfReplicas = 2`, nœuds de gestion, de stockage et SQL, ordre de démarrage gestion → stockage → SQL, et vérification d'intégrité avec `ndb_mgm -e "SHOW"`.
 
 
+
+## Avertissement et périmètre
+
+- Machine principale : VM 1 (`192.168.56.10`, hostname `gestion-sql`, nœud de gestion + nœud SQL), VM 2 (`192.168.56.11`, hostname `stockage`, deux nœuds de stockage `ndbmtd` NodeId 2 et 3) et VM 3 (`192.168.56.12`, hostname `mysql-node3`, second nœud SQL NodeId 5).
+- Réseau : VirtualBox host-only `vboxnet0` (`192.168.56.0/24`) pour l'accès SSH du host vers les VM, plus un adaptateur NAT sur chaque VM pour l'accès Internet de toutes les machines.
+- Données : fictives, marquées `Lab` (uniquement pour le laboratoire isolé).
+- Snapshots : les snapshots propres (`propre-avant-lab`) sont pris sur chaque VM avant le module.
+- Accès : l'apprenant est déjà connecté en SSH sur chaque VM et exécute les commandes directement sur la machine.
+- Hôte : `192.168.56.1`, utilisé uniquement comme hyperviseur, machine d'administration et stockage des preuves.
+- **Note sur les NodeId** : la numérotation canonique du parcours est `NodeId 1` pour le nœud de gestion (VM 1), `NodeId 2 et 3` pour les deux nœuds de stockage (VM 2), et `NodeId 4 et 5` pour les nœuds SQL (VM 1 et VM 3). Les `config.ini`, schémas et résultats `SHOW` attendus des chapitres suivent cette numérotation (gestion=1, stockage=2 et 3, SQL=4 et 5). Cette numérotation est celle de l'infrastructure déployée et validée en laboratoire.
+
+
+## Prérequis
+
+| Élément | Détail | Vérification |
+|---|---|---|
+| Hôte | VirtualBox, réseau host-only vboxnet0 192.168.56.0/24 | `VBoxManage list hostonlyifs` liste vboxnet0 |
+| VM 1 | Ubuntu Server 24.04 LTS, 1 vCPU, 1 Go RAM, 15 Go disque, IP `192.168.56.10`, hostname `gestion-sql` | `ping 192.168.56.10` depuis l'hôte |
+| VM 2 | Ubuntu Server 24.04 LTS, 1 vCPU, 1 Go RAM, 15 Go disque, IP `192.168.56.11`, hostname `stockage` | `ping 192.168.56.11` depuis l'hôte |
+| VM 3 | Ubuntu Server 24.04 LTS, 1 vCPU, 1 Go RAM, 15 Go disque, IP `192.168.56.12`, hostname `mysql-node3` | `ping 192.168.56.12` depuis l'hôte |
+| SSH | Accès `root` sur les trois VM (mot de passe dans `.env`) | session SSH ouverte sur chaque VM |
+| Snapshot | `propre-avant-lab` présent sur chaque VM | `VBoxManage snapshot <vm> list` |
+
+
 ## Architecture de laboratoire : cluster MySQL sur 3 VM (module 1.0)
 
 
@@ -404,6 +407,7 @@ Les trois types de nœuds jouent des rôles distincts dans ce lab :
 L'ordre de démarrage est critique : le nœud de gestion doit être lancé avant les nœuds de stockage, qui doivent être lancés avant les nœuds SQL. Cet ordre garantit que chaque nœud trouve le gestionnaire et rejoint le cluster sans erreur. Cet ordre est celui de référence du parcours : gestionnaire, puis stockage, puis SQL.
 
 MySQL Cluster est adapté aux applications critiques car il offre une haute disponibilité et une tolérance aux pannes : avec `NoOfReplicas = 2`, la perte d'un nœud de stockage n'interrompt pas le service, la réplique restante continue de répondre.
+
 
 ## Fichier de configuration config.ini — référence du parcours
 
@@ -453,6 +457,7 @@ Remarques de référence du parcours :
 - `DataDir` : répertoire de travail de chaque node ; les deux nœuds de stockage collocés sur VM 2 utilisent des répertoires distincts (`ndb_2` et `ndb_3`) pour éviter les collisions de fichiers.
 - `NoOfReplicas = 2` : chaque fragment de données existe en deux exemplaires, sur deux nœuds de stockage distincts.
 
+
 ## Haute disponibilité des systèmes critiques
 
 Les architectures de type partagé-nothing (shared-nothing) avec réplication synchrone sont le fondement des systèmes critiques à haut volume. Dans les réseaux de télécommunications, les plateformes de transaction financière et les infrastructures logistiques distribuées, l'objectif de disponibilité de 99,999 % (moins de cinq minutes d'indisponibilité par an) impose trois conditions :
@@ -465,6 +470,7 @@ Ces principes justifient le choix de `NoOfReplicas = 2`, l'ordre de démarrage s
 
 > **Partagé-nothing (shared-nothing) :** ce n'est pas une erreur, c'est le terme technique de l'architecture NDB Cluster. Cela signifie que chaque nœud possède sa propre mémoire vive et ses propres disques, sans rien partager avec les autres nœuds. Les données sont fragmentées et répliquées sur plusieurs nœuds de stockage indépendants, ce qui élimine tout point de défaillance unique (single point of failure).
 
+
 ## Plan d'installation maître
 
 Le plan ci-dessous ordonne tous les labs du chapitre. Aucune action de configuration ne précède ce plan.
@@ -473,6 +479,7 @@ Le plan ci-dessous ordonne tous les labs du chapitre. Aucune action de configura
 |---|---|---|---|---|---|
 | 1 | Lab-01 | Nettoyer et configurer manuellement les trois VM (réseau, IP statique, SSH, hostname, snapshot, connectivité) | VM 1 + VM 2 + VM 3 | session SSH ouverte sur chaque VM, netplan, VirtualBox snapshots | NDB-01 |
 | 2 | Lab-02 | Installer MySQL Cluster, rédiger `config.ini`, démarrer dans l'ordre, vérifier l'intégrité et la résilience | VM 1 + VM 2 + VM 3 | Dépôt MySQL, `config.ini`, démarrage MGM → stockage → SQL | NDB-03, NDB-04, NDB-08, NDB-05 |
+
 
 ## Lab-01 — Mise en place manuelle des 3 VM
 
@@ -1407,6 +1414,7 @@ mysql-node3
 ### En conclusion
 
 Les trois VM du laboratoire sont nettoyées et configurées : Ubuntu Server 24.04 LTS, adresses IP statiques `192.168.56.10` (gestion-sql), `192.168.56.11` (stockage) et `192.168.56.12` (mysql-node3), service SSH actif, noms d'hôtes confirmés, snapshots propres `propre-avant-lab` présents, connectivité ping et SSH validée. Cette infrastructure est prête pour l'installation de MySQL Cluster au Lab-02. Critères de réussite : `ping` et `hostname` fonctionnent sur les trois VM, les snapshots `propre-avant-lab` existent. Renvoi : passer au Lab-02 pour installer les composants MySQL Cluster.
+
 
 ## Lab-02 — Installation de MySQL Cluster sur les 3 VM
 

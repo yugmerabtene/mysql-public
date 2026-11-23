@@ -266,7 +266,7 @@ sleep 4
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -312,7 +312,7 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
@@ -333,7 +333,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
@@ -351,7 +351,7 @@ sleep 6
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -455,7 +455,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 
@@ -709,7 +709,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -763,7 +763,7 @@ cp config.ini config.ini.pre-node6
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
@@ -904,7 +904,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_6.log &
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
@@ -922,7 +922,7 @@ sleep 8
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 10 — Lister les processus ndbmtd

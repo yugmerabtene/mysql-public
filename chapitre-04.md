@@ -236,7 +236,7 @@ cp config.ini config.ini.bak.optim
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3b — Modifier DataMemory et IndexMemory dans config.ini
@@ -260,7 +260,7 @@ grep -E '^DataMemory = ' config.ini && sed -i 's/^DataMemory = .*/DataMemory = 5
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3c — Vérifier les nouvelles valeurs de config.ini
@@ -309,7 +309,7 @@ pkill -x ndbmtd
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4b — Redémarrer le nœud de stockage Id=2
@@ -335,7 +335,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log &
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4c — Redémarrer le nœud de stockage Id=3
@@ -361,7 +361,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_3.log &
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4d — Vérifier les processus de stockage
@@ -385,7 +385,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4e — Lister les processus ndbmtd
@@ -664,7 +664,7 @@ mkdir -p /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4b — Vérifier les répertoires de stockage créés
@@ -829,7 +829,7 @@ printf '[mysqld]\nlog_bin = mysql-bin\nserver-id = 1\n' >> /etc/mysql/mysql.conf
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
@@ -923,7 +923,7 @@ mkdir -p /var/lib/mysql-cluster/clusterB
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
@@ -974,7 +974,7 @@ EOF
 **Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4b — Démarrer le gestionnaire de Cluster B
@@ -1003,7 +1003,7 @@ ndb_mgmd --ndb-nodeid=10 --initial --config-file=/var/lib/mysql-cluster/clusterB
 **Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4c — Attendre le démarrage du gestionnaire
@@ -1027,7 +1027,7 @@ sleep 2
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4d — Démarrer le nœud de stockage de Cluster B
@@ -1052,7 +1052,7 @@ ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtd
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4e — Démarrer le second nœud de stockage Id=21
@@ -1078,7 +1078,7 @@ ndbmtd --ndb-nodeid=21 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtd
 **Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4f — Attendre le démarrage des nœuds de stockage
@@ -1102,7 +1102,7 @@ sleep 3
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 4f — Vérifier les processus de Cluster B
@@ -1159,7 +1159,7 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.12:1188 --port=3307 --u
 **Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 5 — Configurer le canal de réplication sur le replica (SQL Id=6)
@@ -1508,7 +1508,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 &
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 5b — Attendre le redémarrage du nœud de stockage
@@ -1532,7 +1532,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 5c — Vérifier l'état du cluster après redémarrage

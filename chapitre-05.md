@@ -125,7 +125,7 @@ cp config.ini config.ini.bak.tls
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 1b — Ajouter la configuration TLS à config.ini
@@ -301,7 +301,7 @@ mkdir -p /etc/mysql-cluster-tls
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 2b — Générer l'autorité de certification (CA)
@@ -327,7 +327,7 @@ openssl req -x509 -newkey rsa:2048 -keyout ca-key.pem -out ca-cert.pem -days 365
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 2c — Générer la clé privée et la CSR pour le nœud de gestion
@@ -353,7 +353,7 @@ openssl req -newkey rsa:2048 -keyout mgmd-key.pem -out mgmd-req.pem -nodes -subj
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 2d — Signer le certificat du nœud de gestion avec la CA
@@ -379,7 +379,7 @@ openssl x509 -req -in mgmd-req.pem -CA ca-cert.pem -CAkey ca-key.pem -out mgmd-c
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 2d-bis — Générer le certificat du nœud de stockage (ndbd)
@@ -407,7 +407,7 @@ openssl x509 -req -in ndbd-req.pem -CA ca-cert.pem -CAkey ca-key.pem -out ndbd-c
 **Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 2d-ter — Générer le certificat du nœud SQL (mysqld)
@@ -435,7 +435,7 @@ openssl x509 -req -in mysqld-req.pem -CA ca-cert.pem -CAkey ca-key.pem -out mysq
 **Résultat attendu** (sortie illustrative — non exécutée en lab)
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 2e — Protéger les clés privées et vérifier les fichiers
@@ -461,7 +461,7 @@ chmod 600 ca-key.pem mgmd-key.pem ndbd-key.pem mysqld-key.pem
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 2f — Lister les fichiers TLS générés
@@ -557,7 +557,7 @@ pkill -x mysqld
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
@@ -575,7 +575,7 @@ pkill -x mysqld
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
@@ -626,7 +626,7 @@ pkill -x ndb_mgmd
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3a — Redémarrer le gestionnaire avec TLS activé
@@ -674,7 +674,7 @@ cd /var/lib/mysql-cluster/ndb_2
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3b — Lancer le nœud de stockage Id=2 avec TLS
@@ -702,7 +702,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log &
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3c — Lancer le nœud de stockage Id=3 avec TLS
@@ -729,7 +729,7 @@ nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_3.log &
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3d — Attendre le démarrage des nœuds de stockage
@@ -755,7 +755,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3e — Lancer le nœud SQL Id=4 (VM 1)
@@ -786,7 +786,7 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3f — Lancer le nœud SQL Id=5 (VM 3)
@@ -812,7 +812,7 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3g — Attendre la connexion des nœuds SQL
@@ -838,7 +838,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 3h — Vérifier l'état du cluster avec TLS
@@ -1133,7 +1133,7 @@ sleep 5
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 7 — Protéger les répertoires de sauvegarde
@@ -1159,7 +1159,7 @@ chmod 700 ndb_2/BACKUP ndb_3/BACKUP
 **Résultat attendu**
 
 ```text
-
+aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 ```
 
 #### Étape 7b — Vérifier les fichiers de sauvegarde et leurs droits
