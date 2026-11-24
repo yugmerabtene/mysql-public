@@ -2619,6 +2619,51 @@ wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/a
 sudo apt-get update
 ```
 
+**Problème 3 — MySQL Cluster introuvable (dépôt MySQL 8.4 au lieu de 8.0)**
+
+Si vous obtenez :
+
+```
+E: Impossible de trouver le paquet mysql-cluster-community-management-server
+E: Impossible de trouver le paquet mysql-cluster-community-data-node
+E: Impossible de trouver le paquet mysql-cluster-community-server
+E: Impossible de trouver le paquet mysql-cluster-client
+```
+
+ou :
+
+```
+E: Le paquet « mysql-cluster-community-server » n'a pas de version susceptible d'être installée
+Cependant les paquets suivants le remplacent :
+  mysql-community-server
+```
+
+**Cause** : le dépôt MySQL 8.4 LTS est activé, mais **MySQL Cluster NDB n'existe que dans MySQL 8.0**. MySQL a supprimé le moteur NDB à partir de MySQL 8.4. Le dépôt `repo.mysql.com/apt/ubuntu/ noble mysql-8.4-lts` ne contient donc pas les paquets `mysql-cluster-community-*`.
+
+**Solution** : reconfigurer `mysql-apt-config` pour cibler **MySQL 8.0** au lieu de 8.4 :
+
+```bash
+sudo dpkg-reconfigure mysql-apt-config
+```
+
+Dans l'interface de configuration :
+1. Sélectionner **MySQL Server & Cluster** (ou **MySQL Cluster**)
+2. Choisir la version **mysql-8.0** (et non mysql-8.4)
+3. Valider
+
+Puis recharger les listes et installer :
+
+```bash
+sudo apt-get update
+sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
+**Vérification** : après `apt-get update`, vous devriez voir `noble/mysql-8.0` dans la liste des dépôts :
+
+```text
+Réception de :2 http://repo.mysql.com/apt/ubuntu noble/mysql-8.0 amd64 Packages [...]
+```
+
 ---
 
 **Exemple de commande — Étape 4 : installer les composants MySQL Cluster**
