@@ -1313,6 +1313,17 @@ Les paquets supplémentaires suivants seront installés :
 Paramétrage de mysql-cluster-community-management-server (8.0.50-1ubuntu24.04) …
 ```
 
+**Configuration à valider lors de l'installation des paquets :**
+
+Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des invites de configuration que l'apprenant doit valider :
+
+* **Sélection de la version** : si plusieurs versions de MySQL Cluster sont disponibles dans le dépôt, confirmer la version `8.0.50-1ubuntu24.04` (ou la version cible du parcours).
+* **Dépendances automatiques** : confirmer l'installation des paquets dépendants (`mysql-cluster-community-client-core`, `mysql-cluster-community-client-plugins`, `mysql-cluster-community-server-core`) qui sont requis pour le fonctionnement du moteur NDB.
+* **Configuration du service** : confirmer le démarrage automatique du service `ndb_mgmd` (sur le nœud de gestion) et `mysqld` (sur les nœuds SQL) si une invite le demande.
+* **Conflit de paquets** : si un paquet MySQL standard (`mysql-server`, `mysql-client`) est déjà installé, confirmer son remplacement ou sa suppression pour éviter les conflits avec le moteur NDB.
+
+Sur les VMs du lab isolé, l'installation s'effectue depuis le cache `apt` local (`/var/cache/apt/archives/`) sans accès Internet : aucune invite de téléchargement distant n'apparaît, seule la configuration locale des paquets est à valider.
+
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
