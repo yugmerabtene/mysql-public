@@ -81,4 +81,4 @@ Ce document recense les acronymes, termes techniques et principes fondamentaux u
 
 ---
 
-*Document généré automatiquement à partir des chapitres 1 à 5 du cours MySQL Cluster.*
+
