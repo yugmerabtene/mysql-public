@@ -2681,6 +2681,44 @@ sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-
 Réception de :2 http://repo.mysql.com/apt/ubuntu noble/mysql-8.0 amd64 Packages [...]
 ```
 
+**Procédure complète corrigée pour installer MySQL Cluster sur votre ThinkPad (machine hôte) :**
+
+Si vous avez le dépôt 8.4 activé et que les paquets `mysql-cluster-community-*` ne se trouvent pas, appliquez cette procédure complète :
+
+```bash
+# 1. Réconfigurer mysql-apt-config pour cibler MySQL 8.0 (pas 8.4)
+sudo dpkg-reconfigure mysql-apt-config
+
+# Dans l'interface qui s'affiche :
+#   - Sélectionner "MySQL Server & Cluster"
+#   - Choisir "mysql-8.0" (et non mysql-8.4)
+#   - Valider
+
+# 2. Réimporter la clé GPG officielle MySQL
+sudo mkdir -p /etc/apt/keyrings
+wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/apt/keyrings/mysql.gpg
+
+# 3. Recharger les listes de paquets
+sudo apt-get update
+
+# 4. Vérifier que mysql-8.0 apparaît
+apt-cache policy mysql-cluster-community-management-server
+
+# 5. Installer les composants MySQL Cluster
+sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
+**Si `dpkg-reconfigure mysql-apt-config` ne propose pas mysql-8.0** :
+```bash
+# Supprimer le dépôt 8.4 et recréer proprement
+sudo rm -f /etc/apt/sources.list.d/mysql.list
+wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb
+# Dans l'interface : sélectionner mysql-8.0
+sudo apt-get update
+sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
 ---
 
 **Exemple de commande — Étape 4 : installer les composants MySQL Cluster**
