@@ -222,7 +222,19 @@ stateDiagram-v2
     note right of E4 : pas d'interruption de service
 ```
 
-**Lien avec le concept** : le failover automatique, le quorum (N/2 + 1) et l'arbitrage par le nœud de gestion sont les fondements de la résilience du cluster NDB.
+**Explication détaillée du cycle de failover et réintégration :**
+
+**Étape 1 — État normal** : Le cluster fonctionne nominalement. Les deux nœuds de stockage (NodeId 2 et NodeId 3) sont dans le même node group avec `NoOfReplicas = 2`. Chaque partition de données existe en deux exemplaires, l'un sur chaque nœud. Les nœuds SQL (NodeId 4 et 5) peuvent lire et écrire sur n'importe quel nœud de stockage.
+
+**Étape 2 — Détection** : Le nœud de gestion (`ndb_mgmd`) surveille en permanence les nœuds de stockage via des heartbeats réguliers. Si un nœud de stockage (par exemple NodeId 2) ne répond plus aux heartbeats pendant un intervalle donné, le nœud de gestion marque ce nœud comme `not connected`. C'est la détection de la panne.
+
+**Étape 3 — Basculement (failover)** : Le nœud de gestion arbitre la situation. Comme le NodeId 3 est toujours opérationnel et détient la réplica des mêmes partitions, le basculement est automatique : les requêtes SQL sont désormais dirigées vers le NodeId 3. Le quorum est préservé car le nœud de gestion et le NodeId 3 conservent la majorité (2 sur 3). Les applications clientes ne subissent aucune interruption de service.
+
+**Étape 4 — Resynchronisation** : Lorsque le nœud défaillant (NodeId 2) est redémarré, il se reconnecte au nœud de gestion. Sans l'option `--initial` (qui effacerait les données), le nœud 2 récupère les données modifiées pendant son absence depuis le NodeId 3 qui est resté actif. C'est la resynchronisation à chaud : seuls les fragments manquants ou obsolètes sont transférés, pas l'intégralité du node group.
+
+**Étape 5 — Réintégration** : Une fois la resynchronisation terminée, le NodeId 2 passe de l'état `starting` à l'état `started` et réintègre pleinement le cluster. Il retrouve son rôle de réplica dans le node group. Le cluster retrouve sa pleine redondance avec `NoOfReplicas = 2` sur les deux nœuds de stockage. Le cycle est terminé et le cluster est de nouveau en état nominal.
+
+**Lien avec le concept** : le failover automatique, le quorum (N/2 + 1) et l'arbitrage par le nœud de gestion sont les fondements de la résilience du cluster NDB. Sans quorum, le cluster ne pourrait pas décider quel groupe reste actif en cas de partition réseau ; sans arbitrage, deux partitions pourraient agir simultanément et créer des données divergentes (split-brain).
 
 ### Partitionnement (sharding / auto-sharding) et contraintes des gros volumes
 
