@@ -52,6 +52,17 @@ MySQL Cluster repose sur trois types de nœuds distincts qui communiquent entre 
 * **Rôle** : offre l'interface standard de MySQL. Il agit comme une passerelle entre les applications clientes (protocole MySQL) et le moteur de stockage NDB. Il reçoit les requêtes SQL, les optimise et les traduit en opérations NDB pour les transmettre aux nœuds de stockage appropriés.
 * **Caractéristiques** : ce n'est pas un serveur MySQL classique avec InnoDB ; il utilise le moteur NDB. Il ne stocke pas de données utilisateur NDB. Une application peut se connecter à n'importe quel nœud SQL pour accéder aux mêmes données du cluster.
 
+Ces composants interagissent de manière coordonnée, comme le montre l'illustration suivante :
+
+### Figure 1 — Architecture logique du cluster
+
+![Figure 1 : Architecture logique du cluster](image-1.png)
+
+### Figure 2 — Communication interne et rôles des nœuds du cluster NDB
+
+![Figure 2 : Architecture de référence MySQL NDB Cluster — clients, nodes SQL, nodes de données, gestion](image-3.png)
+
+*Figure 2 : l'architecture canonique du cluster NDB MySQL. À gauche, les clients et APIs (mysql Client, MySQL Connector/C, PHP, Connector/J, Connector/NET, clients personnalisés NDBAPI, client de gestion ndb_mgm) envoient leurs requêtes vers trois SQL Nodes (mysqld). Les SQL Nodes transmettent les opérations aux Data Nodes (ndbd). Le NDB Management Server (ndb_mgm) pilote et supervise l'ensemble du cluster. Les flux vont des clients vers les nodes SQL, puis vers les nodes de données, tandis que le serveur de gestion assure la coordination.*
 
 **Adaptation au lab** : dans notre lab sur 3 VM, cette topologie de référence est réduite à l'essentiel : 1 nœud de gestion (`ndb_mgmd`, NodeId 1, `192.168.56.10`), 2 nœuds de stockage (`ndbmtd`, NodeId 2 et NodeId 3, `192.168.56.11`) et 2 nœuds SQL (`mysqld`, NodeId 4 sur `192.168.56.10` et NodeId 5 sur `192.168.56.12`). Le client de gestion `ndb_mgm` est l'outil utilisé pour vérifier l'état du cluster (`ndb_mgm -e "SHOW"`). Les 3 nodes SQL et 4 nodes de données du schéma de référence deviennent 2 nodes SQL et 2 nodes de stockage collocés sur VM 2.
 
@@ -127,7 +138,14 @@ sequenceDiagram
 
 **Two-Phase Commit (2PC)** : protocole de validation distribuée utilisé par NDB pour garantir la cohérence. Le nœud SQL joue le rôle de coordinateur. Il envoie d'abord une requête "prepare" à tous les nœuds de stockage du node group ; chaque nœud acquitte. Puis, une fois tous les acquit reçus, le coordinateur envoie "commit" à tous. La transaction n'est confirmée à l'application que lorsque **tous** les nœuds ont acquitté le commit. Si un nœud ne répond pas dans les temps, la transaction est annulée (rollback) pour préserver la cohérence.
 
-**Quorum** : le quorum est la règle de décision par majorité qui empêche deux partitions du cluster d'agir simultanément. Dans un système distribué, un quorum se calcule généralement comme (N / 2) + 1, où N est le nombre total de nœuds participants. Cela signifie qu'une majorité de nœuds doit s'accorder avant qu'une décision ne soit prise. C'est pourquoi les clusters sont généralement déployés avec un nombre impair de serveurs (à partir de 3) : cela garantit qu'une majorité peut toujours être formée, même après une défaillance.
+**Quorum** : le quorum est la règle de décision par majorité qui empêche deux partitions du cluster d'agir simultanément. Dans un système distribué, un quorum se calcule généralement comme (N / 2) + 1, où N est le nombre total de nœuds participants. Cela signifie qu'il faut au moins la moitié des nœuds plus un vote pour valider une décision.
+
+**Exemple concret de N/2 + 1 :**
+- Avec **3 nœuds** (N = 3) : quorum = 3/2 + 1 = **2 votes sur 3** nécessaires.
+- Avec **5 nœuds** (N = 5) : quorum = 5/2 + 1 = **3 votes sur 5** nécessaires.
+- Avec **4 nœuds** (N = 4) : quorum = 4/2 + 1 = **3 votes sur 4** nécessaires. Attention : avec un nombre pair de nœuds, un partitionnement 2 contre 2 ne peut jamais atteindre le quorum de 3, donc le cluster s'arrête.
+
+C'est pourquoi les clusters sont généralement déployés avec un nombre impair de serveurs (à partir de 3) : cela garantit qu'une majorité peut toujours être formée, même après une défaillance.
 
 Dans ce lab NDB, le quorum est assuré par le nœud de gestion qui agit comme arbitre. Avec deux nœuds de stockage (NodeId 2 et NodeId 3) dans un seul node group et un nœud de gestion (NodeId 1), la perte d'un nœud de stockage ne rompt pas le quorum : le nœud de gestion et le nœud de stockage restant conservent la majorité et le cluster continue de fonctionner. Chaque nœud connaît le nombre total de nœuds du cluster (via sa configuration et les échanges de heartbeat avec le nœud de gestion). Lorsqu'un nœud détecte qu'il ne peut plus joindre assez de pairs pour atteindre le quorum, il sait qu'il se trouve dans la minorité et cesse de prendre des décisions, évitant ainsi toute écriture divergente.
 
@@ -204,7 +222,19 @@ stateDiagram-v2
     note right of E4 : pas d'interruption de service
 ```
 
-**Lien avec le concept** : le failover automatique, le quorum (N/2 + 1) et l'arbitrage par le nœud de gestion sont les fondements de la résilience du cluster NDB.
+**Explication détaillée du cycle de failover et réintégration :**
+
+**Étape 1 — État normal** : Le cluster fonctionne nominalement. Les deux nœuds de stockage (NodeId 2 et NodeId 3) sont dans le même node group avec `NoOfReplicas = 2`. Chaque partition de données existe en deux exemplaires, l'un sur chaque nœud. Les nœuds SQL (NodeId 4 et 5) peuvent lire et écrire sur n'importe quel nœud de stockage.
+
+**Étape 2 — Détection** : Le nœud de gestion (`ndb_mgmd`) surveille en permanence les nœuds de stockage via des heartbeats réguliers. Si un nœud de stockage (par exemple NodeId 2) ne répond plus aux heartbeats pendant un intervalle donné, le nœud de gestion marque ce nœud comme `not connected`. C'est la détection de la panne.
+
+**Étape 3 — Basculement (failover)** : Le nœud de gestion arbitre la situation. Comme le NodeId 3 est toujours opérationnel et détient la réplica des mêmes partitions, le basculement est automatique : les requêtes SQL sont désormais dirigées vers le NodeId 3. Le quorum est préservé car le nœud de gestion et le NodeId 3 conservent la majorité (2 sur 3). Les applications clientes ne subissent aucune interruption de service.
+
+**Étape 4 — Resynchronisation** : Lorsque le nœud défaillant (NodeId 2) est redémarré, il se reconnecte au nœud de gestion. Sans l'option `--initial` (qui effacerait les données), le nœud 2 récupère les données modifiées pendant son absence depuis le NodeId 3 qui est resté actif. C'est la resynchronisation à chaud : seuls les fragments manquants ou obsolètes sont transférés, pas l'intégralité du node group.
+
+**Étape 5 — Réintégration** : Une fois la resynchronisation terminée, le NodeId 2 passe de l'état `starting` à l'état `started` et réintègre pleinement le cluster. Il retrouve son rôle de réplica dans le node group. Le cluster retrouve sa pleine redondance avec `NoOfReplicas = 2` sur les deux nœuds de stockage. Le cycle est terminé et le cluster est de nouveau en état nominal.
+
+**Lien avec le concept** : le failover automatique, le quorum (N/2 + 1) et l'arbitrage par le nœud de gestion sont les fondements de la résilience du cluster NDB. Sans quorum, le cluster ne pourrait pas décider quel groupe reste actif en cas de partition réseau ; sans arbitrage, deux partitions pourraient agir simultanément et créer des données divergentes (split-brain).
 
 ### Partitionnement (sharding / auto-sharding) et contraintes des gros volumes
 
