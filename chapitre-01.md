@@ -52,21 +52,9 @@ MySQL Cluster repose sur trois types de nœuds distincts qui communiquent entre 
 * **Rôle** : offre l'interface standard de MySQL. Il agit comme une passerelle entre les applications clientes (protocole MySQL) et le moteur de stockage NDB. Il reçoit les requêtes SQL, les optimise et les traduit en opérations NDB pour les transmettre aux nœuds de stockage appropriés.
 * **Caractéristiques** : ce n'est pas un serveur MySQL classique avec InnoDB ; il utilise le moteur NDB. Il ne stocke pas de données utilisateur NDB. Une application peut se connecter à n'importe quel nœud SQL pour accéder aux mêmes données du cluster.
 
-Ces composants interagissent de manière coordonnée, comme le montre l'illustration suivante :
-
-### Figure 1 — Architecture logique du cluster
-
-![Figure 1 : Architecture logique du cluster](image-1.png)
-
-### Figure 2 — Communication interne et rôles des nœuds du cluster NDB
-
-![Figure 2 : Architecture de référence MySQL NDB Cluster — clients, nodes SQL, nodes de données, gestion](image-3.png)
-
-*Figure 2 : l'architecture canonique du cluster NDB MySQL. À gauche, les clients et APIs (mysql Client, MySQL Connector/C, PHP, Connector/J, Connector/NET, clients personnalisés NDBAPI, client de gestion ndb_mgm) envoient leurs requêtes vers trois SQL Nodes (mysqld). Les SQL Nodes transmettent les opérations aux Data Nodes (ndbd). Le NDB Management Server (ndb_mgm) pilote et supervise l'ensemble du cluster. Les flux vont des clients vers les nodes SQL, puis vers les nodes de données, tandis que le serveur de gestion assure la coordination.*
+Ces composants interagissent de manière coordonnée, comme le montre l'architecture de référence du parcours.
 
 **Adaptation au lab** : dans notre lab sur 3 VM, cette topologie de référence est réduite à l'essentiel : 1 nœud de gestion (`ndb_mgmd`, NodeId 1, `192.168.56.10`), 2 nœuds de stockage (`ndbmtd`, NodeId 2 et NodeId 3, `192.168.56.11`) et 2 nœuds SQL (`mysqld`, NodeId 4 sur `192.168.56.10` et NodeId 5 sur `192.168.56.12`). Le client de gestion `ndb_mgm` est l'outil utilisé pour vérifier l'état du cluster (`ndb_mgm -e "SHOW"`). Les 3 nodes SQL et 4 nodes de données du schéma de référence deviennent 2 nodes SQL et 2 nodes de stockage collocés sur VM 2.
-
-**Lien avec le concept** : cette image illustre les trois rôles de nœuds définis plus haut et le cheminement d'une requête (application → node SQL → node de stockage), sous la supervision du node de gestion.
 
 ### Ordre de démarrage critique : gestionnaire → stockage → SQL
 
@@ -178,6 +166,19 @@ graph TD
     classDef ko fill:#fff3e0,stroke:#ef6c00;
 ```
 
+**Explication de la Figure 6 — Quorum et split-brain :**
+
+Ce diagramme illustre comment le quorum et l'arbitrage empêchent le split-brain dans le cluster à 3 nœuds :
+
+* **GM (NodeId 1)** : le nœud de gestion, qui fait office d'arbitre.
+* **DS1 (NodeId 2)** et **DS2 (NodeId 3)** : les deux nœuds de stockage.
+* **Quorum : (N/2) + 1 = 2 sur 3** : avec 3 nœuds au total, il faut au moins 2 nœuds d'accord pour prendre une décision.
+* **Split-brain** : si le réseau est partitionné en deux groupes qui ne peuvent plus communiquer, chaque côté pourrait tenter d'agir indépendamment.
+* **Maj (Majorité garde l'arbitre : reste active)** : le groupe qui contient le nœud de gestion et au moins un nœud de stockage détient le quorum (2 sur 3) et continue de fonctionner.
+* **Min (Minorité : fige, pas d'écriture)** : le groupe isolé sans le quorum cesse d'accepter des écritures pour éviter des données divergentes.
+
+Concrètement, si le lien réseau entre le nœud de gestion et le NodeId 3 est coupé mais que le NodeId 2 reste joignable, le groupe {GM + DS2} a le quorum et reste actif. Le groupe isolé {DS3} est privé d'écriture jusqu'à la restauration du réseau.
+
 ### Figure 7 — Topologie multi-région 3 sites (Régions A, B, C)
 
 ```mermaid
@@ -203,9 +204,19 @@ graph TD
     classDef q fill:#e3f2fd,stroke:#1565c0;
 ```
 
-**Lien avec le concept** : illustration du quorum (N/2 + 1) et du split-brain à l'échelle multi-région, concepts fondements de la résilience des clusters distribués.
+**Explication de la Figure 7 — Topologie multi-région 3 sites :**
 
-**Failover automatique** : lorsqu'un nœud de stockage défaillant est détecté, le nœud de gestion le marque `not connected` et les opérations SQL basculent automatiquement sur la réplica restante. Lorsqu'un nœud est rajouté ou redémarré, il resynchronise ses données depuis la réplica vivante et réintègre le cluster. Ce mécanisme est au cœur de la haute disponibilité visée par les systèmes critiques.
+Ce diagramme étend le concept de quorum à un déploiement géographique sur trois régions :
+
+* **Région A** : contient le nœud de gestion + nœud SQL, et un nœud de stockage.
+* **Région B** : contient un nœud de stockage et un nœud SQL.
+* **Région C** : contient un nœud de stockage.
+* **RA <==> RB <==> RC <==> RA** : les trois régions sont interconnectées pour permettre la communication entre tous les nœuds.
+* **QMR (Quorum multi-région : majorité sur les 3 sites)** : le quorum s'applique à l'échelle géographique. Une décision de cluster nécessite la majorité des régions (ou des nœuds selon la configuration) pour être validée.
+
+Dans ce modèle, si une région entière devient indisponible (panne réseau ou panne de site), les deux régions restantes conservent le quorum et le cluster continue de fonctionner. Le nœud de gestion arbitre reste le point de décision central, mais la réplication des données sur trois sites géographiquement séparés protège contre une panne complète d'un site. Si seule une région reste active, elle ne détient plus le quorum et le cluster s'arrête pour prévenir le split-brain entre sites.
+
+**Lien avec le concept** : illustration du quorum (N/2 + 1) et du split-brain à l'échelle multi-région, concepts fondements de la résilience des clusters distribués.
 
 ### Figure 8 — Cycle de failover et réintégration d'un nœud de stockage
 
