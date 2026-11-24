@@ -2636,7 +2636,38 @@ Si le fichier `/usr/share/keyrings/mysql-apt-config.gpg` existe déjà, réponde
 
 Après cette opération, `sudo apt-get update` doit afficher `Atteint` pour `http://repo.mysql.com/apt/ubuntu noble InRelease` sans erreur GPG.
 
+**Remplacement du trousseau legacy `/etc/apt/trusted.gpg`**
+
+Si vous obtenez :
+
+```
+W: http://repo.mysql.com/apt/ubuntu/dists/noble/InRelease: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
+```
+
+**Cause** : la clé publique du dépôt MySQL est stockée dans l'ancien fichier unique `/etc/apt/trusted.gpg`, méthode dépréciée depuis Ubuntu 22.04.
+
+**Ce qui remplace `/etc/apt/trusted.gpg`** : les clés individuelles dans `/etc/apt/keyrings/` (méthode moderne, recommandée) ou dans `/etc/apt/trusted.gpg.d/`.
+
+**Solution** : migrer la clé MySQL vers le nouveau trousseau :
+
+```bash
+# 1. Supprimer l'ancienne clé du trousseau legacy (si présente)
+sudo apt-key del B7B3B788A8D3785C 2>/dev/null || true
+
+# 2. Créer le répertoire de clés modernes
+sudo mkdir -p /etc/apt/keyrings
+
+# 3. Importer la clé MySQL dans le nouveau trousseau
+wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/apt/keyrings/mysql.gpg
+
+# 4. Recharger les listes de paquets
+sudo apt-get update
+```
+
+Après cette opération, l'avertissement `Key is stored in legacy trusted.gpg keyring` disparaît et `apt update` affiche `Atteint` pour le dépôt MySQL sans avertissement.
+
 ---
+
 
 Si vous obtenez :
 
