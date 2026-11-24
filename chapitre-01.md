@@ -2704,6 +2704,99 @@ Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des
 
 **Important** : cette procédure nécessite un accès Internet. Sur le lab isolé (vboxnet0, pas d'Internet), utiliser plutôt la méthode par cache `.deb` décrite précédemment.
 
+#### Dépannage complet : installation sur machine hôte (ThinkPad)
+
+Si vous installez sur votre machine hôte (ThinkPad avec Ubuntu) et que vous obtenez des erreurs, suivez cette procédure complète dans l'ordre :
+
+**Problème 1 — Verrou dpkg (Permission non accordée)**
+
+```
+E: Impossible d'ouvrir le fichier verrou /var/lib/dpkg/lock-frontend - open (13: Permission non accordée)
+E: Impossible d'obtenir le verrou de dpkg (/var/lib/dpkg/lock-frontend). Avez-vous les droits du superutilisateur ?
+```
+
+**Cause** : la commande est lancée sans `sudo`, ou un autre processus `apt`/`dpkg` détient déjà le verrou.
+
+**Solution** :
+* Toujours préfixer avec `sudo` sur une machine hôte Ubuntu :
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y ...
+  ```
+* Si un autre processus `apt` est en cours, attendre sa fin ou identifier le processus bloquant :
+  ```bash
+  ps aux | grep -E 'apt|dpkg'
+  ```
+
+---
+
+**Problème 2 — Clé GPG MySQL expirée (EXPKEYSIG B7B3B788A8D3785C)**
+
+```
+W: Erreur de GPG : http://repo.mysql.com/apt/ubuntu noble InRelease : Les signatures suivantes ne sont pas valables : EXPKEYSIG B7B3B788A8D3785C MySQL Release Engineering <mysql-build@oss.oracle.com>
+E: Le dépôt http://repo.mysql.com/apt/ubuntu noble InRelease n'est pas signé.
+```
+
+**Cause** : la clé publique du dépôt MySQL est expirée ou n'a pas été importée correctement.
+
+**Solution** : réimporter la clé GPG officielle MySQL :
+```bash
+sudo mkdir -p /etc/apt/keyrings
+wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/apt/keyrings/mysql.gpg
+sudo apt-get update
+```
+
+---
+
+**Problème 3 — Dépôt MySQL 8.4 au lieu de 8.0 (paquets introuvables)**
+
+```
+E: Impossible de trouver le paquet mysql-cluster-community-management-server
+E: Le paquet « mysql-cluster-community-server » n'a pas de version susceptible d'être installée
+```
+
+**Cause** : le dépôt MySQL 8.4 LTS est activé, mais **MySQL Cluster NDB n'existe que dans MySQL 8.0**. Il a été supprimé à partir de MySQL 8.4. Le dépôt `noble/mysql-8.4-lts` ne contient donc pas les paquets `mysql-cluster-community-*`.
+
+**Vérification** : confirmer que seul `mysql-8.0` est activé :
+```bash
+grep -v '^#' /etc/apt/sources.list.d/mysql.list
+```
+Si vous voyez `mysql-8.4-lts`, c'est le problème.
+
+**Solution** : reconfigurer `mysql-apt-config` pour cibler **MySQL 8.0** :
+```bash
+sudo dpkg-reconfigure mysql-apt-config
+```
+Dans l'interface de configuration :
+1. Sélectionner **MySQL Server & Cluster**
+2. Choisir la version **mysql-8.0** (et non mysql-8.4)
+3. Valider
+
+Puis recharger :
+```bash
+sudo apt-get update
+```
+
+Vous devriez voir `noble/mysql-8.0` apparaître dans la liste des dépôts.
+
+---
+
+**Étape finale : installer les composants MySQL Cluster**
+
+Une fois le dépôt MySQL 8.0 configuré et la clé GPG valide :
+
+```bash
+sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
+**Vérification finale** :
+```bash
+apt-cache policy mysql-cluster-community-management-server
+```
+Doit afficher une version disponible (ex: `8.0.50-1ubuntu24.04`).
+
+**Important** : cette procédure nécessite un accès Internet. Sur le lab isolé (vboxnet0, pas d'Internet), utiliser plutôt la méthode par cache `.deb` décrite précédemment.
+
 ### En conclusion
 
 Ce lab installe MySQL Cluster sur les 3 VM avec un `config.ini` selon la configuration de référence du parcours (NodeId, HostName, DataDir explicites, `NoOfReplicas = 2`). Les nœuds sont démarrés dans l'ordre critique (gestion → stockage → SQL), l'intégrité est vérifiée avec `ndb_mgm -e "SHOW"` (5 nœuds connectés), et la configuration effective est interrogée avec `ndb_config --query-all`. Le test de résilience confirme le failover automatique à l'arrêt du NodeId 2, la continuité de service via NodeId 3, et la resynchronisation puis réintégration du NodeId 2 redémarré. Critères de réussite : `SHOW` liste 5 nœuds connectés sans état `not connected`, `NoOfReplicas = 2` confirmé. Renvoi : passer au chapitre 2 pour approfondir l'architecture et l'administration du cluster.
