@@ -2497,6 +2497,168 @@ id=4	@192.168.56.10  (mysql-8.0.50 ndb-8.0.50)
 id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 ```
 
+#### Installation complète depuis le dépôt MySQL APT (procédure complète, accès Internet requis)
+
+Cette procédure complète s'applique sur une machine hôte ou une VM qui dispose d'un accès Internet (hors lab isolé vboxnet0). Elle résout les erreurs courantes : verrou dpkg et clé GPG expirée.
+
+**Machine** — 192.168.56.10, hostname `gestion-sql` (ou votre machine hôte avec Ubuntu).
+
+**Prérequis** — Accès Internet, compte root (ou sudo).
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande — Étape 1 : installer les outils de base**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y wget gnupg ca-certificates
+```
+
+**Explication de la commande**
+
+- `sudo apt-get update` : rafraîchit la liste des paquets depuis les dépôts configurés. `sudo` est requis car la modification des listes de paquets nécessite les droits du superutilisateur.
+- `sudo apt-get install -y wget gnupg ca-certificates` : installe `wget` (téléchargement), `gnupg` (gestion des clés GPG), `ca-certificates` (certificats racine HTTPS).
+
+**Résultat attendu**
+
+```text
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Les paquets supplémentaires suivants seront installés :
+  gnupg gnupg-utils wget …
+0 mis à jour, 3 nouvellement installés, 0 à enlever et 0 non mis à jour.
+…
+Paramétrage de wget (….) …
+```
+
+**Dépannage — Erreur de verrou dpkg (Permission non accordée)**
+
+Si vous obtenez :
+
+```
+E: Impossible d'ouvrir le fichier verrou /var/lib/dpkg/lock-frontend - open (13: Permission non accordée)
+E: Impossible d'obtenir le verrou de dpkg (/var/lib/dpkg/lock-frontend). Avez-vous les droits du superutilisateur ?
+```
+
+**Cause** : la commande est lancée sans `sudo`, ou un autre processus `apt`/`dpkg` détient déjà le verrou.
+
+**Solution** :
+* Toujours préfixer avec `sudo` sur une machine hôte Ubuntu :
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y ...
+  ```
+* Si un autre processus `apt` est en cours, attendre sa fin ou identifier le processus bloquant :
+  ```bash
+  ps aux | grep -E 'apt|dpkg'
+  ```
+
+---
+
+**Exemple de commande — Étape 2 : ajouter le dépôt MySQL APT**
+
+```bash
+wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb
+```
+
+**Explication de la commande**
+
+- `wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb` : télécharge le configurateur de dépôt MySQL APT depuis le site officiel MySQL.
+- `sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb` : installe le configurateur qui ajoute le dépôt MySQL à `/etc/apt/sources.list.d/` et importe la clé GPG. Une interface de configuration s'affiche pour sélectionner les produits et versions MySQL à activer.
+
+**Résultat attendu**
+
+```text
+--2026-…
+mysql-apt-config_0.8.33-1_all.deb: …
+100%[==================================================>] …
+```
+Pendant l'exécution de `dpkg -i`, un écran de configuration s'affiche :
+- Sélectionner **MySQL Cluster** dans la liste des produits.
+- Choisir la version **8.0** (ou la version cible du parcours).
+- Valider pour ajouter le dépôt et la clé GPG.
+
+**Avertissement** : vérifier sur https://dev.mysql.com/downloads/repo/apt/ que la version du paquet `mysql-apt-config` est bien la dernière avant de télécharger. Le numéro de version peut évoluer.
+
+---
+
+**Exemple de commande — Étape 3 : recharger les listes de paquets**
+
+```bash
+sudo apt-get update
+```
+
+**Explication de la commande**
+
+- `sudo apt-get update` : rafraîchit la liste des paquets depuis le dépôt MySQL nouvellement ajouté ainsi que les dépôts Ubuntu.
+
+**Résultat attendu**
+
+```text
+Atteint :1 http://repo.mysql.com/apt/ubuntu/ noble InRelease
+Atteint :2 http://archive.ubuntu.com/ubuntu noble InRelease
+…
+```
+
+**Dépannage — Clé GPG MySQL expirée ou absente**
+
+Si vous obtenez :
+
+```
+W: Erreur de GPG : http://repo.mysql.com/apt/ubuntu noble InRelease : Les signatures suivantes ne sont pas valables : EXPKEYSIG B7B3B788A8D3785C MySQL Release Engineering <mysql-build@oss.oracle.com>
+E: Le dépôt http://repo.mysql.com/apt/ubuntu noble InRelease n'est pas signé.
+```
+
+**Cause** : la clé publique du dépôt MySQL est expirée ou n'a pas été importée correctement.
+
+**Solution** : réimporter la clé GPG officielle MySQL :
+```bash
+sudo mkdir -p /etc/apt/keyrings
+wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/apt/keyrings/mysql.gpg
+sudo apt-get update
+```
+
+---
+
+**Exemple de commande — Étape 4 : installer les composants MySQL Cluster**
+
+```bash
+sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
+**Explication de la commande**
+
+- `sudo apt-get install -y ...` : installe `ndb_mgmd` (gestion), `ndbmtd` (stockage), `mysqld` (SQL) et le client MySQL Cluster depuis le dépôt MySQL.
+- Sur VM 1 : serveur de gestion + serveur SQL + client.
+- Sur VM 2 : uniquement `mysql-cluster-community-data-node`.
+- Sur VM 3 : uniquement `mysql-cluster-community-server mysql-cluster-client`.
+
+**Résultat attendu**
+
+```text
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Lecture des informations d'état…
+Les paquets supplémentaires suivants seront installés :
+  mysql-cluster-community-client mysql-cluster-community-client-core
+  mysql-cluster-community-client-plugins mysql-cluster-community-server-core
+0 mis à jour, 4 nouvellement installés, 0 à enlever et 0 non mis à jour.
+…
+Paramétrage de mysql-cluster-community-management-server (8.0.50-1ubuntu24.04) …
+```
+
+**Configuration à valider lors de l'installation :**
+
+Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des invites de configuration que l'apprenant doit valider :
+
+* **Sélection de la version** : si plusieurs versions de MySQL Cluster sont disponibles dans le dépôt, confirmer la version `8.0.50-1ubuntu24.04` (ou la version cible du parcours).
+* **Dépendances automatiques** : confirmer l'installation des paquets dépendants (`mysql-cluster-community-client-core`, `mysql-cluster-community-client-plugins`, `mysql-cluster-community-server-core`) qui sont requis pour le fonctionnement du moteur NDB.
+* **Configuration du service** : confirmer le démarrage automatique du service `ndb_mgmd` (sur le nœud de gestion) et `mysqld` (sur les nœuds SQL) si une invite le demande.
+* **Conflit de paquets** : si un paquet MySQL standard (`mysql-server`, `mysql-client`) est déjà installé, confirmer son remplacement ou sa suppression pour éviter les conflits avec le moteur NDB.
+
+**Important** : cette procédure nécessite un accès Internet. Sur le lab isolé (vboxnet0, pas d'Internet), utiliser plutôt la méthode par cache `.deb` décrite précédemment.
+
 ### En conclusion
 
 Ce lab installe MySQL Cluster sur les 3 VM avec un `config.ini` selon la configuration de référence du parcours (NodeId, HostName, DataDir explicites, `NoOfReplicas = 2`). Les nœuds sont démarrés dans l'ordre critique (gestion → stockage → SQL), l'intégrité est vérifiée avec `ndb_mgm -e "SHOW"` (5 nœuds connectés), et la configuration effective est interrogée avec `ndb_config --query-all`. Le test de résilience confirme le failover automatique à l'arrêt du NodeId 2, la continuité de service via NodeId 3, et la resynchronisation puis réintégration du NodeId 2 redémarré. Critères de réussite : `SHOW` liste 5 nœuds connectés sans état `not connected`, `NoOfReplicas = 2` confirmé. Renvoi : passer au chapitre 2 pour approfondir l'architecture et l'administration du cluster.
