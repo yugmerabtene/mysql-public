@@ -36,7 +36,7 @@ Ce document recense les acronymes, termes techniques et principes fondamentaux u
 | **Shared-Nothing** | Architecture où chaque nœud possède sa propre mémoire et ses propres disques. Les données sont fragmentées et répliquées sur plusieurs nœuds indépendants. Aucun point de défaillance unique. |
 | **NoOfReplicas** | Nombre de copies de chaque fragment de données. Valeur `2` dans ce lab pour tolérer la perte d'un nœud de stockage. |
 | **Node-group** | Groupe de nœuds de stockage contenant les mêmes copies de données. Avec `NoOfReplicas = 2` et 2 nœuds de stockage, le cluster forme un node group unique. |
-| **Quorum** | Règle de décision par majorité empêchant deux partitions d'agir simultanément. Prévente le split-brain. |
+| **Quorum** | Règle de décision par majorité (N/2 + 1) empêchant deux partitions d'agir simultanément. **N/2 + 1** signifie qu'il faut la moitié des nœuds plus un vote pour valider une décision. Exemple : avec 3 nœuds de gestion, il faut 2 votes sur 3. Seul le groupe majoritaire peut agir ; l'autre groupe se met en arrêt pour prévenir le split-brain. |
 | **Split-brain** | Situation où le cluster est partitionné en deux groupes ne pouvant plus communiquer. |
 | **Arbitrage** | Mécanisme par lequel un nœud tranche en cas de perte de communication entre node groups. |
 | **Failover** | Basculement automatique sur un nœud de réplica lorsqu'un nœud primaire tombe en panne. |
