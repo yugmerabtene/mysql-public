@@ -27,7 +27,7 @@ Règle appliquée : pas de commit, pas de push (l'orchestrator valide et committ
 - **`dpkg -l`** : VM 2 → paquet `data-node` seul, VM 3 → `server` + `client` (au lieu de 4 paquets identiques partout). ✔ corrigé.
 - **Étape 5** : `DataMemory`/`IndexMemory` du résultat `config.ini` 512M/256M → 256M/128M. ✔ corrigé.
 - **Netplan Lab-01** (3 VM) : suppression `gateway4` + `8.8.8.8`, explication « aucune route par défaut ». ✔ corrigé.
-- **Étape 12** : suppression du doublon « Exemple de commande », scission en **Étape 12** (arrêt + failover) et **Étape 13** (redémarrage + resynchronisation) avec en-têtes `**But**`/`**Machine**`/`**Prérequis**`, suppression des sous-sections « Suite » / « Vérification finale » sans en-tête. ✔ corrigé.
+- **Étape 12** : suppression du doublon « Commande », scission en **Étape 12** (arrêt + failover) et **Étape 13** (redémarrage + resynchronisation) avec en-têtes `**But**`/`**Machine**`/`**Prérequis**`, suppression des sous-sections « Suite » / « Vérification finale » sans en-tête. ✔ corrigé.
 - **`2 STOP`** : « Node 2 has shutdown. » → « Node 2: Node shutdown initiated ». ✔ corrigé.
 - **Note NodeId** : reformulée (le syllabus n'indique plus « node-id 1 et 2 »). ✔ corrigé.
 - **`sleep 5` + `echo` orphelin** : ligne `echo` expliquée mais non exécutée supprimée. ✔ corrigé.
@@ -41,7 +41,7 @@ Règle appliquée : pas de commit, pas de push (l'orchestrator valide et committ
   - **Étape de suppression ajoutée** (Étape 4 : arrêt `ndbmtd` 6, restauration `config.ini.pre-node6`, rechargement gestionnaire, `SHOW` retour à 5 nœuds). ✔
   - `SHOW` : NodeId 6 connecté (Nodegroup: 1) après démarrage ; NodeId 6 « not connected » à l'état intermédiaire. ✔
 - **`2 STOP`** (Lab-04, Lab-06) : → « Node 2: Node shutdown initiated ». ✔ corrigé.
-- **Lab-06** : doublon « Exemple de commande » supprimé. ✔ corrigé.
+- **Lab-06** : doublon « Commande » supprimé. ✔ corrigé.
 - **Outils Lab-04** : `2 START` remplacé par la relance manuelle `ndbmtd`. ✔ corrigé.
 
 ### chapitre-03.md

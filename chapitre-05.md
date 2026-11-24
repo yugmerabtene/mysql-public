@@ -112,7 +112,7 @@ Sécuriser le cluster MySQL Cluster en administration : activer le chiffrement T
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cp config.ini config.ini.bak.tls
@@ -138,7 +138,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cat >> config.ini << 'EOF'
@@ -242,7 +242,7 @@ TLSKeyFile = /etc/mysql-cluster-tls/mysqld-key.pem
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 grep -E 'TLS|TLSCAFile|TLSCertificateFile|TLSKeyFile' config.ini
@@ -288,7 +288,7 @@ TLSKeyFile = /etc/mysql-cluster-tls/mysqld-key.pem
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mkdir -p /etc/mysql-cluster-tls
@@ -314,7 +314,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 openssl req -x509 -newkey rsa:2048 -keyout ca-key.pem -out ca-cert.pem -days 365 -nodes -subj '/CN=MySQLCluster-CA/L=Lab/O=Formation'
@@ -340,7 +340,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 openssl req -newkey rsa:2048 -keyout mgmd-key.pem -out mgmd-req.pem -nodes -subj '/CN=ndb_mgmd/L=Lab/O=Formation'
@@ -366,7 +366,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 openssl x509 -req -in mgmd-req.pem -CA ca-cert.pem -CAkey ca-key.pem -out mgmd-cert.pem -days 365 -set_serial 01
@@ -392,7 +392,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 openssl req -newkey rsa:2048 -keyout ndbd-key.pem -out ndbd-req.pem -nodes -subj '/CN=ndbd/L=Lab/O=Formation'
@@ -420,7 +420,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 openssl req -newkey rsa:2048 -keyout mysqld-key.pem -out mysqld-req.pem -nodes -subj '/CN=mysqld/L=Lab/O=Formation'
@@ -448,7 +448,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 chmod 600 ca-key.pem mgmd-key.pem ndbd-key.pem mysqld-key.pem
@@ -474,7 +474,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ls -la ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem
@@ -505,7 +505,7 @@ ls -la ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /etc/mysql-cluster-tls
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 scp ca-cert.pem ca-key.pem mgmd-cert.pem mgmd-key.pem ndbd-cert.pem ndbd-key.pem mysqld-cert.pem mysqld-key.pem root@192.168.56.11:/etc/mysql-cluster-tls/
@@ -544,7 +544,7 @@ mgmd-req.pem                                                                100%
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pkill -x mysqld
@@ -562,7 +562,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pkill -x mysqld
@@ -580,7 +580,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a ndbmtd
@@ -600,7 +600,7 @@ pgrep -a ndbmtd
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 kill <PID_ndbmtd_2> <PID_ndbmtd_3>
@@ -613,7 +613,7 @@ kill <PID_ndbmtd_2> <PID_ndbmtd_3>
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pkill -x ndb_mgmd
@@ -639,7 +639,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini
@@ -661,7 +661,7 @@ MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cd /var/lib/mysql-cluster/ndb_2
@@ -687,7 +687,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log &
@@ -715,7 +715,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_3
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_3.log &
@@ -742,7 +742,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -768,7 +768,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld-4.log &
@@ -799,7 +799,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld-5.log &
@@ -825,7 +825,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -851,7 +851,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e "SHOW"
@@ -889,7 +889,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "CREATE USER IF NOT EXISTS 'app_user'@'192.168.56.%' IDENTIFIED BY 'LabAppPass123!'"
@@ -908,7 +908,7 @@ Query OK, 0 rows affected (0.02 sec)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "GRANT SELECT, INSERT, UPDATE, DELETE ON labperf.* TO 'app_user'@'192.168.56.%'"
@@ -926,7 +926,7 @@ Query OK, 0 rows affected (0.02 sec)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "CREATE USER IF NOT EXISTS 'backup_user'@'192.168.56.%' IDENTIFIED BY 'LabBackupPass123!'"
@@ -944,7 +944,7 @@ Query OK, 0 rows affected (0.02 sec)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "GRANT SELECT, SHOW VIEW, LOCK TABLES ON *.* TO 'backup_user'@'192.168.56.%'"
@@ -962,7 +962,7 @@ Query OK, 0 rows affected (0.02 sec)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "FLUSH PRIVILEGES"
@@ -980,7 +980,7 @@ Query OK, 0 rows affected (0.02 sec)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "SHOW GRANTS FOR 'app_user'@'192.168.56.%'"
@@ -999,7 +999,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON `labperf`.* TO 'app_user'@'192.168.56.%'
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "SHOW GRANTS FOR 'backup_user'@'192.168.56.%'"
@@ -1026,7 +1026,7 @@ GRANT SELECT, SHOW VIEW, LOCK TABLES ON *.* TO 'backup_user'@'192.168.56.%'
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "SELECT User, Host FROM mysql.user WHERE User='' OR authentication_string='';"
@@ -1052,7 +1052,7 @@ Empty set (0.00 sec)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "SELECT User, Host FROM mysql.user;"
@@ -1085,7 +1085,7 @@ mysql -u root -e "SELECT User, Host FROM mysql.user;"
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e "START BACKUP"
@@ -1119,7 +1119,7 @@ Node 3: Backup 1 started from node 1 completed
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -1146,7 +1146,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 chmod 700 ndb_2/BACKUP ndb_3/BACKUP
@@ -1172,7 +1172,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ls -la ndb_2/BACKUP/BACKUP-1/ ndb_3/BACKUP/BACKUP-1/
@@ -1212,7 +1212,7 @@ drwxr-xr-x 3 root root 4096 … ..
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ip route show default
@@ -1241,7 +1241,7 @@ ou toute autre passerelle NAT configurée par VirtualBox.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ip -br addr show enp0s8
@@ -1267,7 +1267,7 @@ enp0s8           UP             192.168.56.10/24 fe80::a00:27ff:fef7:44ec/64
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ip route show default || echo 'aucune route par défaut'
@@ -1293,7 +1293,7 @@ aucune route par défaut
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ip -br addr show enp0s8
@@ -1320,7 +1320,7 @@ enp0s8           UP             192.168.56.11/24 fe80::a00:27ff:fe62:5198/64
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a ndb_mgmd
@@ -1347,7 +1347,7 @@ ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a mysqld
@@ -1374,7 +1374,7 @@ mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a ndbmtd
@@ -1403,7 +1403,7 @@ ndbmtd --ndb-connectstring=192.168.56.10 --initial
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a mysqld

@@ -69,7 +69,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 2. `**Machine**`
 3. `**Prérequis**`
 4. encart de localisation `> **Machine** : ... | **Terminal** : ... | **Utilisateur** : ... | **Répertoire** : ...`
-5. `**Exemple de commande**` (bloc avec une seule commande simple)
+5. `**Commande**` (bloc avec une seule commande simple)
 6. `**Explication de la commande**` (liste, une ligne par option/argument/redirection/piège)
 7. `**Résultat attendu**`
 

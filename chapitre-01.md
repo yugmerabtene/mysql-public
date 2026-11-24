@@ -141,7 +141,7 @@ Dans ce lab NDB, le quorum est assuré par le nœud de gestion qui agit comme ar
 
 Le split-brain est prévenu par l'arbitrage : le nœud de gestion agit comme arbitre et tranche quel node group reste actif lorsque la communication entre node groups est perdue. Le groupe majoritaire (qui peut atteindre le quorum) reste opérationnel ; le groupe minoritaire devient indisponible et cesse d'accepter des écritures. Si le nœud de gestion se trouve dans la partition minoritaire, il reconnaît sa séparation et cède son rôle d'arbitre. L'arbitrage est requis sur les nœuds de données uniquement ; les nœuds SQL et de gestion n'en ont pas besoin.
 
-### Figure 6 — Topologie région unique vs multi-région (illustration du quorum et du split-brain)
+**Explication de la Figure 6**
 
 ```mermaid
 graph TD
@@ -501,14 +501,7 @@ Ces principes justifient le choix de `NoOfReplicas = 2`, l'ordre de démarrage s
 > **Partagé-nothing (shared-nothing) :** ce n'est pas une erreur, c'est le terme technique de l'architecture NDB Cluster. Cela signifie que chaque nœud possède sa propre mémoire vive et ses propres disques, sans rien partager avec les autres nœuds. Les données sont fragmentées et répliquées sur plusieurs nœuds de stockage indépendants, ce qui élimine tout point de défaillance unique (single point of failure).
 
 
-## Plan d'installation maître
-
-Le plan ci-dessous ordonne tous les labs du chapitre. Aucune action de configuration ne précède ce plan.
-
-| Ordre | Lab | Objectif | Cible | Tactique | Opérations de référence |
-|---|---|---|---|---|---|
-| 1 | Lab-01 | Nettoyer et configurer manuellement les trois VM (réseau, IP statique, SSH, hostname, snapshot, connectivité) | VM 1 + VM 2 + VM 3 | session SSH ouverte sur chaque VM, netplan, VirtualBox snapshots | NDB-01 |
-| 2 | Lab-02 | Installer MySQL Cluster, rédiger `config.ini`, démarrer dans l'ordre, vérifier l'intégrité et la résilience | VM 1 + VM 2 + VM 3 | Dépôt MySQL, `config.ini`, démarrage MGM → stockage → SQL | NDB-03, NDB-04, NDB-08, NDB-05 |
+## Plan d'installation
 
 
 ## Lab-01 — Installation et mise en place de l'infrastructure (vierge ou remise à zéro)
@@ -565,8 +558,6 @@ Hôte 192.168.56.1
 
 ---
 
-### Commande et laboratoire étape par étape
-
 #### Étape 1 — Cas A : Nettoyer les VMs existantes (remise à zéro)
 
 **But** — Supprimer toute configuration MySQL/Cluster précédente sur les 3 VMs pour repartir d'un état propre.
@@ -577,7 +568,7 @@ Hôte 192.168.56.1
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
@@ -596,7 +587,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
@@ -615,7 +606,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 rm -rf /var/lib/mysql-cluster /usr/mysql-cluster /etc/mysql /var/lib/mysql
@@ -644,7 +635,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
@@ -664,7 +655,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
@@ -684,7 +675,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get purge -y mysql-cluster-* mysql-server-* mysql-common-* || true
@@ -714,7 +705,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get autoremove -y || true
@@ -734,7 +725,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get autoremove -y || true
@@ -754,7 +745,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get autoremove -y || true
@@ -873,7 +864,7 @@ Chaque VM dispose de 2 adaptateurs :
 
 **Prérequis** — VMs créées, ISO attaché, réseaux configurés (adaptateur 1 = vboxnet0, adaptateur 2 = NAT).
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 # Aucune commande : installation via l'interface graphique d'installation d'Ubuntu Server
@@ -913,7 +904,7 @@ Ubuntu Server 24.04 LTS installé sur VM 1, VM 2 et VM 3.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ou console sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 hostnamectl set-hostname gestion-sql
@@ -953,7 +944,7 @@ gestion-sql
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ou console sur stockage | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 hostnamectl set-hostname stockage
@@ -993,7 +984,7 @@ stockage
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ou console sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 hostnamectl set-hostname mysql-node3
@@ -1039,7 +1030,7 @@ mysql-node3
 
 > **Machine** : 192.168.56.1 | **Terminal** : terminal hôte | **Utilisateur** : yug | **Répertoire** : /home/yug/Documents/mysql
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ping -c 4 192.168.56.10
@@ -1098,7 +1089,7 @@ enp0s8           UP             192.168.56.12/24 fe80::.../64
 
 > **Machine** : 192.168.56.1 | **Terminal** : terminal hôte | **Utilisateur** : yug | **Répertoire** : /home/yug/Documents/mysql
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 VBoxManage snapshot UbuntuServer-01 list
@@ -1176,7 +1167,7 @@ Installer les composants MySQL Cluster sur les trois VM configurées au Lab-01 :
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 dpkg -l
@@ -1206,7 +1197,7 @@ ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 dpkg -l
@@ -1233,7 +1224,7 @@ ii  mysql-cluster-community-data-node          8.0.50-1ubuntu24.04  amd64  MySQL
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 dpkg -l
@@ -1261,7 +1252,7 @@ ii  mysql-cluster-client                       8.0.50-1ubuntu24.04  amd64  MySQL
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1287,7 +1278,7 @@ Tous les paquets sont a jour.
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
@@ -1334,7 +1325,7 @@ Sur les VMs du lab isolé, l'installation s'effectue depuis le cache `apt` local
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1363,7 +1354,7 @@ Paramétrage de wget (….) …
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
@@ -1391,7 +1382,7 @@ Pendant l'exécution de `dpkg -i`, un écran de configuration s'affiche :
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1411,7 +1402,7 @@ Atteint :2 http://archive.ubuntu.com/ubuntu noble InRelease
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
@@ -1449,7 +1440,7 @@ Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1475,7 +1466,7 @@ Tous les paquets sont a jour.
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get install -y mysql-cluster-community-data-node
@@ -1508,7 +1499,7 @@ Paramétrage de mysql-cluster-community-data-node (8.0.50-1ubuntu24.04) …
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1533,7 +1524,7 @@ Les paquets supplémentaires suivants seront installés :
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
@@ -1555,7 +1546,7 @@ mysql-apt-config_0.8.33-1_all.deb: …
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1575,7 +1566,7 @@ Atteint :2 http://archive.ubuntu.com/ubuntu noble InRelease
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get install -y mysql-cluster-community-data-node
@@ -1611,7 +1602,7 @@ Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1637,7 +1628,7 @@ Tous les paquets sont a jour.
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get install -y mysql-cluster-community-server mysql-cluster-client
@@ -1670,7 +1661,7 @@ Paramétrage de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1695,7 +1686,7 @@ Les paquets supplémentaires suivants seront installés :
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
@@ -1717,7 +1708,7 @@ mysql-apt-config_0.8.33-1_all.deb: …
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get update
@@ -1737,7 +1728,7 @@ Atteint :2 http://archive.ubuntu.com/ubuntu noble InRelease
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 apt-get install -y mysql-cluster-community-server mysql-cluster-client
@@ -1824,7 +1815,7 @@ sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cat > /tmp/config.ini << 'EOF'
@@ -1910,7 +1901,7 @@ HostName = 192.168.56.12
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cp /tmp/config.ini /var/lib/mysql-cluster/config.ini
@@ -1929,7 +1920,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cat /var/lib/mysql-cluster/config.ini
@@ -1987,7 +1978,7 @@ HostName = 192.168.56.12
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mkdir -p /var/lib/mysql-cluster/ndb_2 /var/lib/mysql-cluster/ndb_3
@@ -2007,7 +1998,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ls -la /var/lib/mysql-cluster/
@@ -2037,7 +2028,7 @@ drwxr-xr-x 2 root root 4096 nov.  22 09:42 ndb_3
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgmd --config-file=/var/lib/mysql-cluster/config.ini --initial
@@ -2067,7 +2058,7 @@ MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cd /var/lib/mysql-cluster/ndb_2
@@ -2086,7 +2077,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
@@ -2109,7 +2100,7 @@ nohup: ignoring input and appending output to 'nohup.out'
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cd /var/lib/mysql-cluster/ndb_3
@@ -2128,7 +2119,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_3
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial &
@@ -2157,7 +2148,7 @@ nohup: ignoring input and appending output to 'nohup.out'
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize &
@@ -2182,7 +2173,7 @@ nohup: ignoring input and appending output to 'nohup.out'
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize &
@@ -2202,7 +2193,7 @@ nohup: ignoring input and appending output to 'nohup.out'
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -2229,7 +2220,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e "SHOW"
@@ -2267,7 +2258,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_config --query-all
@@ -2316,7 +2307,7 @@ id=5    @192.168.56.12 (mysqld)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e "2 STOP"
@@ -2335,7 +2326,7 @@ Node 2: Node shutdown initiated
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -2354,7 +2345,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 echo '=== Etat apres arret NodeId 2 ==='
@@ -2372,7 +2363,7 @@ echo '=== Etat apres arret NodeId 2 ==='
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e "SHOW"
@@ -2409,7 +2400,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cd /var/lib/mysql-cluster/ndb_2
@@ -2428,7 +2419,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 &
@@ -2450,7 +2441,7 @@ nohup: ignoring input and appending output to 'nohup.out'
 
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /var/lib/mysql-cluster/ndb_2
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 8
@@ -2470,7 +2461,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e "SHOW"
@@ -2507,7 +2498,7 @@ Cette procédure complète s'applique sur une machine hôte ou une VM qui dispos
 
 > **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
 
-**Exemple de commande — Étape 1 : installer les outils de base**
+**Commande — Étape 1 : installer les outils de base**
 
 ```bash
 sudo apt-get update
@@ -2555,7 +2546,7 @@ E: Impossible d'obtenir le verrou de dpkg (/var/lib/dpkg/lock-frontend). Avez-vo
 
 ---
 
-**Exemple de commande — Étape 2 : ajouter le dépôt MySQL APT**
+**Commande — Étape 2 : ajouter le dépôt MySQL APT**
 
 ```bash
 wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
@@ -2583,7 +2574,7 @@ Pendant l'exécution de `dpkg -i`, un écran de configuration s'affiche :
 
 ---
 
-**Exemple de commande — Étape 3 : recharger les listes de paquets**
+**Commande — Étape 3 : recharger les listes de paquets**
 
 ```bash
 sudo apt-get update
@@ -2752,7 +2743,7 @@ sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-
 
 ---
 
-**Exemple de commande — Étape 4 : installer les composants MySQL Cluster**
+**Commande — Étape 4 : installer les composants MySQL Cluster**
 
 ```bash
 sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client

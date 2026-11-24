@@ -89,7 +89,7 @@ Explorer concrètement l'architecture du moteur NDB sur le cluster déjà déplo
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -128,7 +128,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_config --query-all
@@ -177,7 +177,7 @@ id=5    @192.168.56.12 (mysqld)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
@@ -211,7 +211,7 @@ Node 3: Index usage is 0%(9 32K pages of total 24558)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e 'SHOW ENGINE NDB STATUS\G'
@@ -273,7 +273,7 @@ Approfondir la résilience du cluster : comprendre le quorum, prévenir le split
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -313,7 +313,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e '2 STOP'
@@ -332,7 +332,7 @@ Node 2: Node shutdown initiated
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -351,7 +351,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 echo '=== Etat apres arret ==='
@@ -369,7 +369,7 @@ echo '=== Etat apres arret ==='
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -407,7 +407,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cd /var/lib/mysql-cluster/ndb_2
@@ -426,7 +426,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 &
@@ -448,7 +448,7 @@ nohup: ignoring input and appending output to 'nohup.out'
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 6
@@ -476,7 +476,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 8
@@ -495,7 +495,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -555,7 +555,7 @@ Configurer finement les nœuds du cluster (`config.ini`), ajouter et supprimer u
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.save
@@ -574,7 +574,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cat /var/lib/mysql-cluster/config.ini
@@ -627,7 +627,7 @@ HostName = 192.168.56.12
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mkdir -p /var/lib/mysql-cluster/ndb_6
@@ -648,7 +648,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ls -la /var/lib/mysql-cluster/
@@ -679,7 +679,7 @@ drwxr-xr-x 2 root root 4096 … ndb_6
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cp /var/lib/mysql-cluster/config.ini /var/lib/mysql-cluster/config.ini.pre-node6
@@ -698,7 +698,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cat >> /var/lib/mysql-cluster/config.ini << 'EOF'
@@ -761,7 +761,7 @@ DataDir = /var/lib/mysql-cluster/ndb_6
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 grep -A3 'NodeId = 6' /var/lib/mysql-cluster/config.ini
@@ -789,7 +789,7 @@ DataDir = /var/lib/mysql-cluster/ndb_6
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pkill -x ndb_mgmd
@@ -809,7 +809,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgmd -f /var/lib/mysql-cluster/config.ini
@@ -828,7 +828,7 @@ MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -847,7 +847,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -885,7 +885,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_6.log &
@@ -908,7 +908,7 @@ nohup: ignoring input and appending output to 'ndbmtd_6.log'
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 6
@@ -935,7 +935,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -975,7 +975,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -1004,7 +1004,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 echo '---'
@@ -1022,7 +1022,7 @@ echo '---'
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
@@ -1057,7 +1057,7 @@ Node 6: Index usage is 0%(6 32K pages of total 12285)
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_6`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a ndbmtd
@@ -1077,7 +1077,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cp config.ini.pre-node6 config.ini
@@ -1096,7 +1096,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pkill -x ndb_mgmd && sleep 2 && ndb_mgmd -f /var/lib/mysql-cluster/config.ini
@@ -1117,7 +1117,7 @@ MySQL Cluster Management Server mysql-8.0.50 ndb-8.0.50
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -1136,7 +1136,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -1195,7 +1195,7 @@ Tester la résilience opérationnelle : arrêt simulé d'un nœud de stockage av
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e '2 STOP'
@@ -1215,7 +1215,7 @@ Node 2: Node shutdown initiated
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 3
@@ -1234,7 +1234,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -1272,7 +1272,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pkill -x mysqld
@@ -1292,7 +1292,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 3
@@ -1311,7 +1311,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a mysqld
@@ -1331,7 +1331,7 @@ aucune sortie attendue (mysqld arrete, aucun processus correspondant)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize &
@@ -1356,7 +1356,7 @@ nohup: ignoring input and appending output to 'nohup.out'
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -1375,7 +1375,7 @@ aucune sortie attendue (commande silencieuse en cas de succes, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a mysqld
@@ -1402,7 +1402,7 @@ pgrep -a mysqld
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'

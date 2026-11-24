@@ -62,7 +62,7 @@ Tous les labels contenant des espaces, parentheses ou caracteres speciaux sont e
 
 ### 2.4 Ordre des etapes (contrainte D)
 
-Verifie sur Lab-03, Lab-04, Lab-05 (lecture complete) : chaque étape respecte l'ordre strict `**But**` → `**Machine**` → `**Prérequis**` → encart `> **Machine** : ... | **Terminal** : ... | **Utilisateur** : ... | **Répertoire** : ...` → `**Exemple de commande**` (une seule commande) → `**Explication de la commande**` (liste) → `**Résultat attendu**` (bloc de sortie reelle). Le resultat ne precede jamais l'explication.
+Verifie sur Lab-03, Lab-04, Lab-05 (lecture complete) : chaque étape respecte l'ordre strict `**But**` → `**Machine**` → `**Prérequis**` → encart `> **Machine** : ... | **Terminal** : ... | **Utilisateur** : ... | **Répertoire** : ...` → `**Commande**` (une seule commande) → `**Explication de la commande**` (liste) → `**Résultat attendu**` (bloc de sortie reelle). Le resultat ne precede jamais l'explication.
 
 ### 2.5 Absence de section "cyber" dans les chapitres 1-4 (contrainte E)
 

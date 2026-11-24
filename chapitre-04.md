@@ -103,7 +103,7 @@ Optimiser les paramètres de performance du moteur NDB (`DataMemory`, `IndexMemo
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 **Prérequis** — Cluster démarré, `ndb_mgm` opérationnel.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
 ```
@@ -124,7 +124,7 @@ Node 3: Index usage is 0%(6 32K pages of total 12285)
 **Machine** — VM 1, VM 2, VM 3.
 **Prérequis** — Outils `free` et `df` disponibles sur chaque VM.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 
 ```bash
 free -m
@@ -152,7 +152,7 @@ Swap:          1023           0        1023
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 df -h /var/lib/mysql-cluster
@@ -178,7 +178,7 @@ df -h /var/lib/mysql-cluster
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 df -h /var/lib/mysql-cluster
@@ -204,7 +204,7 @@ df -h /var/lib/mysql-cluster
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 df -h /
@@ -224,7 +224,7 @@ df -h /
 **Machine** — VM 1 (fichier `config.ini`), VM 2 (redémarrage des `ndbmtd`).
 **Prérequis** — Sauvegarde de `config.ini` avant modification (Lab-05).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 cp config.ini config.ini.bak.optim
@@ -247,7 +247,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 **Prérequis** — Sauvegarde de `config.ini` créée (étape 3a).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 grep -E '^DataMemory = ' config.ini && sed -i 's/^DataMemory = .*/DataMemory = 512M/; s/^IndexMemory = .*/IndexMemory = 256M/' config.ini
@@ -272,7 +272,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — `config.ini` modifié (étape 3b).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 grep -E 'DataMemory|IndexMemory|NoOfReplicas' config.ini
@@ -296,7 +296,7 @@ IndexMemory = 256M
 **Machine** — VM 2 (192.168.56.11) pour redémarrer les `ndbmtd`, VM 1 pour vérifier.
 **Prérequis** — `config.ini` modifié (étape 3), répertoires `ndb_2` et `ndb_3` présents.
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 pkill -x ndbmtd
@@ -321,7 +321,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Processus `ndbmtd` arrêtés (étape 4).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_2.log &
@@ -347,7 +347,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Nœud de stockage Id=2 redémarré (étape 4b).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_3`
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 --initial > ndbmtd_3.log &
@@ -373,7 +373,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Nœuds de stockage Id=2 et Id=3 redémarrés (étapes 4b et 4c).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -397,7 +397,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Nœuds de stockage Id=2 et Id=3 redémarrés (étapes 4b et 4c).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a ndbmtd
@@ -419,7 +419,7 @@ pgrep -a ndbmtd
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 **Prérequis** — Nœuds de stockage redémarrés (étape 4).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -454,7 +454,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_config --query-all
@@ -500,7 +500,7 @@ Mettre en œuvre le sharding et le partitionnement pour répartir la charge sur 
 **Machine** — VM 1 (192.168.56.10), premier nœud SQL.
 **Prérequis** — `mysqld` démarré avec `--ndbcluster`, datadir accessible.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS labperf"
 ```
@@ -514,7 +514,7 @@ Query OK, 1 row affected (0.01 sec)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "CREATE TABLE IF NOT EXISTS labperf.t_shard (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
 ```
@@ -527,7 +527,7 @@ Query OK, 0 rows affected (0.05 sec)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "INSERT INTO labperf.t_shard (id,val) VALUES (1,'a'),(2,'b'),(3,'c'),(4,'d'),(5,'e') ON DUPLICATE KEY UPDATE val=VALUES(val)"
 ```
@@ -541,7 +541,7 @@ Records: 5  Duplicates: 0  Warnings: 0
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "SELECT COUNT(*) FROM labperf.t_shard"
 ```
@@ -560,7 +560,7 @@ mysql -u root -e "SELECT COUNT(*) FROM labperf.t_shard"
 **Machine** — VM 1 (192.168.56.10), premier nœud SQL.
 **Prérequis** — Table `labperf.t_shard` créée (étape 1), `ndb_desc` disponible.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "DESCRIBE labperf.t_shard"
 ```
@@ -582,7 +582,7 @@ mysql -u root -e "DESCRIBE labperf.t_shard"
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 **Prérequis** — Cluster démarré, outils de supervision disponibles.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'ALL REPORT MEMORYUSAGE'
@@ -611,7 +611,7 @@ Node 3: Index usage is 0%(9 32K pages of total 24558)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_config --query-all
@@ -649,7 +649,7 @@ id=3    @192.168.56.11 (ndbd)
 **Machine** — VM 2 (192.168.56.11) pour préparer un nouveau répertoire de stockage.
 **Prérequis** — Espace disque sur VM 2, `ndbmtd` installé.
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 mkdir -p /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
@@ -676,7 +676,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Répertoires de stockage créés (étape 4a).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ls -ld /var/lib/mysql-cluster/ndb_7 /var/lib/mysql-cluster/ndb_8
@@ -768,7 +768,7 @@ L'accès se fait avec une session SSH ouverte sur la VM du lab (mot de passe dan
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 **Prérequis** — Cluster A démarré, `ndb_mgm` opérationnel.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 ndb_mgm -e 'SHOW'
 ```
@@ -795,7 +795,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Machine** — VM 1 (192.168.56.10), premier nœud SQL.
 **Prérequis** — `mysqld` Id=4 démarré et accessible via le client `mysql`.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "SHOW VARIABLES LIKE 'log_bin'"
 ```
@@ -815,7 +815,7 @@ mysql -u root -e "SHOW VARIABLES LIKE 'log_bin'"
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 printf '[mysqld]\nlog_bin = mysql-bin\nserver-id = 1\n' >> /etc/mysql/mysql.conf.d/replication.cnf && systemctl restart mysql
 ```
@@ -834,7 +834,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "SHOW VARIABLES LIKE 'server_id'"
 ```
@@ -855,7 +855,7 @@ mysql -u root -e "SHOW VARIABLES LIKE 'server_id'"
 **Machine** — VM 1 (192.168.56.10), premier nœud SQL.
 **Prérequis** — Journal binaire activé (étape 2).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED BY 'repl_pass'"
 ```
@@ -871,7 +871,7 @@ Query OK, 0 rows affected (0.01 sec)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%'"
 ```
@@ -886,7 +886,7 @@ Query OK, 0 rows affected (0.01 sec)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "SHOW MASTER STATUS\G"
 ```
@@ -911,7 +911,7 @@ mysql -u root -e "SHOW MASTER STATUS\G"
 
 **Prérequis** — Espace disque et binaires MySQL Cluster installés sur VM 3 ; répertoire de données dédié pour Cluster B (non réalisable en pratique sur l'infrastructure actuelle).
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster`
-**Exemple de commande**
+**Commande**
 
 ```bash
 mkdir -p /var/lib/mysql-cluster/clusterB
@@ -928,7 +928,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 cat > /var/lib/mysql-cluster/clusterB/config.ini << 'EOF'
@@ -986,7 +986,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Répertoire `clusterB` et `config.ini` créés (étape 4).
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgmd --ndb-nodeid=10 --initial --config-file=/var/lib/mysql-cluster/clusterB/config.ini --configdir=/var/lib/mysql-cluster/clusterB > mgmdB.log &
@@ -1015,7 +1015,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Gestionnaire de Cluster B lancé (étape 4b).
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 2
@@ -1039,7 +1039,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Gestionnaire de Cluster B démarré (étape 4b).
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndbmtd --ndb-nodeid=20 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtdB.log &
@@ -1064,7 +1064,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Gestionnaire de Cluster B démarré (étape 4b), nœud de stockage Id=20 lancé (étape 4d).
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndbmtd --ndb-nodeid=21 --ndb-connectstring=192.168.56.12:1188 --initial > ndbmtdB_21.log &
@@ -1090,7 +1090,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Nœuds de stockage Id=20 et Id=21 lancés (étapes 4d et 4e).
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 3
@@ -1114,7 +1114,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Gestionnaire (étape 4b) et nœuds de stockage Id=20 et Id=21 (étapes 4d et 4e) lancés.
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/clusterB`
-**Exemple de commande**
+**Commande**
 
 ```bash
 pgrep -a 'ndb_mgmd|ndbmtd'
@@ -1141,7 +1141,7 @@ ndbmtd --ndb-nodeid=21 --ndb-connectstring=192.168.56.12:1188 --initial
 **Prérequis** — Gestionnaire et nœuds de stockage de Cluster B lancés (étapes 4b, 4d, 4e), datadir MySQL initialisé pour l'instance 3307.
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.12:1188 --port=3307 --user=mysql --daemonize > /tmp/mysqld-6.log &
@@ -1167,7 +1167,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Machine** — VM 3 (192.168.56.12), nœud SQL replica de Cluster B.
 **Prérequis** — Cluster B démarré (étapes 4 à 4g), nœud SQL replica Id=6 lancé sur le port 3307 (étape 4g), position du binaire relevée à l'étape 3 (Fichier `mysql-bin.000001`, Position `154` à adapter).
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CHANGE MASTER TO MASTER_HOST='192.168.56.10', MASTER_USER='repl', MASTER_PASSWORD='repl_pass', MASTER_LOG_FILE='mysql-bin.000001', MASTER_LOG_POS=154"
 ```
@@ -1184,7 +1184,7 @@ Query OK, 0 rows affected (0.02 sec)
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "START SLAVE"
 ```
@@ -1199,7 +1199,7 @@ Query OK, 0 rows affected (0.01 sec)
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "SHOW SLAVE STATUS\G"
 ```
@@ -1217,7 +1217,7 @@ ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:3307' (111 "Conn
 **Machine** — VM 1 (insertion sur le SQL source Id=4) puis VM 3 (vérification sur le SQL replica Id=6).
 **Prérequis** — Canal de réplication actif (`Slave_IO_Running: Yes`, `Slave_SQL_Running: Yes`).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS labrep"
 ```
@@ -1232,7 +1232,7 @@ Query OK, 1 row affected (0.01 sec)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "CREATE TABLE IF NOT EXISTS labrep.t_repl (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
 ```
@@ -1247,7 +1247,7 @@ Query OK, 0 rows affected (0.05 sec)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "INSERT INTO labrep.t_repl (id,val) VALUES (101,'principal'),(102,'secours') ON DUPLICATE KEY UPDATE val=VALUES(val)"
 ```
@@ -1264,7 +1264,7 @@ Records: 2  Duplicates: 0  Warnings: 0
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "SELECT * FROM labrep.t_repl"
 ```
@@ -1283,7 +1283,7 @@ mysql -u root -e "SELECT * FROM labrep.t_repl"
 +-----+----------+
 ```
 > **Passage sur le site de secours (VM 3)** — création de la table sur le replica et vérification de la propagation.
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "CREATE TABLE IF NOT EXISTS labrep.t_repl (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
 ```
@@ -1299,7 +1299,7 @@ Query OK, 0 rows affected (0.05 sec)
 
 > **Machine** : VM 3 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root --protocol=TCP -h 127.0.0.1 -P 3307 -e "SELECT * FROM labrep.t_repl"
 ```
@@ -1336,7 +1336,7 @@ Simuler une panne de nœud de stockage sur le cluster MySQL Cluster, observer le
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 **Prérequis** — Cluster démarré et sain, `ndb_mgm` opérationnel.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 ndb_mgm -e 'SHOW'
 ```
@@ -1369,7 +1369,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS labfail"
@@ -1386,7 +1386,7 @@ Query OK, 1 row affected (0.01 sec)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "CREATE TABLE IF NOT EXISTS labfail.t_fail (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB"
@@ -1404,7 +1404,7 @@ Query OK, 0 rows affected (0.05 sec)
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "INSERT INTO labfail.t_fail (id,val) VALUES (101,'principal'),(102,'secours') ON DUPLICATE KEY UPDATE val=VALUES(val)"
@@ -1425,7 +1425,7 @@ Records: 2  Duplicates: 0  Warnings: 0
 **Machine** — VM 1 (192.168.56.10), nœud de gestion (commande émise vers le cluster).
 **Prérequis** — Nœud de stockage Id=2 connecté (étape 1).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e "2 STOP"
@@ -1446,7 +1446,7 @@ Node 2: Node shutdown initiated
 **Machine** — VM 1 (192.168.56.10), nœud de gestion.
 **Prérequis** — Nœud Id=2 arrêté (étape 2).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 ndb_mgm -e 'SHOW'
 ```
@@ -1470,7 +1470,7 @@ id=3	@192.168.56.11  (mysql-8.0.50 ndb-8.0.50, Nodegroup: 0)
 **Machine** — VM 1 (192.168.56.10), premier nœud SQL Id=4.
 **Prérequis** — Nœud Id=2 en panne, au moins un nœud de stockage et un nœud SQL disponibles.
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 ```bash
 mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail;"
 ```
@@ -1493,7 +1493,7 @@ mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail;"
 **Machine** — VM 2 (192.168.56.11), nœud de stockage.
 **Prérequis** — Nœud Id=2 arrêté (étape 2), service continu via Id=3, répertoire `/var/lib/mysql-cluster/ndb_2` présent.
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
-**Exemple de commande**
+**Commande**
 
 ```bash
 nohup ndbmtd --ndb-connectstring=192.168.56.10 &
@@ -1520,7 +1520,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Nœud de stockage Id=2 relancé (étape 5).
 
 > **Machine** : VM 2 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : `root` | **Répertoire** : `/var/lib/mysql-cluster/ndb_2`
-**Exemple de commande**
+**Commande**
 
 ```bash
 sleep 5
@@ -1544,7 +1544,7 @@ aucune sortie attendue (commande silencieuse en cas de succès, rc=0)
 **Prérequis** — Nœud de stockage Id=2 relancé (étape 5).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -1575,7 +1575,7 @@ id=5	@192.168.56.12  (mysql-8.0.50 ndb-8.0.50)
 **Machine** — VM 1 (192.168.56.10), nœud de gestion et nœud SQL.
 **Prérequis** — Nœud Id=2 redémarré et en état `connected` (étape 5).
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 
 ```bash
 ndb_mgm -e 'SHOW'
@@ -1602,7 +1602,7 @@ id=3	@192.168.56.11  (...) connected
 **Prérequis** — Nœud Id=2 redémarré et en état `connected` (étape 5).
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail"
@@ -1624,7 +1624,7 @@ mysql -u root -e "SELECT COUNT(*) FROM labfail.t_fail"
 
 > **Machine** : VM 1 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : `root` | **Répertoire** : `/root`
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 mysql -u root -e "SELECT * FROM labfail.t_fail ORDER BY id"

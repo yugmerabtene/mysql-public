@@ -62,7 +62,7 @@ sont fondus ici, pas conservés comme sections séparées.
 
 > **Machine** : ... | **Terminal** : ... | **Utilisateur** : ... | **Répertoire** : ...
 
-**Exemple de commande**
+**Commande**
 
 ```bash
 commande --option argument
@@ -135,7 +135,7 @@ est défini dans `.opencode/skills/common.md`, section 16.
 
 1. **Format canonique obligatoire** — chaque lab suit exactement la structure définie ci-dessous : titre `Lab-XX`, section `Énoncé / Contexte`, section `Outils et commandes utilisées`, section `Commande et laboratoire étape par étape`, section `En conclusion`. Aucune autre section `###` dans le corps du lab.
 2. **Lab guidé, sans corrigé séparé** — l'énoncé et l'explication font partie du même déroulement. Il n'y a **pas de section « Corrigé » séparée** ni de question d'exercice détachée.
-3. **Ordre d'une étape** — `**But**`, `**Machine**`, `**Prérequis**`, encart de localisation, exemple de commande, puis explication décomposée en liste, puis résultat attendu. Le résultat ne précède jamais l'explication. Chaque étape indique la machine, le terminal, l'utilisateur, le répertoire et la preuve produite.
+3. **Ordre d'une étape** — `**But**`, `**Machine**`, `**Prérequis**`, encart de localisation, Commande, puis explication décomposée en liste, puis résultat attendu. Le résultat ne précède jamais l'explication. Chaque étape indique la machine, le terminal, l'utilisateur, le répertoire et la preuve produite.
 4. **Lab autoporteur** — un débutant doit pouvoir exécuter le lab sans deviner une commande, un chemin, une option ou un prérequis.
 5. **Cohérence des identifiants** — les adresses IP, les noms de nœuds et les commandes doivent être identiques entre l'énoncé, les étapes et le plan maître.
 6. **Fichier de sortie** — le chapitre est livré dans `chapitre-0N.md` (ex. `chapitre-01.md`), propre, fusionné et sans section de corrigé détachée.

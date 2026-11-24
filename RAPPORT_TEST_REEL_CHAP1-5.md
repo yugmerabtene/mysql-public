@@ -38,7 +38,7 @@ Vérifié par `grep -c 'preuves/'` sur les 5 chapitres : **0 occurrence** dans c
 
 ### 4. Ordre correct de chaque étape
 
-Chaque étape lab suit l'ordre : `**But**` → `**Machine**` → `**Prérequis**` → encadré de localisation (`> **Machine** : ... | **Terminal** : ... | **Utilisateur** : ... | **Répertoire** : ...`) → `**Exemple de commande**` → `**Explication de la commande**` (liste) → `**Résultat attendu**`.
+Chaque étape lab suit l'ordre : `**But**` → `**Machine**` → `**Prérequis**` → encadré de localisation (`> **Machine** : ... | **Terminal** : ... | **Utilisateur** : ... | **Répertoire** : ...`) → `**Commande**` → `**Explication de la commande**` (liste) → `**Résultat attendu**`.
 
 Vérifié sur la structure des labs (Lab-01 à Lab-14) : l'ordre est respecté. Aucun bloc ne commence directement par une commande.
 

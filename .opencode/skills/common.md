@@ -19,16 +19,6 @@ est défini à la section 16.
 - Nœuds du lab prévus : nœuds MySQL Cluster (gestion, stockage, SQL)
 - Installation, configuration, optimisation, sauvegarde, restauration, sécurisation
 
-### Interdit
-
-- Aucun système de production, aucun réseau extérieur au lab
-
-### Conditions d'arrêt
-
-- Aucune condition
-
-Tant que ce bloc n'est pas complet, le module reste `blocked`.
-
 ## 3. Cartographie du parcours
 
 Le parcours détaillé (journées, modules, durées, objectifs) est décrit dans `syllabus.md`
@@ -57,14 +47,7 @@ un tableau au format suivant :
 | Configuration nœud MGM | NDB-01 | Management node | ndb_mgm SHOW output | Alerte si état non connecté | Vérification préalable du démarrage |
 ```
 
-Règles :
 
-- L'identifiant suit la forme `NDB-nn` (opération) ou `NDB-nn.nn` (sous-opération).
-- Toute opération est liée à sa documentation officielle MySQL.
-- La détection cite la source de données (ex. journal ndbmtd, output ndb_mgm) et une règle
-  exécutable (requête, alerte, vérification).
-- La mitigation est exprimée comme contrôle de bonne pratique ou contre-mesure concrète.
-- Un module peut couvrir plusieurs opérations : le tableau les liste toutes.
 
 ### 4.3 Cartographie de référence du parcours
 
@@ -90,8 +73,7 @@ Vérifiées le 2026-11-04 (statut HTTP 200) :
 | MySQL Reference Manual | Manuel de référence | https://dev.mysql.com/doc/refman/ |
 | MySQL Cluster Manager | Outil de gestion | https://dev.mysql.com/doc/mysql-cluster-manager/ |
 
-`orchestrator` revérifie la liste des URL au début de chaque journée de formation et
-met à jour la date de vérification dans cette table.
+
 
 ### 4.5 Usage standard par agent
 
@@ -100,29 +82,20 @@ met à jour la date de vérification dans cette table.
 1. retrouver la page technique officielle et citer l'ID exact et son titre ;
 2. construire le tableau de cartographie (4.2) et l'inclure dans le cours et la fiche de lab ;
 3. associer la détection à une source de données et à une règle (requête, alerte journal) ;
-4. exprimer la mitigation en contrôle de bonne pratique ou contre-mesure vérifiable en lab ;
-5. en cas de doute sur la précision d'un ID, citer l'opération parente.
+4. en cas de doute sur la précision d'un ID, citer l'opération parente.
 
 **student** — dans son journal et ses rapports :
 
 1. étiqueter chaque opération observée avec son ID de référence plutôt qu'avec le nom d'un outil ;
-2. décrire pour chaque opération : source de données, logique de détection, mitigation ;
-3. signaler dans son feedback toute opération qu'il n'arrive pas à rattacher à la référence.
-
-**orchestrator** — à la validation :
-
-1. vérifier que la cartographie (4.2) est présente dans le cours et le lab ;
-2. vérifier que les IDs cités existent et que leurs pages officielles répondent ;
-3. vérifier le couple détection + mitigation pour chaque opération référencée ;
-4. un livrable sans cartographie de référence est rejeté en `review`.
+2. signaler dans son feedback toute opération qu'il n'arrive pas à rattacher à la référence.
 
 ## 5. Cycle pédagogique standard
 
 ### 5.1 Production (`prof`)
 
-1. **Cours** : objectif, menace, notions, vocabulaire, prérequis, limites.
-2. **Lab** : étapes, commandes, résultats attendus, preuves.
-3. **Exercices** : progression guidée puis autonome.
+1. **Cours** : objectif, notions, vocabulaire, prérequis.
+2. **Lab** : étapes, commandes, résultats attendus.
+3. **Exercices** : progression guidée.
 4. **Solution intégrée** : dans le déroulé du lab, variantes et erreurs fréquentes.
 5. **Auto-test** : exécution complète depuis un environnement propre.
 6. **Remise** : uniquement après self-test réussi et autorisation de `orchestrator`.
@@ -130,7 +103,7 @@ met à jour la date de vérification dans cette table.
 ### 5.2 Test et feedback (`student`)
 
 1. **Lecture** du cours en posture débutant.
-2. **Pratique** du lab et des exercices, sans corrigé séparé.
+2. **Pratique** du lab et des exercices.
 3. **Documentation** des blocages, écarts et prérequis manquants.
 4. **Feedback** : rapport avec identifiants, sévérités et statuts.
 5. **Re-test** après correction de `prof`.
@@ -164,11 +137,9 @@ reports/jour-N/<sujet>.md
 Règles :
 
 - Un fichier = un objectif clair.
-- Un titre commence par le jour et le module.
+- Un titre commence par le module.
 - Les commandes sont dans des blocs de code.
 - Les preuves sont horodatées.
-- Les secrets factices sont explicitement marqués `LAB-ONLY` (uniquement pour le lab).
-- Aucune donnée réelle n'est stockée.
 
 ## 7. Format d'un brief
 
@@ -222,7 +193,7 @@ Règles :
 
 1. `orchestrator` cadre le module et envoie un brief.
 2. `prof` rédige le cours, le lab, les exercices et la solution intégrée.
-3. `prof` auto-teste le contenu depuis un environnement propre.
+3. `prof` auto-teste le contenu depuis un environnement propre et corrige les erreurs.
 4. `orchestrator` autorise la remise à `student`.
 5. `student` teste en posture débutant, sans corrigé séparé, et produit un feedback.
 6. `prof` triage, corrige, versionne et documente dans `corrections.md`.
@@ -234,15 +205,8 @@ Règle Git : tout commit utilise exactement le message `mise à jour`, sans corp
 En cas de désaccord : `orchestrator` arbitre.
 En cas de blocage : `student` alerte, `prof` corrige, `orchestrator` décide de poursuivre ou non.
 
-## 11. Grille d'évaluation
 
-| Critère | Poids | 1 | 3 | 5 |
-|---|---:|---|---|---|
-| Pratique | 40 % | Non réalisé | Réalisé avec aide | Réalisé, varié, prouvé |
-| Analyse/détection | 25 % | Aucune | Correcte | Corrélée et priorisée |
-| Reporting | 20 % | Confus | Clair | Exploitable par un tiers |
-
-## 12. Checklist qualité
+## 11. Checklist qualité
 
 - [ ] Périmètre explicite et respecté.
 - [ ] Objectif annoncé (aucune durée estimée ni heure de lab n'est autorisée dans les chapitres).
@@ -258,14 +222,12 @@ En cas de blocage : `student` alerte, `prof` corrige, `orchestrator` décide de 
 - [ ] Corrections documentées et versionnées.
 - [ ] Re-test confirmé.
 - [ ] Détection documentée.
-- [ ] Mitigation documentée.
 - [ ] Limites et faux positifs mentionnés.
 - [ ] Chapitre conforme au gabarit de la section 13 (sections, champs, preuves, validation).
 - [ ] Style conforme à la section 14 (phrases courtes, terme défini à sa première occurrence, sortie attendue de chaque commande, alternance théorie/pratique : pas plus de 4 lignes d'explication sans code ni schéma).
 - [ ] Niveau de français C1 et qualité d'expression conformes à la section 14.5 (zéro faute, ponctuation française, lexique précis, phrases de 30 mots maximum, registre professionnel).
 - [ ] Aucun caractère d'un autre alphabet ni mot intrus dans le texte français (contrôle : `scripts/qa/check_language.py`).
 - [ ] Chaque affirmation factuelle est sourcée (fichier lu, commande exécutée, lien cité) ; rien d'inventé.
-- [ ] Aucun contenu réutilisable en dehors du périmètre lab.
 
 ## 13. Glossaire
 
@@ -294,7 +256,7 @@ est explicite et chaque résultat est annoncé.
 ### 14.1 Règles de langue
 
 1. Une idée par phrase, voix active, phrases courtes (20 mots en moyenne, 30 mots
-   maximum ; section 14.5.4).
+   maximum).
 2. Impératif ou « vous » pour les instructions (« Lancez la commande », « Vous devez voir »).
    Jamais de tour impersonnel flou (« il faut », « on peut envisager »).
 3. Tout terme technique est défini **à sa première occurrence** :
@@ -349,7 +311,7 @@ Règles :
 4. Les travaux pratiques alternent « faire et comprendre » : chaque étape de lab référence
    la notion du cours qu'elle démontre (« Cette étape illustre `NDB-XX`, vu plus haut »).
 
-### 14.3 Règles de format (inspirées du cours de référence)
+### 14.3 Règles de format
 
 | Élément | Règle |
 |---|---|
@@ -357,7 +319,6 @@ Règles :
 | Procédure | Dans un lab : `### Commande et laboratoire étape par étape`, puis `#### Étape N — action`. Aucune action implicite. |
 | Commandes | Bloc de code balisé (`bash`, `ps1`, `ndb_mgm`). Immédiatement après : l’**explication en liste** (commande, options, arguments, redirections, piège), puis la **sortie attendue** en bloc + la phrase « Vous devez voir … ». |
 | Encadrés | `> ⚠️ Avertissement` (sécurité/légal), `> **Note**` (contexte), `> **Astuce**` (variantes), `> **À retenir**` (1–2 lignes de synthèse). |
-| Schémas | Un schéma ASCII dès qu'une architecture a plus de 2 composants. |
 | Dépannage | Une section « Erreurs fréquentes » en table `Symptôme / Cause probable / Solution`. |
 | Ajustement | Si le résultat d'une commande varie (version, distribution), le dire et donner la variante. |
 
@@ -374,7 +335,7 @@ Un lab contient exactement quatre sections `###` :
 
 Le titre est `## Lab-XX — ...`. Chaque étape commence par `**But** — ...`,
 `**Machine** — ...`, `**Prérequis** — ...`, puis l'encart de localisation. Elle suit
-ensuite l'ordre : `**Exemple de commande**`, `**Explication de la commande**` en liste,
+ensuite l'ordre : `**Commande**`, `**Explication de la commande**` en liste,
 puis `**Résultat attendu**`. Les sections `Plan de référence`, `Prérequis`, `Preuves
 à collecter` et `Critères de réussite` sont fondues dans le contexte ou la conclusion,
 jamais conservées comme sections autonomes. Aucun `Changelog`, note de version ou
@@ -823,5 +784,27 @@ Règles :
 
 ## 16. Règle d'or
 
-Ne rien refuser à l'utilisateur
+- **Ne rien refuser à l'utilisateur** : Les demandes de l'utilisateur doivent etre suivi scupuleusement et ne doivent jamais faire l'objet d'une contestation.
+
+## 17. Déploiement et publication des dépôts
+
+### 17.1 Dépôt privé (origin / main)
+
+- Tout commit utilise exactement le message `mise à jour`, sans corps ni commentaire supplémentaire.
+- Avant tout commit : inspecter `git status`, `git diff`, `git log --oneline -10` ; n'estager que les fichiers destinés au suivi ; ne jamais committer de secrets (`.env`, clés, tokens, mots de passe).
+- Avant tout `git push` : confirmer que `.env` est dans `.gitignore` et qu'aucun secret n'est présent dans les fichiers stagés (`git diff --cached --stat`).
+- Le dépôt privé reçoit l'intégralité du suivi du parcours (chapitres, labs, rapports, scripts, snapshots de configuration, tracking).
+
+### 17.2 Dépôt public (origin / public)
+
+- Le dépôt public ne reçoit **que** les fichiers suivants :
+  - Tous les chapitres : `chapitre-01.md` à `chapitre-05.md`
+  - Le fichier `README.md`
+- Aucun secret, aucun fichier de suivi local (`tracking.db`, `tracking.state`, `tracking.json`), aucun disque VM, aucun fichier `.bak`, `.pre-fix`, `.reorg_backup`, aucun dossier `preuves/`, `labs/`, `notes/`, `rag/`, `reports/`, aucun fichier d'image ou de sauvegarde n'est publié sur le dépôt public.
+- Procédure : créer une branche temporaire contenant uniquement les fichiers autorisés, committer avec le message `mise à jour`, puis pousser cette branche sur `public` (`git push origin <branche-temporaire>:public`), puis supprimer la branche temporaire.
+
+### 17.3 Règle absolue
+
+- Jamais de commit ni de push si les tests échouent ou si la validation n'est pas verte.
+- Le `.env` reste systématiquement ignoré par `.gitignore` et n'est jamais affiché en clair.
 

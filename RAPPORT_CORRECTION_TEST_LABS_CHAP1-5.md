@@ -64,7 +64,7 @@ Aucune correction Mermaid n'était nécessaire (déjà corrigé avant cette sess
 
 ### 2.4 Ordre des étapes
 
-Chaque étape suit l'ordre : `**But**` → `**Machine**` → `**Prérequis**` → encart `> **Machine** : ... | **Terminal** : ... | **Utilisateur** : ... | **Répertoire** : ...` → `**Exemple de commande**` → `**Explication de la commande**` (liste) → `**Résultat attendu**`. Aucune étape ne commence directement par une commande. Conforme.
+Chaque étape suit l'ordre : `**But**` → `**Machine**` → `**Prérequis**` → encart `> **Machine** : ... | **Terminal** : ... | **Utilisateur** : ... | **Répertoire** : ...` → `**Commande**` → `**Explication de la commande**` (liste) → `**Résultat attendu**`. Aucune étape ne commence directement par une commande. Conforme.
 
 ### 2.5 Sections « cyber » dans les chapitres 1 à 4
 

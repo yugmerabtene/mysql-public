@@ -17,7 +17,7 @@
 | F-02 | MAJOR | Lab-08 (ch.3) | `chapitre-03.md` | Lab-08 ne contenait pas de `ndb_desc` (c'etait Lab-07, siehe F-01). Rien a modifier dans Lab-08 ; cohérence assuree par F-01. | CORRIGE (par F-01) |
 | F-03 | MAJOR | Lab-12 (ch.4) | `chapitre-04.md` | Marquer explicitement Lab-12 comme "Lab non executable (demonstration uniquement)" via encadret en tete d'enonce, et retirer de la liste des labs testables executables. Conclusion et renvois Lab-13 deja coherents. | CORRIGE |
 | F-04 | MAJOR | Lab-06 (ch.2), Lab-09 (ch.3), Lab-13 (ch.4), Lab-14 (ch.5) | `chapitre-02.md`, `chapitre-03.md`, `chapitre-04.md`, `chapitre-05.md` | Supprimer les 4 sections `### Erreurs de conception/architecture/configuration/gros volumes` situes apres `### En conclusion` du dernier lab de chaque chapitre. Retour a exactement 4 sections canoniques par lab. | CORRIGE |
-| F-05 | MAJOR | Lab-09 (ch.3) etape 3 | `chapitre-03.md` | Ajouter `**Exemple de commande**` (`echo` constat) + `**Explication de la commande**` (liste decomposee) avant `**Resultat attendu**`. | CORRIGE |
+| F-05 | MAJOR | Lab-09 (ch.3) etape 3 | `chapitre-03.md` | Ajouter `**Commande**` (`echo` constat) + `**Explication de la commande**` (liste decomposee) avant `**Resultat attendu**`. | CORRIGE |
 | F-06 | MINOR | Figure 6 / Figure 8 (ch.1) | `chapitre-01.md` | Figure 6 garde `image-16.png` ; Figure 8 corrigee de `image-16.png` vers `image-15.png`. Aucun fichier image supprime. | CORRIGE |
 | F-07 | MINOR | Lab-14 (ch.5) | `chapitre-05.md` | Ajouter une note explicite dans l'enonce : les VM ont un adaptateur NAT (route par defaut eventuelle via 10.0.2.2) ; l'isolement reseau porte sur le perimetre d'administration (vboxnet0 isole). | CORRIGE |
 | F-08 | MINOR | Lab-14 (ch.5) | `chapitre-05.md` | Ajouter une note d'execution conditionnelle (TLS) : `--initial` disruptif pour le cluster partage ; a executer uniquement sur cluster dedie ou apres snapshot `propre-avant-lab`. | CORRIGE |
@@ -68,7 +68,7 @@
 
 **Constat :** `chapitre-03.md` Lab-09 etape 3 (demonstration theorique MCM) avait un `**Resultat attendu**` sans `**Explication de la commande**` decomposee.
 
-**Correction appliquee :** ajout d'un `**Exemple de commande**` (`echo 'Demonstration theorique MCM ...'`) suivi d'un `**Explication de la commande**` (liste decomposee : commande, effet, commandes mcm theoretiques non executees) avant le `**Resultat attendu**`. L'ordre `commande -> explication -> resultat` est respecte.
+**Correction appliquee :** ajout d'un `**Commande**` (`echo 'Demonstration theorique MCM ...'`) suivi d'un `**Explication de la commande**` (liste decomposee : commande, effet, commandes mcm theoretiques non executees) avant le `**Resultat attendu**`. L'ordre `commande -> explication -> resultat` est respecte.
 
 ### F-06 — MINOR : doublon image-16.png (Figure 6 et Figure 8)
 
