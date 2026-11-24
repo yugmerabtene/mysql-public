@@ -1771,6 +1771,49 @@ Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des
 
 **Important** : cette procédure nécessite un accès Internet. Sur le lab isolé (vboxnet0, pas d'Internet), utiliser plutôt la méthode par cache `.deb` décrite précédemment.
 
+#### Dépannage des erreurs courantes lors de l'installation via dépôt MySQL APT
+
+**Problème 1 — Verrou dpkg/apt (Permission non accordée)**
+
+```
+E: Impossible d'ouvrir le fichier verrou /var/lib/dpkg/lock-frontend - open (13: Permission non accordée)
+E: Impossible d'obtenir le verrou de dpkg (/var/lib/dpkg/lock-frontend). Avez-vous les droits du superutilisateur ?
+```
+
+**Cause** : la commande est lancée sans `sudo`, ou un autre processus `apt`/`dpkg` est déjà en cours et détient le verrou.
+
+**Solution** :
+* Toujours préfixer les commandes d'installation avec `sudo` sur une machine hôte Ubuntu standard :
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y mysql-cluster-community-management-server ...
+  ```
+* Si un autre processus `apt` est en cours, attendre sa fin ou identifier le processus bloquant :
+  ```bash
+  ps aux | grep -E 'apt|dpkg'
+  ```
+
+**Problème 2 — Clé GPG MySQL expirée ou absente**
+
+```
+W: Erreur de GPG : http://repo.mysql.com/apt/ubuntu noble InRelease : Les signatures suivantes ne sont pas valables : EXPKEYSIG B7B3B788A8D3785C MySQL Release Engineering <mysql-build@oss.oracle.com>
+E: Le dépôt http://repo.mysql.com/apt/ubuntu noble InRelease n'est pas signé.
+```
+
+**Cause** : la clé publique du dépôt MySQL est expirée ou n'a pas été importée correctement lors de l'installation de `mysql-apt-config`.
+
+**Solution** : réimporter la clé GPG officielle MySQL :
+```bash
+sudo mkdir -p /etc/apt/keyrings
+wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/apt/keyrings/mysql.gpg
+sudo apt-get update
+```
+
+Puis relancer l'installation :
+```bash
+sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
 #### Étape 5 — Rédiger et installer le fichier config.ini sur VM 1
 
 **But** — Créer le fichier `config.ini` qui définit la topologie du cluster sur 3 VM : 1 nœud de gestion (NodeId 1), 2 nœuds de stockage sur VM 2 (NodeId 2 et 3), 2 nœuds SQL (NodeId 4 sur VM 1, NodeId 5 sur VM 3), avec `NoOfReplicas = 2` pour la redondance. Le fichier définit `NodeId`, `HostName` et `DataDir` explicites pour chaque node, selon la configuration de référence du parcours.
