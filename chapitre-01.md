@@ -1324,6 +1324,129 @@ Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des
 
 Sur les VMs du lab isolé, l'installation s'effectue depuis le cache `apt` local (`/var/cache/apt/archives/`) sans accès Internet : aucune invite de téléchargement distant n'apparaît, seule la configuration locale des paquets est à valider.
 
+#### Installation depuis le dépôt MySQL APT (accès Internet requis)
+
+**But** — Installer les composants MySQL Cluster sur VM 1 depuis le dépôt officiel MySQL via `apt`. Cette procédure nécessite un accès Internet et ne s'applique pas au lab isolé (vboxnet0 sans Internet).
+
+**Machine** — 192.168.56.10, hostname `gestion-sql`.
+
+**Prérequis** — Accès Internet sur la VM, compte root.
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get update
+apt-get install -y wget gnupg ca-certificates
+```
+
+**Explication de la commande**
+
+- `apt-get update` : rafraîchit la liste des paquets depuis les dépôts configurés.
+- `apt-get install -y wget gnupg ca-certificates` : installe les outils nécessaires pour télécharger et vérifier l'authenticité du dépôt MySQL APT.
+- `wget` : télécharge le fichier de configuration du dépôt MySQL depuis dev.mysql.com.
+- `gnupg` : gère les clés GPG pour vérifier la signature des paquets.
+- `ca-certificates` : fournit les certificats racine pour les connexions HTTPS.
+
+**Résultat attendu**
+
+```text
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Les paquets supplémentaires suivants seront installés :
+  gnupg gnupg-utils wget …
+0 mis à jour, 3 nouvellement installés, 0 à enlever et 0 non mis à jour.
+…
+Paramétrage de wget (….) …
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb
+```
+
+**Explication de la commande**
+
+- `wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb` : télécharge le configurateur de dépôt MySQL APT depuis le site officiel MySQL.
+- `sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb` : installe le configurateur qui ajoute le dépôt MySQL à `/etc/apt/sources.list.d/` et importe la clé GPG. Une interface de configuration s'affiche pour sélectionner les produits et versions MySQL à activer.
+
+**Résultat attendu**
+
+```text
+--2026-…
+mysql-apt-config_0.8.33-1_all.deb: …
+100%[==================================================>] …
+```
+Pendant l'exécution de `dpkg -i`, un écran de configuration s'affiche :
+- Sélectionner **MySQL Cluster** dans la liste des produits.
+- Choisir la version **8.0** (ou la version cible du parcours).
+- Valider pour ajouter le dépôt et la clé GPG.
+
+**Avertissement** : vérifier sur https://dev.mysql.com/downloads/repo/apt/ que la version du paquet `mysql-apt-config` est bien la dernière avant de télécharger. Le numéro de version peut évoluer.
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get update
+```
+
+**Explication de la commande**
+
+- `apt-get update` : rafraîchit la liste des paquets depuis le dépôt MySQL nouvellement ajouté ainsi que les dépôts Ubuntu.
+
+**Résultat attendu**
+
+```text
+Atteint :1 http://repo.mysql.com/apt/ubuntu/ noble InRelease
+Atteint :2 http://archive.ubuntu.com/ubuntu noble InRelease
+…
+```
+
+> **Machine** : 192.168.56.10 | **Terminal** : session SSH ouverte sur gestion-sql | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
+**Explication de la commande**
+
+- `apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client` : installe `ndb_mgmd` (gestion), `ndbmtd` (stockage), `mysqld` (SQL) et le client MySQL Cluster depuis le dépôt MySQL.
+- Sur VM 1 : serveur de gestion + serveur SQL + client.
+
+**Résultat attendu**
+
+```text
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Lecture des informations d'état…
+Les paquets supplémentaires suivants seront installés :
+  mysql-cluster-community-client mysql-cluster-community-client-core
+  mysql-cluster-community-client-plugins mysql-cluster-community-server-core
+0 mis à jour, 4 nouvellement installés, 0 à enlever et 0 non mis à jour.
+…
+Paramétrage de mysql-cluster-community-management-server (8.0.50-1ubuntu24.04) …
+```
+
+**Configuration à valider lors de l'installation :**
+
+Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des invites de configuration que l'apprenant doit valider :
+
+* **Sélection de la version** : si plusieurs versions de MySQL Cluster sont disponibles dans le dépôt, confirmer la version `8.0.50-1ubuntu24.04` (ou la version cible du parcours).
+* **Dépendances automatiques** : confirmer l'installation des paquets dépendants (`mysql-cluster-community-client-core`, `mysql-cluster-community-client-plugins`, `mysql-cluster-community-server-core`) qui sont requis pour le fonctionnement du moteur NDB.
+* **Configuration du service** : confirmer le démarrage automatique du service `ndb_mgmd` (sur le nœud de gestion) et `mysqld` (sur les nœuds SQL) si une invite le demande.
+* **Conflit de paquets** : si un paquet MySQL standard (`mysql-server`, `mysql-client`) est déjà installé, confirmer son remplacement ou sa suppression pour éviter les conflits avec le moteur NDB.
+
+**Important** : cette procédure nécessite un accès Internet. Sur le lab isolé (vboxnet0, pas d'Internet), utiliser plutôt la méthode par cache `.deb` décrite précédemment.
+
 > **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
@@ -1375,6 +1498,117 @@ Lecture des informations d'état…
 Paramétrage de mysql-cluster-community-data-node (8.0.50-1ubuntu24.04) …
 ```
 
+#### Installation depuis le dépôt MySQL APT (accès Internet requis)
+
+**But** — Installer les composants MySQL Cluster sur VM 2 depuis le dépôt officiel MySQL via `apt`. Cette procédure nécessite un accès Internet et ne s'applique pas au lab isolé (vboxnet0 sans Internet).
+
+**Machine** — 192.168.56.11, hostname `stockage`.
+
+**Prérequis** — Accès Internet sur la VM, compte root.
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get update
+apt-get install -y wget gnupg ca-certificates
+```
+
+**Explication de la commande**
+
+- `apt-get update` : rafraîchit la liste des paquets depuis les dépôts configurés.
+- `apt-get install -y wget gnupg ca-certificates` : installe les outils nécessaires pour télécharger et vérifier l'authenticité du dépôt MySQL APT.
+
+**Résultat attendu**
+
+```text
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Les paquets supplémentaires suivants seront installés :
+  gnupg gnupg-utils wget …
+0 mis à jour, 3 nouvellement installés, 0 à enlever et 0 non mis à jour.
+…
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb
+```
+
+**Explication de la commande**
+
+- `wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb` : télécharge le configurateur de dépôt MySQL APT depuis le site officiel MySQL.
+- `sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb` : installe le configurateur qui ajoute le dépôt MySQL à `/etc/apt/sources.list.d/` et importe la clé GPG. Sélectionner **MySQL Cluster** en version **8.0** lors de la configuration interactive.
+
+**Résultat attendu**
+
+```text
+--2026-…
+mysql-apt-config_0.8.33-1_all.deb: …
+100%[==================================================>] …
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get update
+```
+
+**Explication de la commande**
+
+- `apt-get update` : rafraîchit la liste des paquets depuis le dépôt MySQL nouvellement ajouté ainsi que les dépôts Ubuntu.
+
+**Résultat attendu**
+
+```text
+Atteint :1 http://repo.mysql.com/apt/ubuntu/ noble InRelease
+Atteint :2 http://archive.ubuntu.com/ubuntu noble InRelease
+…
+```
+
+> **Machine** : 192.168.56.11 | **Terminal** : session SSH ouverte sur stockage | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get install -y mysql-cluster-community-data-node
+```
+
+**Explication de la commande**
+
+- `apt-get install -y mysql-cluster-community-data-node` : installe uniquement le paquet de nœud de données (`ndbmtd`) sur le nœud de stockage VM 2 depuis le dépôt MySQL.
+- Même principe que VM 1, mais sans le serveur SQL inutile sur un nœud dédié au stockage.
+- **Piège** : ne pas installer le serveur SQL inutilement sur un nœud dédié au stockage.
+
+**Résultat attendu**
+
+```text
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Lecture des informations d'état…
+0 mis à jour, 1 nouvellement installé, 0 à enlever et 0 non mis à jour.
+…
+Paramétrage de mysql-cluster-community-data-node (8.0.50-1ubuntu24.04) …
+```
+
+**Configuration à valider lors de l'installation :**
+
+Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des invites de configuration que l'apprenant doit valider :
+
+* **Sélection de la version** : si plusieurs versions de MySQL Cluster sont disponibles dans le dépôt, confirmer la version `8.0.50-1ubuntu24.04` (ou la version cible du parcours).
+* **Dépendances automatiques** : confirmer l'installation des paquets dépendants (`mysql-cluster-community-client-core`, `mysql-cluster-community-client-plugins`, `mysql-cluster-community-server-core`) qui sont requis pour le fonctionnement du moteur NDB.
+* **Configuration du service** : confirmer le démarrage automatique du service `ndb_mgmd` (sur le nœud de gestion) et `mysqld` (sur les nœuds SQL) si une invite le demande.
+* **Conflit de paquets** : si un paquet MySQL standard (`mysql-server`, `mysql-client`) est déjà installé, confirmer son remplacement ou sa suppression pour éviter les conflits avec le moteur NDB.
+
+**Important** : cette procédure nécessite un accès Internet. Sur le lab isolé (vboxnet0, pas d'Internet), utiliser plutôt la méthode par cache `.deb` décrite précédemment.
+
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
 
 **Exemple de commande**
@@ -1425,6 +1659,117 @@ Lecture des informations d'état…
 …
 Paramétrage de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
 ```
+
+#### Installation depuis le dépôt MySQL APT (accès Internet requis)
+
+**But** — Installer les composants MySQL Cluster sur VM 3 depuis le dépôt officiel MySQL via `apt`. Cette procédure nécessite un accès Internet et ne s'applique pas au lab isolé (vboxnet0 sans Internet).
+
+**Machine** — 192.168.56.12, hostname `mysql-node3`.
+
+**Prérequis** — Accès Internet sur la VM, compte root.
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get update
+apt-get install -y wget gnupg ca-certificates
+```
+
+**Explication de la commande**
+
+- `apt-get update` : rafraîchit la liste des paquets depuis les dépôts configurés.
+- `apt-get install -y wget gnupg ca-certificates` : installe les outils nécessaires pour télécharger et vérifier l'authenticité du dépôt MySQL APT.
+
+**Résultat attendu**
+
+```text
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Les paquets supplémentaires suivants seront installés :
+  gnupg gnupg-utils wget …
+0 mis à jour, 3 nouvellement installés, 0 à enlever et 0 non mis à jour.
+…
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb
+```
+
+**Explication de la commande**
+
+- `wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb` : télécharge le configurateur de dépôt MySQL APT depuis le site officiel MySQL.
+- `sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb` : installe le configurateur qui ajoute le dépôt MySQL à `/etc/apt/sources.list.d/` et importe la clé GPG. Sélectionner **MySQL Cluster** en version **8.0** lors de la configuration interactive.
+
+**Résultat attendu**
+
+```text
+--2026-…
+mysql-apt-config_0.8.33-1_all.deb: …
+100%[==================================================>] …
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get update
+```
+
+**Explication de la commande**
+
+- `apt-get update` : rafraîchit la liste des paquets depuis le dépôt MySQL nouvellement ajouté ainsi que les dépôts Ubuntu.
+
+**Résultat attendu**
+
+```text
+Atteint :1 http://repo.mysql.com/apt/ubuntu/ noble InRelease
+Atteint :2 http://archive.ubuntu.com/ubuntu noble InRelease
+…
+```
+
+> **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
+
+**Exemple de commande**
+
+```bash
+apt-get install -y mysql-cluster-community-server mysql-cluster-client
+```
+
+**Explication de la commande**
+
+- `apt-get install -y mysql-cluster-community-server mysql-cluster-client` : installe le serveur SQL et le client sur VM 3 (second nœud SQL) depuis le dépôt MySQL.
+- Même principe que VM 1, mais sans le serveur de gestion (VM 3 est un second nœud SQL).
+- **Piège** : le second nœud SQL doit disposer du même binaire `mysqld` avec le moteur NDB que VM 1.
+
+**Résultat attendu**
+
+```text
+Lecture des listes de paquets…
+Construction de l'arbre des dépendances…
+Lecture des informations d'état…
+0 mis à jour, 2 nouvellement installés, 0 à enlever et 0 non mis à jour.
+…
+Paramétrage de mysql-cluster-community-server (8.0.50-1ubuntu24.04) …
+```
+
+**Configuration à valider lors de l'installation :**
+
+Lors de l'installation des paquets MySQL Cluster, `dpkg`/`apt` peut afficher des invites de configuration que l'apprenant doit valider :
+
+* **Sélection de la version** : si plusieurs versions de MySQL Cluster sont disponibles dans le dépôt, confirmer la version `8.0.50-1ubuntu24.04` (ou la version cible du parcours).
+* **Dépendances automatiques** : confirmer l'installation des paquets dépendants (`mysql-cluster-community-client-core`, `mysql-cluster-community-client-plugins`, `mysql-cluster-community-server-core`) qui sont requis pour le fonctionnement du moteur NDB.
+* **Configuration du service** : confirmer le démarrage automatique du service `ndb_mgmd` (sur le nœud de gestion) et `mysqld` (sur les nœuds SQL) si une invite le demande.
+* **Conflit de paquets** : si un paquet MySQL standard (`mysql-server`, `mysql-client`) est déjà installé, confirmer son remplacement ou sa suppression pour éviter les conflits avec le moteur NDB.
+
+**Important** : cette procédure nécessite un accès Internet. Sur le lab isolé (vboxnet0, pas d'Internet), utiliser plutôt la méthode par cache `.deb` décrite précédemment.
 
 #### Étape 5 — Rédiger et installer le fichier config.ini sur VM 1
 
