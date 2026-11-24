@@ -2619,7 +2619,24 @@ wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/a
 sudo apt-get update
 ```
 
-**Problème 3 — MySQL Cluster introuvable (dépôt MySQL 8.4 au lieu de 8.0)**
+**Solution pratique complète (si la commande ci-dessus ne suffit pas)** : sur Ubuntu noble, la clé peut être expirée dans le trousseau système. La méthode suivante a été testée et fonctionne :
+
+```bash
+# 1. Importer la clé publique MySQL depuis le serveur de clés
+gpg --keyserver keyserver.ubuntu.com --recv-keys B7B3B788A8D3785C
+
+# 2. Exporter et installer la clé dans le trousseau apt
+gpg --export --armor B7B3B788A8D3785C | sudo gpg --dearmor -o /usr/share/keyrings/mysql-apt-config.gpg
+
+# 3. Recharger les listes de paquets
+sudo apt-get update
+```
+
+Si le fichier `/usr/share/keyrings/mysql-apt-config.gpg` existe déjà, répondez `o` pour l'écraser.
+
+Après cette opération, `sudo apt-get update` doit afficher `Atteint` pour `http://repo.mysql.com/apt/ubuntu noble InRelease` sans erreur GPG.
+
+---
 
 Si vous obtenez :
 
@@ -2662,6 +2679,44 @@ sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-
 
 ```text
 Réception de :2 http://repo.mysql.com/apt/ubuntu noble/mysql-8.0 amd64 Packages [...]
+```
+
+**Procédure complète corrigée pour installer MySQL Cluster sur votre ThinkPad (machine hôte) :**
+
+Si vous avez le dépôt 8.4 activé et que les paquets `mysql-cluster-community-*` ne se trouvent pas, appliquez cette procédure complète :
+
+```bash
+# 1. Réconfigurer mysql-apt-config pour cibler MySQL 8.0 (pas 8.4)
+sudo dpkg-reconfigure mysql-apt-config
+
+# Dans l'interface qui s'affiche :
+#   - Sélectionner "MySQL Server & Cluster"
+#   - Choisir "mysql-8.0" (et non mysql-8.4)
+#   - Valider
+
+# 2. Réimporter la clé GPG officielle MySQL
+sudo mkdir -p /etc/apt/keyrings
+wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/apt/keyrings/mysql.gpg
+
+# 3. Recharger les listes de paquets
+sudo apt-get update
+
+# 4. Vérifier que mysql-8.0 apparaît
+apt-cache policy mysql-cluster-community-management-server
+
+# 5. Installer les composants MySQL Cluster
+sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+```
+
+**Si `dpkg-reconfigure mysql-apt-config` ne propose pas mysql-8.0** :
+```bash
+# Supprimer le dépôt 8.4 et recréer proprement
+sudo rm -f /etc/apt/sources.list.d/mysql.list
+wget https://dev.mysql.com/get/mysql-apt-config_0.8.33-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.33-1_all.deb
+# Dans l'interface : sélectionner mysql-8.0
+sudo apt-get update
+sudo apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
 ```
 
 ---
