@@ -138,7 +138,14 @@ sequenceDiagram
 
 **Two-Phase Commit (2PC)** : protocole de validation distribuée utilisé par NDB pour garantir la cohérence. Le nœud SQL joue le rôle de coordinateur. Il envoie d'abord une requête "prepare" à tous les nœuds de stockage du node group ; chaque nœud acquitte. Puis, une fois tous les acquit reçus, le coordinateur envoie "commit" à tous. La transaction n'est confirmée à l'application que lorsque **tous** les nœuds ont acquitté le commit. Si un nœud ne répond pas dans les temps, la transaction est annulée (rollback) pour préserver la cohérence.
 
-**Quorum** : le quorum est la règle de décision par majorité qui empêche deux partitions du cluster d'agir simultanément. Dans un système distribué, un quorum se calcule généralement comme (N / 2) + 1, où N est le nombre total de nœuds participants. Cela signifie qu'une majorité de nœuds doit s'accorder avant qu'une décision ne soit prise. C'est pourquoi les clusters sont généralement déployés avec un nombre impair de serveurs (à partir de 3) : cela garantit qu'une majorité peut toujours être formée, même après une défaillance.
+**Quorum** : le quorum est la règle de décision par majorité qui empêche deux partitions du cluster d'agir simultanément. Dans un système distribué, un quorum se calcule généralement comme (N / 2) + 1, où N est le nombre total de nœuds participants. Cela signifie qu'il faut au moins la moitié des nœuds plus un vote pour valider une décision.
+
+**Exemple concret de N/2 + 1 :**
+- Avec **3 nœuds** (N = 3) : quorum = 3/2 + 1 = **2 votes sur 3** nécessaires.
+- Avec **5 nœuds** (N = 5) : quorum = 5/2 + 1 = **3 votes sur 5** nécessaires.
+- Avec **4 nœuds** (N = 4) : quorum = 4/2 + 1 = **3 votes sur 4** nécessaires. Attention : avec un nombre pair de nœuds, un partitionnement 2 contre 2 ne peut jamais atteindre le quorum de 3, donc le cluster s'arrête.
+
+C'est pourquoi les clusters sont généralement déployés avec un nombre impair de serveurs (à partir de 3) : cela garantit qu'une majorité peut toujours être formée, même après une défaillance.
 
 Dans ce lab NDB, le quorum est assuré par le nœud de gestion qui agit comme arbitre. Avec deux nœuds de stockage (NodeId 2 et NodeId 3) dans un seul node group et un nœud de gestion (NodeId 1), la perte d'un nœud de stockage ne rompt pas le quorum : le nœud de gestion et le nœud de stockage restant conservent la majorité et le cluster continue de fonctionner. Chaque nœud connaît le nombre total de nœuds du cluster (via sa configuration et les échanges de heartbeat avec le nœud de gestion). Lorsqu'un nœud détecte qu'il ne peut plus joindre assez de pairs pour atteindre le quorum, il sait qu'il se trouve dans la minorité et cesse de prendre des décisions, évitant ainsi toute écriture divergente.
 
