@@ -2619,7 +2619,24 @@ wget -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | sudo gpg --dearmor -o /etc/a
 sudo apt-get update
 ```
 
-**Problème 3 — MySQL Cluster introuvable (dépôt MySQL 8.4 au lieu de 8.0)**
+**Solution pratique complète (si la commande ci-dessus ne suffit pas)** : sur Ubuntu noble, la clé peut être expirée dans le trousseau système. La méthode suivante a été testée et fonctionne :
+
+```bash
+# 1. Importer la clé publique MySQL depuis le serveur de clés
+gpg --keyserver keyserver.ubuntu.com --recv-keys B7B3B788A8D3785C
+
+# 2. Exporter et installer la clé dans le trousseau apt
+gpg --export --armor B7B3B788A8D3785C | sudo gpg --dearmor -o /usr/share/keyrings/mysql-apt-config.gpg
+
+# 3. Recharger les listes de paquets
+sudo apt-get update
+```
+
+Si le fichier `/usr/share/keyrings/mysql-apt-config.gpg` existe déjà, répondez `o` pour l'écraser.
+
+Après cette opération, `sudo apt-get update` doit afficher `Atteint` pour `http://repo.mysql.com/apt/ubuntu noble InRelease` sans erreur GPG.
+
+---
 
 Si vous obtenez :
 
