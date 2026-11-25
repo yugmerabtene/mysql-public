@@ -1,8 +1,0 @@
-# date: 2026-11-23 15:27:53
-# cmd: mysql -u root -e 'SHOW TABLE STATUS FROM labndb LIKE "t_ndb_desc"; SELECT COUNT(*) FROM labndb.t_ndb_desc;'
-# rc= 0
-
-Name	Engine	Version	Row_format	Rows	Avg_row_length	Data_length	Max_data_length	Index_length	Data_free	Auto_increment	Create_time	Update_time	Check_time	Collation	Checksum	Create_options	Comment
-t_ndb_desc	ndbcluster	10	Dynamic	0	0	0	0	0	0	NULL	2026-11-23 14:20:57	NULL	NULL	utf8mb4_0900_ai_ci	NULL		
-nb_lignes
-0

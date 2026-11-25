@@ -1,6 +1,0 @@
-# date: 2026-11-23 00:12:43 UTC
-# host: 192.168.56.10
-# cmd: df -h /var/lib/mysql-cluster
-Filesystem                         Size  Used Avail Use% Mounted on
-/dev/mapper/ubuntu--vg-ubuntu--lv   12G  9,4G  1,4G  88% /
-# rc=0

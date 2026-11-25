@@ -1,6 +1,0 @@
-Connected to Management Server at: localhost:1186
-Node 2: Data usage is 0%(11 32K pages of total 12290)
-Node 2: Index usage is 0%(6 32K pages of total 12285)
-Node 3: Data usage is 0%(11 32K pages of total 12290)
-Node 3: Index usage is 0%(6 32K pages of total 12285)
-

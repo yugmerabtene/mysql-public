@@ -1,7 +1,0 @@
-*************************** 1. row ***************************
-       Table: test_ndb
-Create Table: CREATE TABLE `test_ndb` (
-  `id` int NOT NULL,
-  `name` varchar(50) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci

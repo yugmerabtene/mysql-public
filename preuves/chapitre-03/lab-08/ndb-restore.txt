@@ -1,2 +1,0 @@
-Backup Id = 1
-Backup file node ID not specified, please provide --nodeid

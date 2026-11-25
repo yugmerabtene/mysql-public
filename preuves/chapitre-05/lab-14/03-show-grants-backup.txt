@@ -1,6 +1,0 @@
-# date: 2026-11-23 00:13:55 UTC
-# host: 192.168.56.10
-# cmd: mysql -u root -e "SHOW GRANTS FOR 'backup_user'@'192.168.56.%'"
-Grants for backup_user@192.168.56.%
-GRANT SELECT, LOCK TABLES, SHOW VIEW ON *.* TO `backup_user`@`192.168.56.%`
-# rc=0

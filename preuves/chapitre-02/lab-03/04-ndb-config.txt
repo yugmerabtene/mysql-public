@@ -1,4 +1,0 @@
-# date: 2026-11-23 00:05:20 UTC
-# host: 192.168.56.10
-# cmd: ndb_config --query-all 2>&1 | grep -E '^(id=|NodeId|HostName|NoOfReplicas|DataMemory|IndexMemory|NoOfFragmentLogParts|RedoBuffer)'
-# rc=1

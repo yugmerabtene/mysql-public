@@ -1,5 +1,0 @@
-# date: 2026-11-23 00:05:09 UTC
-# host: 192.168.56.11
-# cmd: dpkg -l | grep -i -E 'mysql-cluster|ndb' || echo 'aucun paquet mysql-cluster'
-ii  mysql-cluster-community-data-node     8.0.50-1ubuntu24.04                              amd64        Data node
-# rc=0

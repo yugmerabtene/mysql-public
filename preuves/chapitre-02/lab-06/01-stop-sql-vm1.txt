@@ -1,5 +1,0 @@
-# date: 2026-11-23 00:06:22 UTC
-# host: 192.168.56.10
-# cmd: pkill -x mysqld; sleep 3; pgrep -a mysqld || echo 'mysqld arrete sur VM1'
-48787 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
-# rc=0

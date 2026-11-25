@@ -1,8 +1,0 @@
-# date: 2026-11-23 00:13:58 UTC
-# host: 192.168.56.11
-# cmd: pgrep -a ndbmtd
-24365 ndbmtd --ndb-connectstring=192.168.56.10
-24366 ndbmtd --ndb-connectstring=192.168.56.10
-31291 ndbmtd --ndb-connectstring=192.168.56.10
-31292 ndbmtd --ndb-connectstring=192.168.56.10
-# rc=0

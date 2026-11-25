@@ -1,4 +1,0 @@
-# date: 2026-11-23 00:06:54 UTC
-# host: 192.168.56.10
-# cmd: mysql -u root -e 'CREATE DATABASE IF NOT EXISTS labndb; CREATE TABLE IF NOT EXISTS labndb.t_ndb_desc (id INT PRIMARY KEY, val VARCHAR(100)) ENGINE=NDB'
-# rc=0

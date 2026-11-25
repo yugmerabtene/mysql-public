@@ -1,3 +1,0 @@
-id	val
-100	alpha
-200	beta

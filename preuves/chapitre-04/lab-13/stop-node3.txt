@@ -1,2 +1,0 @@
-Connected to Management Server at: localhost:1186
-Node 3 has shutdown.

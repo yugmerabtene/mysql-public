@@ -1,6 +1,0 @@
-               total        used        free      shared  buff/cache   available
-Mem:           1,5Gi       696Mi       490Mi       1,1Mi       446Mi       790Mi
-Swap:          2,0Gi          0B       2,0Gi
----
-Filesystem                         Size  Used Avail Use% Mounted on
-/dev/mapper/ubuntu--vg-ubuntu--lv   12G  9,2G  1,5G  87% /

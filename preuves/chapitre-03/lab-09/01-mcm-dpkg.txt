@@ -1,5 +1,0 @@
-# date: 2026-11-23 00:06:57 UTC
-# host: 192.168.56.11
-# cmd: dpkg -l | grep -i 'mysql-cluster-manager' || echo 'paquet mysql-cluster-manager non installe'
-paquet mysql-cluster-manager non installe
-# rc=0

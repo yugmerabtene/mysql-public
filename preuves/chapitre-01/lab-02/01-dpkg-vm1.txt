@@ -1,2 +1,0 @@
-mkdir : option invalide -- 'o'
-Saisissez « mkdir --help » pour plus d'informations.

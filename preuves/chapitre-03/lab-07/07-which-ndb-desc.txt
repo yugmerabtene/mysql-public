@@ -1,6 +1,0 @@
-# date: 2026-11-23 00:11:52 UTC
-# host: 192.168.56.10
-# cmd: which ndb_desc; ndb_desc --version 2>&1
-/usr/bin/ndb_desc
-MySQL distrib mysql-8.0.50 ndb-8.0.50, for Linux (x86_64)
-# rc=0

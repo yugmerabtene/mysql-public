@@ -1,3 +1,0 @@
-# date: 2026-11-23 00:12:58 UTC
-# host: 192.168.56.10
-# cmd: ndb_mgm -e '2 STOP'

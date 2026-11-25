@@ -1,4 +1,0 @@
-COUNT(*)
-3
-Name	Engine	Version	Row_format	Rows	Avg_row_length	Data_length	Max_data_length	Index_length	Data_free	Auto_increment	Create_time	Update_time	Check_time	Collation	Checksum	Create_options	Comment
-gros_volume	ndbcluster	10	Dynamic	3	32	131072	0	0	0	4	2026-11-23 19:14:51	NULL	NULL	utf8mb4_0900_ai_ci	NULL		

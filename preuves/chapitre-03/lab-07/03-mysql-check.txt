@@ -1,7 +1,0 @@
-# date: 2026-11-23 00:08:02 UTC
-# host: 192.168.56.10
-# cmd: pgrep -a mysqld; mysql -u root -e 'SELECT 1' 2>&1
-65064 mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize
-1
-1
-# rc=0

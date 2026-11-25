@@ -1,5 +1,0 @@
-# date: 2026-11-23 00:13:58 UTC
-# host: 192.168.56.10
-# cmd: pgrep -a ndb_mgmd
-63164 ndb_mgmd -f /var/lib/mysql-cluster/config.ini
-# rc=0

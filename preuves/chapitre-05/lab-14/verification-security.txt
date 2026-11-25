@@ -1,6 +1,0 @@
-Grants for app_user@192.168.56.%
-GRANT USAGE ON *.* TO `app_user`@`192.168.56.%`
-GRANT SELECT, INSERT, UPDATE, DELETE ON `lab11`.* TO `app_user`@`192.168.56.%`
-GRANT SELECT, INSERT, UPDATE, DELETE ON `labperf`.* TO `app_user`@`192.168.56.%`
-Grants for backup_user@192.168.56.%
-GRANT SELECT, LOCK TABLES, SHOW VIEW ON *.* TO `backup_user`@`192.168.56.%`
