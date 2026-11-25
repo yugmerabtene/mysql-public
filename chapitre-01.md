@@ -1281,14 +1281,33 @@ Tous les paquets sont a jour.
 **Commande**
 
 ```bash
-apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-data-node mysql-cluster-community-server mysql-cluster-client
+# 0. Réimporter la clé GPG MySQL si le dépôt est déjà configuré (clé expirée sur Ubuntu 24.04)
+mkdir -p /etc/apt/keyrings
+wget -q -O- https://repo.mysql.com/RPM-GPG-KEY-mysql | gpg --dearmor > /etc/apt/keyrings/mysql.gpg
+
+# 1. Mettre à jour les listes de paquets
+apt-get update
+
+# 2. Installer les composants MySQL Cluster adaptés au rôle de la VM
+#    - VM 1 (gestion + SQL) : management-server + server + client (+ -core, -plugins, -server-core)
+#    - VM 2 (stockage) : data-node uniquement (+ -core)
+#    - VM 3 (second SQL) : server + client (+ -core, -plugins, -server-core)
+apt-get install -y mysql-cluster-community-management-server mysql-cluster-community-server mysql-cluster-community-client mysql-cluster-community-client-core mysql-cluster-community-client-plugins mysql-cluster-community-server-core
 ```
 
 **Explication de la commande**
 
-- `apt-get install -y ...` : installe `ndb_mgmd` (gestion), `ndbmtd` (stockage), `mysqld` (SQL) et le client MySQL Cluster sur VM 1.
-- Sur VM 1 : serveur de gestion + serveur SQL + client.
-- **Piège** : les paquets sont installés depuis le dépôt MySQL configuré ; une fois terminé, les nœuds restent sur le réseau host-only vboxnet0 (pas d'Internet permanent sur les nœuds).
+- `mkdir -p /etc/apt/keyrings` et `wget ... | gpg --dearmor` : réimportent la clé publique du dépôt MySQL. Nécessaire sur Ubuntu 24.04 car la clé par défaut peut être expirée (`EXPKEYSIG B7B3B788A8D3785C`), ce qui bloque `apt-get update`.
+- `apt-get update` : rafraîchit la liste des paquets depuis le dépôt configuré sur la VM.
+- `apt-get install -y ...` : installe les composants MySQL Cluster.
+  - Sur VM 1 (gestion-sql) : `management-server` (ndb_mgmd), `server` (mysqld), `client` (+ sous-paquets `-core`, `-plugins`, `-server-core`).
+  - Sur VM 2 (stockage) : uniquement `data-node` (ndbmtd).
+  - Sur VM 3 (mysql-node3) : `server` (mysqld) + `client` (+ sous-paquets).
+- **Piège 1** : le paquet s'appelle `mysql-cluster-community-client` (pas `mysql-cluster-client`). Les sous-paquets `-core` et `-plugins` doivent être installés explicitement, sinon l'installation échoue sur des dépendances non satisfaites.
+- **Piège 2** : le dépôt MySQL doit cibler la version **8.0** (pas 8.4). MySQL Cluster NDB n'existe que dans MySQL 8.0 ; il a été supprimé à partir de MySQL 8.4. Si `mysql-apt-config` a sélectionné 8.4, les paquets `mysql-cluster-community-*` sont introuvables. Reconfigurer avec `sudo dpkg-reconfigure mysql-apt-config` et choisir `mysql-8.0`.
+- **Piège 3** : sur Ubuntu 24.04, l'installation de `mysql-cluster-community-server` crée et lance automatiquement un service système `mysqld` qui verrouille `/var/lib/mysql/ibdata1`. Avant de lancer votre propre `mysqld --ndbcluster`, vous devez arrêter et désactiver ce service : `systemctl stop mysql && systemctl disable mysql`.
+- **Piège 4** : avant le premier démarrage de `mysqld --ndbcluster`, le datadir MySQL doit être initialisé : `mysqld --initialize-insecure --user=mysql`. Sans cela, mysqld refuse de démarrer (`Failed to find valid data directory`).
+- Les paquets sont installés depuis le dépôt MySQL configuré ; une fois terminé, les nœuds restent sur le réseau host-only vboxnet0 (pas d'Internet permanent sur les nœuds).
 
 **Résultat attendu**
 
@@ -2151,24 +2170,43 @@ nohup: ignoring input and appending output to 'nohup.out'
 **Commande**
 
 ```bash
-nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize &
+# 0. Arrêter et désactiver le service mysqld système (verrouille ibdata1 sur Ubuntu 24.04)
+systemctl stop mysql 2>/dev/null || true
+systemctl disable mysql 2>/dev/null || true
+
+# 1. Initialiser le datadir MySQL si nécessaire (premier démarrage uniquement)
+if [ ! -f /var/lib/mysql/auto.cnf ]; then
+  mysqld --initialize-insecure --user=mysql 2>&1 | tail -3
+fi
+
+# 2. Démarrer mysqld NDB (NodeId 4 sur VM1)
+rm -f /var/run/mysqld/mysqld.sock
+mkdir -p /var/run/mysqld
+nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld-4.log 2>&1 &
+sleep 6
+tail -5 /tmp/mysqld-4.log
 ```
 
 **Explication de la commande**
 
-- `mysqld --ndbcluster` : active le moteur NDB sur l'instance MySQL.
-- `--ndb-connectstring=192.168.56.10` : indique l'adresse du nœud de gestion pour rejoindre le cluster.
-- `--user=mysql` : exécute le processus sous l'utilisateur `mysql` (pratique de moindre privilège).
-- `--daemonize` : lance `mysqld` en arrière-plan (démon).
-- `&` : détache le processus pour qu'il tourne en arrière-plan.
-- **Piège** : si le datadir MySQL n'est pas initialisé (`mysqld --initialize` préalable), le démarrage échoue. Ne pas démarrer les nœuds SQL avant les nœuds de stockage.
+- `systemctl stop mysql && systemctl disable mysql` : arrête et désactive le service mysqld système installé par le paquet `mysql-cluster-community-server`. Ce service lance un `mysqld` classique qui verrouille `/var/lib/mysql/ibdata1` et empêcherait le démarrage du nœud SQL NDB.
+- `mysqld --initialize-insecure --user=mysql` : initialise le datadir MySQL (crée les tables systèmes, les certificats SSL, etc.). Nécessaire une seule fois avant le premier démarrage.
+- `rm -f /var/run/mysqld/mysqld.sock` : supprime l'ancien socket s'il existe.
+- `nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld-4.log 2>&1 &` : lance le nœud SQL NDB (NodeId 4) en arrière-plan, connecté au gestionnaire sur 192.168.56.10.
+- `sleep 6` : laisse le temps au nœud SQL de se connecter au gestionnaire et de rejoindre le cluster.
+- **Piège 1** : si le service mysqld système n'est pas arrêté, il verrouille `ibdata1` et le démarrage échoue (`Unable to lock ./ibdata1 error: 11`).
+- **Piège 2** : si le datadir n'est pas initialisé, mysqld refuse de démarrer (`Failed to find valid data directory`).
+- **Piège 3** : ne pas démarrer les nœuds SQL avant les nœuds de stockage.
 
 **Résultat attendu**
 
 ```text
-nohup: ignoring input and appending output to 'nohup.out'
+nohup: ignoring input and appending output to '/tmp/mysqld-4.log'
 [1] 2460
-
+2026-11-25T... [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.50-cluster) starting as process ...
+2026-11-25T... [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-11-25T... [System] [MY-010866] [NDB] Binlog: NDB tables writable
+2026-11-25T... [System] [MY-010866] [NDB] Binlog: Startup and setup completed
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
@@ -2176,7 +2214,21 @@ nohup: ignoring input and appending output to 'nohup.out'
 **Commande**
 
 ```bash
-nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize &
+# 0. Arrêter et désactiver le service mysqld système (verrouille ibdata1 sur Ubuntu 24.04)
+systemctl stop mysql 2>/dev/null || true
+systemctl disable mysql 2>/dev/null || true
+
+# 1. Initialiser le datadir MySQL si nécessaire (premier démarrage uniquement)
+if [ ! -f /var/lib/mysql/auto.cnf ]; then
+  mysqld --initialize-insecure --user=mysql 2>&1 | tail -3
+fi
+
+# 2. Démarrer mysqld NDB (NodeId 5 sur VM3)
+rm -f /var/run/mysqld/mysqld.sock
+mkdir -p /var/run/mysqld
+nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemonize > /tmp/mysqld-5.log 2>&1 &
+sleep 6
+tail -5 /tmp/mysqld-5.log
 ```
 
 **Explication de la commande**
@@ -2186,9 +2238,12 @@ nohup mysqld --ndbcluster --ndb-connectstring=192.168.56.10 --user=mysql --daemo
 **Résultat attendu**
 
 ```text
-nohup: ignoring input and appending output to 'nohup.out'
+nohup: ignoring input and appending output to '/tmp/mysqld-5.log'
 [1] 2461
-
+2026-11-25T... [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.50-cluster) starting as process ...
+2026-11-25T... [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-11-25T... [System] [MY-010866] [NDB] Binlog: NDB tables writable
+2026-11-25T... [System] [MY-010866] [NDB] Binlog: Startup and setup completed
 ```
 
 > **Machine** : 192.168.56.12 | **Terminal** : session SSH ouverte sur mysql-node3 | **Utilisateur** : root | **Répertoire** : /root
